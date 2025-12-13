@@ -1,4 +1,4 @@
 package config
 
-const HOST string = "0.0.0.0"
-const PORT int = 6379
+var HOST string = "0.0.0.0"
+var PORT int = 6379

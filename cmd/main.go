@@ -1,45 +1,17 @@
 package main
 
 import (
-	"fmt"
-	"github.com/manhhung2111/go-redis/internal/core"
-	"net"
+	"flag"
+	"github.com/manhhung2111/go-redis/internal/config"
+	"github.com/manhhung2111/go-redis/internal/server"
 )
 
+func init() {
+	flag.StringVar(&config.HOST, "host", "0.0.0.0", "host")
+	flag.IntVar(&config.PORT, "port", 6379, "port")
+	flag.Parse()
+}
+
 func main() {
-	fmt.Println("Listening on port :6379")
-
-	// Create a new server
-	l, err := net.Listen("tcp", ":6379")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	// Listen for connections
-	conn, err := l.Accept()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	defer conn.Close()
-
-	for {
-		resp := core.NewResp(conn)
-		value, err := resp.Read()
-
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		_ = value
-
-		writer := core.NewWriter(conn)
-		writer.Write(core.Value{
-			Typ: "string",
-			Str: "OK",
-		})
-	}
+	server.StartServer()
 }

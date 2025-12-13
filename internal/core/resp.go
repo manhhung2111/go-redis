@@ -1,211 +1,129 @@
 package core
 
 import (
-	"bufio"
+	"errors"
 	"fmt"
-	"io"
-	"strconv"
+	"strings"
 )
 
 const (
-	STRING  = '+'
-	ERROR   = '-'
-	INTEGER = ':'
-	BULK    = '$'
-	ARRAY   = '*'
+	SIMPLE_STRING = '+'
+	ERROR         = '-'
+	INTEGER       = ':'
+	BULK_STRING   = '$'
+	ARRAY         = '*'
+	CR            = '\r'
+	LF            = '\n'
+	CRLF          = "\r\n"
 )
 
-type Value struct {
-	Typ   string
-	Str   string
-	Num   int
-	Bulk  string
-	Array []Value
+/** +OK\r\n -> OK, 5 */
+func readSimpleString(data []byte) (string, int, error) {
+	idx := 1 // skip the first byte
+	for data[idx] != CR {
+		idx++
+	}
+	return string(data[1:idx]), idx + 2, nil
 }
 
-type Resp struct {
-	reader *bufio.Reader
+/** :123\r\n -> 123, 6 */
+func readInt64(data []byte) (int64, int, error) {
+	var res int64 = 0
+	idx := 1
+	for data[idx] != CR {
+		res = res*10 + int64(data[idx]-'0')
+		idx++
+	}
+
+	return res, idx + 2, nil
 }
 
-func NewResp(rd io.Reader) *Resp {
-	return &Resp{reader: bufio.NewReader(rd)}
+func readError(data []byte) (string, int, error) {
+	return readSimpleString(data)
 }
 
-func (r *Resp) readLine() (line []byte, n int, err error) {
-	for {
-		b, err := r.reader.ReadByte()
+/** $5\r\hello\r\n -> 5, 4 */
+func readLen(data []byte) (int, int) {
+	res, idx, _ := readInt64(data)
+	return int(res), idx
+}
+
+/** $5\r\nhello\r\n -> "hello" */
+func readBulkString(data []byte) (string, int, error) {
+	strLen, idx := readLen(data)
+	endIdx := idx + strLen
+
+	return string(data[idx:endIdx]), endIdx + 2, nil
+}
+
+/** *2\r\n$5\r\nhello\r\n$5\r\nworld\r\n -> {"hello", "world"} */
+func readArray(data []byte) (interface{}, int, error) {
+	arrLen, idx := readLen(data)
+
+	var res []interface{} = make([]interface{}, arrLen)
+
+	for i := range arrLen {
+		element, delta, err := Decode(data[idx:])
 		if err != nil {
 			return nil, 0, err
 		}
 
-		n += 1
-		line = append(line, b)
-		if len(line) >= 2 && line[len(line) - 2] == '\r' {
-			break
-		}
+		res[i] = element
+		idx += delta
 	}
 
-	return line, n, nil
+	return res, idx, nil
 }
 
-func (r *Resp) readInteger() (x int, n int, err error) {
-	line, n, err := r.readLine()
-	if err != nil {
-		return 0, 0, err	
+func Decode(data []byte) (interface{}, int, error) {
+	if len(data) == 0 {
+		return nil, 0, errors.New("no data to decode")
 	}
 
-	i64, err := strconv.ParseInt(string(line), 10, 64)
-	if err != nil {
-		return 0, 0, err
-	}
-
-	return int(i64), n, nil
-}
-
-func (r *Resp) Read() (Value, error) {
-	_type, err := r.reader.ReadByte()
-
-	if err != nil {
-		return Value{}, err
-	}
-
-	switch _type {
+	switch data[0] {
+	case SIMPLE_STRING:
+		return readSimpleString(data)
+	case INTEGER:
+		return readInt64(data)
+	case ERROR:
+		return readError(data)
+	case BULK_STRING:
+		return readBulkString(data)
 	case ARRAY:
-		return r.readArray()
-	case BULK:
-		return r.readBulk()
+		return readArray(data)
 	default:
-		fmt.Printf("Unknown type: %v", string(_type))
-		return Value{}, nil
+		return nil, 0, errors.New(fmt.Sprintf("unsupported data type %c", data[0]))
 	}
 }
 
-func (r *Resp) readArray() (Value, error) {
-	v := Value{}
-	v.Typ = "array"
-
-	// read length of array
-	len, _, err := r.readInteger()
-	if err != nil {
-		return v, err
-	}
-
-	// foreach line, parse and read the value
-	v.Array = make([]Value, 0)
-	for i := 0; i < len; i++ {
-		val, err := r.Read()
-		if err != nil {
-			return v, err
+func Encode(value interface{}, isSimpleString bool) []byte {
+	switch v := value.(type) {
+	case string:
+		if isSimpleString {
+			return []byte(fmt.Sprintf("+%s%s", v, CRLF))
 		}
-
-		// append parsed value to array
-		v.Array = append(v.Array, val)
+		return []byte(fmt.Sprintf("$%d%s%s%s", len(v), CRLF, v, CRLF))
 	}
-
-	return v, nil
+	return []byte{}
 }
 
-func (r *Resp) readBulk() (Value, error) {
-	v := Value{}
-
-	v.Typ = "bulk"
-
-	len, _, err := r.readInteger()
+func ParseCmd(data []byte) (*RedisCmd, error) {
+	value, _, err := Decode(data)
 	if err != nil {
-		return v, err
+		return nil, err
 	}
 
-	bulk := make([]byte, len)
+	arr := value.([]interface{})
+	tokens := make([]string, len(arr))
 
-	r.reader.Read(bulk)
-
-	v.Bulk = string(bulk)
-
-	// Read the trailing CRLF
-	r.readLine()
-
-	return v, nil
-}
-
-func (v Value) Marshal() []byte {
-	switch v.Typ {
-	case "array":
-		return v.marshalArray()
-	case "bulk":
-		return v.marshalBulk()
-	case "string":
-		return v.marshalString()
-	case "null":
-		return v.marshallNull()
-	case "error":
-		return v.marshallError()
-	default:
-		return []byte{}
-	}
-}
-
-func (v Value) marshalString() []byte {
-	var bytes []byte
-	bytes = append(bytes, STRING)
-	bytes = append(bytes, v.Str...)
-	bytes = append(bytes, '\r', '\n')
-
-	return bytes
-}
-
-func (v Value) marshalBulk() []byte {
-	var bytes []byte
-	bytes = append(bytes, BULK)
-	bytes = append(bytes, strconv.Itoa(len(v.Bulk))...)
-	bytes = append(bytes, '\r', '\n')
-	bytes = append(bytes, v.Bulk...)
-	bytes = append(bytes, '\r', '\n')
-
-	return bytes
-}
-
-func (v Value) marshalArray() []byte {
-	len := len(v.Array)
-	var bytes []byte
-	bytes = append(bytes, ARRAY)
-	bytes = append(bytes, strconv.Itoa(len)...)
-	bytes = append(bytes, '\r', '\n')
-
-	for i := 0; i < len; i++ {
-		bytes = append(bytes, v.Array[i].Marshal()...)
+	for i := range tokens {
+		tokens[i] = arr[i].(string)
 	}
 
-	return bytes
-}
-
-func (v Value) marshallError() []byte {
-	var bytes []byte
-	bytes = append(bytes, ERROR)
-	bytes = append(bytes, v.Str...)
-	bytes = append(bytes, '\r', '\n')
-
-	return bytes
-}
-
-func (v Value) marshallNull() []byte {
-	return []byte("$-1\r\n")
-}
-
-type Writer struct {
-	writer io.Writer
-}
-
-func NewWriter(w io.Writer) *Writer {
-	return &Writer{writer: w}
-}
-
-func (w *Writer) Write(v Value) error {
-	var bytes = v.Marshal()
-
-	_, err := w.writer.Write(bytes)
-	if err != nil {
-		return err
+	redisCmd := &RedisCmd{
+		Cmd:  strings.ToUpper(tokens[0]),
+		Args: tokens[1:],
 	}
 
-	return nil
+	return redisCmd, err
 }
