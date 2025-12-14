@@ -22,18 +22,18 @@ func NewStore() Store {
 }
 
 func (store Store) Get(key string) (any, bool) {
-	val, ok := store.data[key]
+	entry, ok := store.data[key]
 	if !ok {
 		return nil, false
 	}
 
 	now := time.Now().UnixMilli()
-	if val.ExpireAt != constant.NO_EXPIRE && val.ExpireAt <= now {
+	if entry.ExpireAt != constant.NO_EXPIRE && entry.ExpireAt <= now {
 		store.Del(key)
 		return nil, false
 	}
 
-	return val.Value, true
+	return entry.Value, true
 }
 
 func (store Store) Set(key string, value any) {
@@ -51,6 +51,14 @@ func (store *Store) Del(key string) bool {
 		return true
 	}
 	return false
+}
+
+func (store *Store) GetEntry(key string) *Entry {
+	entry, ok := store.data[key]
+	if !ok {
+		return nil
+	}
+	return entry
 }
 
 func (store Store) setWithTTL(key string, value any, ttlSeconds int64) {

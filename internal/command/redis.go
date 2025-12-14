@@ -7,9 +7,11 @@ import (
 
 type IRedis interface {
 	Ping(cmd core.RedisCmd) []byte
+
 	Get(cmd core.RedisCmd) []byte
 	Set(cmd core.RedisCmd) []byte
 	Del(cmd core.RedisCmd) []byte
+	TTL(cmd core.RedisCmd) []byte
 }
 
 type Redis struct {
