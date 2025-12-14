@@ -3,73 +3,137 @@ package core
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 )
 
+type RespType byte
+
 const (
-	SIMPLE_STRING = '+'
-	ERROR         = '-'
-	INTEGER       = ':'
-	BULK_STRING   = '$'
-	ARRAY         = '*'
-	CR            = '\r'
-	LF            = '\n'
-	CRLF          = "\r\n"
+	RespSimpleString RespType = '+'
+	RespError        RespType = '-'
+	RespInteger      RespType = ':'
+	RespBulkString   RespType = '$'
+	RespArray        RespType = '*'
+)
+
+const (
+	CR byte = '\r'
+	LF byte = '\n'
+)
+
+var CRLF = []byte{CR, LF}
+
+var (
+	ErrInvalidRESP = errors.New("invalid RESP")
+	ErrIncomplete  = errors.New("incomplete RESP frame")
 )
 
 /** +OK\r\n -> OK, 5 */
+/** -Error message\r\n -> Error message */
 func readSimpleString(data []byte) (string, int, error) {
-	idx := 1 // skip the first byte
-	for data[idx] != CR {
-		idx++
+	for i := 1; i+1 < len(data); i++ {
+		if data[i] == CR && data[i+1] == LF {
+			return string(data[1:i]), i + 2, nil
+		}
 	}
-	return string(data[1:idx]), idx + 2, nil
+	return "", 0, ErrIncomplete
 }
 
-/** :123\r\n -> 123, 6 */
+/** :[<+|->]<value>\r\n -> <value> */
 func readInt64(data []byte) (int64, int, error) {
-	var res int64 = 0
 	idx := 1
-	for data[idx] != CR {
+	sign := int64(1)
+
+	if idx >= len(data) {
+		return 0, 0, fmt.Errorf("unexpected end")
+	}
+
+	switch data[idx] {
+	case '-':
+		sign = -1
+		idx++
+	case '+':
+		idx++
+	}
+
+	if idx >= len(data) || data[idx] < '0' || data[idx] > '9' {
+		return 0, 0, fmt.Errorf("invalid integer format")
+	}
+
+	var res int64 = 0
+	for idx < len(data) && data[idx] != '\r' {
+		if data[idx] < '0' || data[idx] > '9' {
+			return 0, 0, fmt.Errorf("invalid digit")
+		}
+
+		// overflow check
+		if res > (math.MaxInt64-int64(data[idx]-'0'))/10 {
+			return 0, 0, fmt.Errorf("integer overflow")
+		}
+
 		res = res*10 + int64(data[idx]-'0')
 		idx++
 	}
 
-	return res, idx + 2, nil
-}
+	if idx+1 >= len(data) || data[idx] != '\r' || data[idx+1] != '\n' {
+		return 0, 0, fmt.Errorf("missing CRLF")
+	}
 
-func readError(data []byte) (string, int, error) {
-	return readSimpleString(data)
-}
-
-/** $5\r\hello\r\n -> 5, 4 */
-func readLen(data []byte) (int, int) {
-	res, idx, _ := readInt64(data)
-	return int(res), idx
+	return sign * res, idx + 2, nil
 }
 
 /** $5\r\nhello\r\n -> "hello" */
-func readBulkString(data []byte) (string, int, error) {
-	strLen, idx := readLen(data)
-	endIdx := idx + strLen
+func readBulkString(data []byte) (interface{}, int, error) {
+	strLen64, idx, err := readInt64(data)
+	if err != nil {
+		return nil, 0, err
+	}
+	fmt.Println("bulk string len=", strLen64)
 
-	return string(data[idx:endIdx]), endIdx + 2, nil
+	if strLen64 == -1 {
+		return nil, idx, nil // NULL bulk string
+	}
+
+	strLen := int(strLen64)
+	if idx+strLen+2 > len(data) {
+		return nil, 0, ErrIncomplete
+	}
+	fmt.Println("bulk string len=", strLen64)
+
+	if data[idx+strLen] != CR || data[idx+strLen+1] != LF {
+		return nil, 0, ErrInvalidRESP
+	}
+
+	return string(data[idx : idx+strLen]), idx + strLen + 2, nil
 }
 
 /** *2\r\n$5\r\nhello\r\n$5\r\nworld\r\n -> {"hello", "world"} */
 func readArray(data []byte) (interface{}, int, error) {
-	arrLen, idx := readLen(data)
+	count64, idx, err := readInt64(data)
+	if err != nil {
+		return nil, 0, err
+	}
 
-	var res []interface{} = make([]interface{}, arrLen)
+	if count64 == -1 {
+		return nil, idx, nil // NULL array
+	}
 
-	for i := range arrLen {
-		element, delta, err := Decode(data[idx:])
+	count := int(count64)
+	res := make([]interface{}, count)
+
+	for i := 0; i < count; i++ {
+		if idx >= len(data) {
+			return nil, 0, ErrIncomplete
+		}
+
+		val, consumed, err := Decode(data[idx:])
 		if err != nil {
 			return nil, 0, err
 		}
 
-		res[i] = element
-		idx += delta
+		res[i] = val
+		idx += consumed
 	}
 
 	return res, idx, nil
@@ -80,19 +144,17 @@ func Decode(data []byte) (interface{}, int, error) {
 		return nil, 0, errors.New("no data to decode")
 	}
 
-	switch data[0] {
-	case SIMPLE_STRING:
+	switch RespType(data[0]) {
+	case RespSimpleString, RespError:
 		return readSimpleString(data)
-	case INTEGER:
+	case RespInteger:
 		return readInt64(data)
-	case ERROR:
-		return readError(data)
-	case BULK_STRING:
+	case RespBulkString:
 		return readBulkString(data)
-	case ARRAY:
+	case RespArray:
 		return readArray(data)
 	default:
-		return nil, 0, errors.New(fmt.Sprintf("unsupported data type %c", data[0]))
+		return nil, 0, ErrInvalidRESP
 	}
 }
 
@@ -108,22 +170,32 @@ func Encode(value interface{}, isSimpleString bool) []byte {
 }
 
 func ParseCmd(data []byte) (*RedisCmd, error) {
-	value, _, err := Decode(data)
+	val, _, err := Decode(data)
 	if err != nil {
 		return nil, err
 	}
 
-	arr := value.([]interface{})
-	tokens := make([]string, len(arr))
-
-	for i := range tokens {
-		tokens[i] = arr[i].(string)
+	arr, ok := val.([]interface{})
+	if !ok || len(arr) == 0 {
+		return nil, ErrInvalidRESP
 	}
 
-	redisCmd := &RedisCmd{
-		Cmd:  strings.ToUpper(tokens[0]),
-		Args: tokens[1:],
+	cmd, ok := arr[0].(string)
+	if !ok {
+		return nil, ErrInvalidRESP
 	}
 
-	return redisCmd, err
+	args := make([]string, len(arr)-1)
+	for i := 1; i < len(arr); i++ {
+		s, ok := arr[i].(string)
+		if !ok {
+			return nil, ErrInvalidRESP
+		}
+		args[i-1] = s
+	}
+
+	return &RedisCmd{
+		Cmd:  strings.ToUpper(cmd),
+		Args: args,
+	}, nil
 }

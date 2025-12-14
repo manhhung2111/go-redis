@@ -3,10 +3,10 @@ package core
 import (
 	"errors"
 	"fmt"
-	"net"
+	"io"
 )
 
-func handlePINGCommand(args []string, conn net.Conn) error {
+func handlePINGCommand(args []string, conn io.ReadWriter) error {
 	var buf []byte
 
 	argsLen := len(args)
@@ -24,7 +24,7 @@ func handlePINGCommand(args []string, conn net.Conn) error {
 	return err
 }
 
-func HandleCommandAndResponse(cmd *RedisCmd, conn net.Conn) error {
+func HandleCommandAndResponse(cmd *RedisCmd, conn io.ReadWriter) error {
 	switch cmd.Cmd {
 	case "PING":
 		return handlePINGCommand(cmd.Args, conn)

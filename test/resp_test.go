@@ -53,7 +53,7 @@ func TestBulkString(t *testing.T) {
 	}
 	for k, v := range cases {
 		value, _, _ := core.Decode([]byte(k))
-		if v != value {
+		if v != value.(string) {
 			t.Fail()
 		}
 	}
