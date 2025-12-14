@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 	"strings"
+
+	"github.com/manhhung2111/go-redis/internal/constant"
 )
 
 type RespType byte
@@ -28,6 +30,8 @@ var (
 	ErrInvalidRESP = errors.New("invalid RESP")
 	ErrIncomplete  = errors.New("incomplete RESP frame")
 )
+
+var NilBulkString = struct{}{}
 
 /** +OK\r\n -> OK, 5 */
 /** -Error message\r\n -> Error message */
@@ -89,7 +93,6 @@ func readBulkString(data []byte) (interface{}, int, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	fmt.Println("bulk string len=", strLen64)
 
 	if strLen64 == -1 {
 		return nil, idx, nil // NULL bulk string
@@ -99,7 +102,6 @@ func readBulkString(data []byte) (interface{}, int, error) {
 	if idx+strLen+2 > len(data) {
 		return nil, 0, ErrIncomplete
 	}
-	fmt.Println("bulk string len=", strLen64)
 
 	if data[idx+strLen] != CR || data[idx+strLen+1] != LF {
 		return nil, 0, ErrInvalidRESP
@@ -127,7 +129,7 @@ func readArray(data []byte) (interface{}, int, error) {
 			return nil, 0, ErrIncomplete
 		}
 
-		val, consumed, err := Decode(data[idx:])
+		val, consumed, err := DecodeResp(data[idx:])
 		if err != nil {
 			return nil, 0, err
 		}
@@ -139,7 +141,7 @@ func readArray(data []byte) (interface{}, int, error) {
 	return res, idx, nil
 }
 
-func Decode(data []byte) (interface{}, int, error) {
+func DecodeResp(data []byte) (interface{}, int, error) {
 	if len(data) == 0 {
 		return nil, 0, errors.New("no data to decode")
 	}
@@ -158,19 +160,24 @@ func Decode(data []byte) (interface{}, int, error) {
 	}
 }
 
-func Encode(value interface{}, isSimpleString bool) []byte {
+func EncodeResp(value interface{}, isSimpleString bool) []byte {
 	switch v := value.(type) {
 	case string:
 		if isSimpleString {
 			return []byte(fmt.Sprintf("+%s%s", v, CRLF))
 		}
 		return []byte(fmt.Sprintf("$%d%s%s%s", len(v), CRLF, v, CRLF))
+	case int64:
+		return []byte(fmt.Sprintf(":%d%s", v, CRLF))
+	case error:
+		return []byte(fmt.Sprintf("-%s%s", v.Error(), CRLF))
+	default:
+		return constant.RESP_NIL_BULK_STRING
 	}
-	return []byte{}
 }
 
 func ParseCmd(data []byte) (*RedisCmd, error) {
-	val, _, err := Decode(data)
+	val, _, err := DecodeResp(data)
 	if err != nil {
 		return nil, err
 	}

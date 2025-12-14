@@ -2,8 +2,9 @@ package main
 
 import (
 	"flag"
+
 	"github.com/manhhung2111/go-redis/internal/config"
-	"github.com/manhhung2111/go-redis/internal/server"
+	"github.com/manhhung2111/go-redis/internal/wiring"
 )
 
 func init() {
@@ -13,5 +14,9 @@ func init() {
 }
 
 func main() {
-	server.StartServer()
+	server, err := wiring.InitializeServer()
+	if err != nil {
+		panic(err)
+	}
+	server.Start()
 }

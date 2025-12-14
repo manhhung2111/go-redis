@@ -1,17 +1,30 @@
 package server
 
 import (
-	"fmt"
-	"io"
 	"log"
 	"net"
+	"os"
+	"os/signal"
 	"syscall"
 
+	"github.com/manhhung2111/go-redis/internal/command"
 	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/manhhung2111/go-redis/internal/core"
 )
 
-func StartServer() error {
+type Server struct {
+	redis command.IRedis
+}
+
+func NewServer(
+	redis command.IRedis,
+) *Server {
+	return &Server{
+		redis: redis,
+	}
+}
+
+func (server *Server) Start() error {
 	log.Println("starting a TCP server listening on", config.HOST, config.PORT)
 
 	var events []syscall.Kevent_t = make([]syscall.Kevent_t, config.MAX_CONNECTION)
@@ -64,6 +77,17 @@ func StartServer() error {
 			continue
 		}
 
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+
+		go func() {
+			<-sig
+			log.Println("shutting down server...")
+			syscall.Close(serverFD)
+			syscall.Close(kQueueFd)
+			os.Exit(0)
+		}()
+
 		for i := 0; i < nEvents; i++ {
 			// if the socket server itself is ready for an IO
 			if int(events[i].Ident) == serverFD {
@@ -97,7 +121,8 @@ func StartServer() error {
 					clients--
 					continue
 				}
-				responseRw(cmd, comm)
+				response := command.HandleCommandAndResponse(*cmd, server.redis)
+				comm.Write(response)
 			}
 		}
 	}
@@ -110,11 +135,4 @@ func readCommandFD(fd int) (*core.RedisCmd, error) {
 		return nil, err
 	}
 	return core.ParseCmd(buf[:n])
-}
-
-func responseRw(cmd *core.RedisCmd, rw io.ReadWriter) {
-	err := core.HandleCommandAndResponse(cmd, rw)
-	if err != nil {
-		rw.Write([]byte(fmt.Sprintf("-%s%s", err, core.CRLF)))
-	}
 }
