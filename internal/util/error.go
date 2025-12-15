@@ -15,3 +15,7 @@ func InvalidCommandOption(option, command string) error {
 func InvalidCommand(command string) error {
 	return fmt.Errorf("ERR command '%s' is unsupported", command)
 }
+
+func InvalidExpireTime(command string) error {
+	return fmt.Errorf("ERR invalid expire time in '%s' command", command)
+}

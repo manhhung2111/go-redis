@@ -2,6 +2,7 @@ package command
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/manhhung2111/go-redis/internal/constant"
@@ -21,33 +22,70 @@ func (redis *Redis) Get(cmd core.RedisCmd) []byte {
 		return constant.RESP_NIL_BULK_STRING
 	}
 
-	return core.EncodeResp(value, false)
+	str, ok := value.(string)
+	if !ok {
+		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	}
+
+	return core.EncodeResp(str, false)
 }
 
-/* Supports `SET key value [EX seconds]` */
+/* Supports `SET key value [NX | XX] [EX seconds]` */
 func (redis *Redis) Set(cmd core.RedisCmd) []byte {
 	argsLen := len(cmd.Args)
-	if argsLen < 2 || argsLen == 3 || argsLen > 4 {
+	if argsLen < 2 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	args := cmd.Args
 	key, value := args[0], args[1]
 
-	if argsLen > 2 {
-		option := args[2]
+	var (
+		nx        bool // SET if Not eXists
+		xx        bool // SET if eXists
+		expireSec int64
+	)
 
-		switch option {
+	for i := 2; i < argsLen; i++ {
+		opt := strings.ToUpper(args[i])
+		switch opt {
+		case "NX":
+			nx = true
+		case "XX":
+			xx = true
 		case "EX":
-			ttlSeconds, err := strconv.ParseInt(args[3], 10, 64)
-			if err != nil {
-				return core.EncodeResp(err, false)
+			if i+1 >= argsLen {
+				return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 			}
 
-			redis.Store.SetEx(key, value, ttlSeconds)
+			ttl, err := strconv.ParseInt(args[i+1], 10, 64)
+			if err != nil || ttl <= 0 {
+				return core.EncodeResp(util.InvalidExpireTime(cmd.Cmd), false)
+			}
+
+			expireSec = ttl
+			i++
 		default:
-			return core.EncodeResp(util.InvalidCommandOption(option, cmd.Cmd), false)
+			return core.EncodeResp(util.InvalidCommandOption(opt, cmd.Cmd), false)
 		}
+	}
+
+	if nx && xx {
+		return core.EncodeResp(util.InvalidCommandOption("NX|XX", cmd.Cmd), false)
+	}
+
+	entry := redis.Store.GetEntry(key)
+
+	if nx && entry != nil {
+		return constant.RESP_NIL_BULK_STRING
+	}
+
+	if xx && entry == nil {
+		return constant.RESP_NIL_BULK_STRING
+	}
+
+	if expireSec > 0 {
+		redis.Store.SetEx(key, value, expireSec)
 	} else {
 		redis.Store.Set(key, value)
 	}
