@@ -19,6 +19,14 @@ func HandleCommandAndResponse(cmd core.RedisCmd, redis IRedis) []byte {
 		return redis.TTL(cmd)
 	case "EXPIRE":
 		return redis.Expire(cmd)
+	case "INCR":
+		return redis.Incr(cmd)
+	case "INCRBY":
+		return redis.IncrBy(cmd)
+	case "DECR":
+		return redis.Decr(cmd)
+	case "DECRBY":
+		return redis.DecrBy(cmd)
 	}
 	return core.EncodeResp(util.InvalidCommand(cmd.Cmd), false)
 }

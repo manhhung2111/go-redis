@@ -21,7 +21,7 @@ func NewStore() Store {
 	}
 }
 
-func (store Store) Get(key string) (any, bool) {
+func (store *Store) Get(key string) (any, bool) {
 	entry, ok := store.data[key]
 	if !ok {
 		return nil, false
@@ -36,11 +36,11 @@ func (store Store) Get(key string) (any, bool) {
 	return entry.Value, true
 }
 
-func (store Store) Set(key string, value any) {
+func (store *Store) Set(key string, value any) {
 	store.setWithTTL(key, value, constant.NO_EXPIRE)
 }
 
-func (store Store) SetEx(key string, value any, ttlSeconds int64) {
+func (store *Store) SetEx(key string, value any, ttlSeconds int64) {
 	store.setWithTTL(key, value, ttlSeconds)
 }
 
@@ -72,6 +72,16 @@ func (store *Store) SetExpire(key string, ttlSeconds int64) bool {
 	}
 
 	entry.ExpireAt = time.Now().UnixMilli() + ttlSeconds*1000
+	return true
+}
+
+func (store *Store) SetValue(key string, value any) bool {
+	entry, ok := store.data[key]
+	if !ok {
+		return false
+	}
+
+	entry.Value = value
 	return true
 }
 

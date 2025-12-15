@@ -11,5 +11,8 @@ var RESP_EXPIRE_OPTIONS_NOT_COMPATIBLE []byte = []byte("-NX and XX, GT or LT opt
 var RESP_EXPIRE_TIMEOUT_NOT_SET []byte = []byte(":0\r\n")
 var RESP_EXPIRE_TIMEOUT_SET []byte = []byte(":1\r\n")
 
+var RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE []byte = []byte("-value is not an integer or out of range\r\n")
+
 const NO_EXPIRE int64 = -1
+
 /** Errors */
