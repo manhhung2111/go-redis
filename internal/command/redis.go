@@ -12,6 +12,7 @@ type IRedis interface {
 	Set(cmd core.RedisCmd) []byte
 	Del(cmd core.RedisCmd) []byte
 	TTL(cmd core.RedisCmd) []byte
+	Expire(cmd core.RedisCmd) []byte
 }
 
 type Redis struct {

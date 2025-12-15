@@ -61,6 +61,20 @@ func (store *Store) GetEntry(key string) *Entry {
 	return entry
 }
 
+func (store *Store) SetExpire(key string, ttlSeconds int64) bool {
+	entry, ok := store.data[key]
+	if !ok {
+		return false
+	}
+
+	if ttlSeconds <= 0 {
+		return false
+	}
+
+	entry.ExpireAt = time.Now().UnixMilli() + ttlSeconds*1000
+	return true
+}
+
 func (store Store) setWithTTL(key string, value any, ttlSeconds int64) {
 	var expireAt int64 = constant.NO_EXPIRE
 	if ttlSeconds > 0 {

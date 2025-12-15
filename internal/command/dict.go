@@ -129,3 +129,80 @@ func (redis *Redis) TTL(cmd core.RedisCmd) []byte {
 	remainingTTLSeconds := (entry.ExpireAt - time.Now().UnixMilli()) / 1000
 	return core.EncodeResp((int64)(remainingTTLSeconds), false)
 }
+
+/* Supports EXPIRE key seconds [NX | XX | GT | LT] */
+func (redis *Redis) Expire(cmd core.RedisCmd) []byte {
+	args := cmd.Args
+	argsLen := len(args)
+
+	if argsLen < 2 {
+		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+	}
+
+	key := args[0]
+	ttlSeconds, err := strconv.ParseInt(args[1], 10, 64)
+	if err != nil || ttlSeconds <= 0 {
+		return core.EncodeResp(util.InvalidExpireTime(cmd.Cmd), false)
+	}
+
+	var (
+		nx bool // SET if Not eXists
+		xx bool // SET if eXists
+		gt bool
+		lt bool
+	)
+
+	if argsLen == 3 {
+		opt := strings.ToUpper(args[2])
+		switch opt {
+		case "NX":
+			nx = true
+		case "XX":
+			xx = true
+		case "GT":
+			gt = true
+		case "LT":
+			lt = true
+		default:
+			return core.EncodeResp(util.InvalidCommandOption(opt, cmd.Cmd), false)
+		}
+	}
+
+	// The GT, LT and NX options are mutually exclusive.
+	if (nx && xx) || (gt && lt) || (nx && (gt || lt)) {
+		return constant.RESP_EXPIRE_OPTIONS_NOT_COMPATIBLE
+	}
+
+	entry := redis.Store.GetEntry(key)
+	if entry == nil {
+		return constant.RESP_EXPIRE_TIMEOUT_NOT_SET
+	}
+
+	if nx && entry.ExpireAt != constant.NO_EXPIRE {
+		return constant.RESP_EXPIRE_TIMEOUT_NOT_SET
+	}
+
+	if xx && entry.ExpireAt == constant.NO_EXPIRE {
+		return constant.RESP_EXPIRE_TIMEOUT_NOT_SET
+	}
+
+	if entry.ExpireAt != constant.NO_EXPIRE {
+		now := time.Now().UnixMilli()
+		currentTTL := (entry.ExpireAt - now) / 1000
+
+		if gt && currentTTL >= ttlSeconds {
+			return constant.RESP_EXPIRE_TIMEOUT_NOT_SET
+		}
+
+		if lt && currentTTL <= ttlSeconds {
+			return constant.RESP_EXPIRE_TIMEOUT_NOT_SET
+		}
+	}
+
+	ok := redis.Store.SetExpire(key, ttlSeconds)
+	if !ok {
+		return constant.RESP_EXPIRE_TIMEOUT_NOT_SET
+	}
+
+	return constant.RESP_EXPIRE_TIMEOUT_SET
+}
