@@ -10,14 +10,15 @@ import (
 	"github.com/manhhung2111/go-redis/internal/command"
 	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/manhhung2111/go-redis/internal/core"
+	"github.com/manhhung2111/go-redis/internal/util"
 )
 
 type Server struct {
-	redis command.IRedis
+	redis command.Redis
 }
 
 func NewServer(
-	redis command.IRedis,
+	redis command.Redis,
 ) *Server {
 	return &Server{
 		redis: redis,
@@ -70,6 +71,17 @@ func (server *Server) Start() error {
 	}
 
 	syscall.Kevent(kQueueFd, []syscall.Kevent_t{socketServerReadyEvent}, nil, nil)
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sig
+		log.Println("shutting down server...")
+		syscall.Close(serverFD)
+		syscall.Close(kQueueFd)
+		os.Exit(0)
+	}()
+
 	for {
 		// block the main thread until one or more registered events become ready, then copy them into `events`
 		nEvents, err := syscall.Kevent(kQueueFd, nil, events, nil)
@@ -79,14 +91,6 @@ func (server *Server) Start() error {
 
 		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
-
-		go func() {
-			<-sig
-			log.Println("shutting down server...")
-			syscall.Close(serverFD)
-			syscall.Close(kQueueFd)
-			os.Exit(0)
-		}()
 
 		for i := 0; i < nEvents; i++ {
 			// if the socket server itself is ready for an IO
@@ -115,24 +119,50 @@ func (server *Server) Start() error {
 				}
 			} else {
 				comm := core.FDComm{Fd: int(events[i].Ident)}
-				cmd, err := readCommandFD(comm.Fd)
+				cmd, err := readCommandFD(comm)
 				if err != nil {
 					syscall.Close(int(events[i].Ident))
 					clients--
 					continue
 				}
-				response := command.HandleCommandAndResponse(*cmd, server.redis)
+				response := server.handleCommand(*cmd)
 				comm.Write(response)
 			}
 		}
 	}
 }
 
-func readCommandFD(fd int) (*core.RedisCmd, error) {
+func readCommandFD(comm core.FDComm) (*core.RedisCmd, error) {
 	var buf []byte = make([]byte, 512)
-	n, err := syscall.Read(fd, buf)
+	n, err := comm.Read(buf)
 	if err != nil {
 		return nil, err
 	}
 	return core.ParseCmd(buf[:n])
+}
+
+func (server *Server) handleCommand(cmd core.RedisCmd) []byte {
+	switch cmd.Cmd {
+	case "PING":
+		return server.redis.Ping(cmd)
+	case "SET":
+		return server.redis.Set(cmd)
+	case "GET":
+		return server.redis.Get(cmd)
+	case "DEL":
+		return server.redis.Del(cmd)
+	case "TTL":
+		return server.redis.TTL(cmd)
+	case "EXPIRE":
+		return server.redis.Expire(cmd)
+	case "INCR":
+		return server.redis.Incr(cmd)
+	case "INCRBY":
+		return server.redis.IncrBy(cmd)
+	case "DECR":
+		return server.redis.Decr(cmd)
+	case "DECRBY":
+		return server.redis.DecrBy(cmd)
+	}
+	return core.EncodeResp(util.InvalidCommand(cmd.Cmd), false)
 }

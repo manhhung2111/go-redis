@@ -11,7 +11,7 @@ import (
 )
 
 /* Supports `GET key` */
-func (redis *Redis) Get(cmd core.RedisCmd) []byte {
+func (redis *redis) Get(cmd core.RedisCmd) []byte {
 	argsLen := len(cmd.Args)
 	if argsLen != 1 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
@@ -31,7 +31,7 @@ func (redis *Redis) Get(cmd core.RedisCmd) []byte {
 }
 
 /* Supports `SET key value [NX | XX] [EX seconds]` */
-func (redis *Redis) Set(cmd core.RedisCmd) []byte {
+func (redis *redis) Set(cmd core.RedisCmd) []byte {
 	argsLen := len(cmd.Args)
 	if argsLen < 2 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
@@ -94,7 +94,7 @@ func (redis *Redis) Set(cmd core.RedisCmd) []byte {
 }
 
 /* Supports `DEL key [key...]` */
-func (redis *Redis) Del(cmd core.RedisCmd) []byte {
+func (redis *redis) Del(cmd core.RedisCmd) []byte {
 	argsLen := len(cmd.Args)
 	if argsLen < 1 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
@@ -111,7 +111,7 @@ func (redis *Redis) Del(cmd core.RedisCmd) []byte {
 }
 
 /* Supports `TTL key` */
-func (redis *Redis) TTL(cmd core.RedisCmd) []byte {
+func (redis *redis) TTL(cmd core.RedisCmd) []byte {
 	argsLen := len(cmd.Args)
 	if argsLen != 1 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
@@ -131,7 +131,7 @@ func (redis *Redis) TTL(cmd core.RedisCmd) []byte {
 }
 
 /* Supports EXPIRE key seconds [NX | XX | GT | LT] */
-func (redis *Redis) Expire(cmd core.RedisCmd) []byte {
+func (redis *redis) Expire(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	argsLen := len(args)
 

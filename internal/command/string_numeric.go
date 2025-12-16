@@ -10,7 +10,7 @@ import (
 )
 
 /* Support INCR key */
-func (redis *Redis) Incr(cmd core.RedisCmd) []byte {
+func (redis *redis) Incr(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
@@ -40,7 +40,7 @@ func (redis *Redis) Incr(cmd core.RedisCmd) []byte {
 }
 
 /* Support INCRBY key increment */
-func (redis *Redis) IncrBy(cmd core.RedisCmd) []byte {
+func (redis *redis) IncrBy(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 2 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
@@ -75,7 +75,7 @@ func (redis *Redis) IncrBy(cmd core.RedisCmd) []byte {
 }
 
 /* Support DECR key */
-func (redis *Redis) Decr(cmd core.RedisCmd) []byte {
+func (redis *redis) Decr(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
@@ -105,7 +105,7 @@ func (redis *Redis) Decr(cmd core.RedisCmd) []byte {
 }
 
 /* Support DECRBY key decrement */
-func (redis *Redis) DecrBy(cmd core.RedisCmd) []byte {
+func (redis *redis) DecrBy(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 2 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)

@@ -17,8 +17,8 @@ import (
 
 func InitializeServer() (*server.Server, error) {
 	store := storage.NewStore()
-	iRedis := command.NewRedis(store)
-	serverServer := server.NewServer(iRedis)
+	redis := command.NewRedis(store)
+	serverServer := server.NewServer(redis)
 	return serverServer, nil
 }
 

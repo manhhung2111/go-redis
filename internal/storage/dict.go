@@ -6,22 +6,32 @@ import (
 	"github.com/manhhung2111/go-redis/internal/constant"
 )
 
+type Store interface {
+	Get(key string) (any, bool)
+	Set(key string, value any)
+	SetEx(key string, value any, ttlSeconds int64)
+	Del(key string) bool
+	GetEntry(key string) *Entry
+	SetExpire(key string, ttlSeconds int64) bool
+	SetValue(key string, value any) bool
+}
+
 type Entry struct {
 	Value    any
 	ExpireAt int64 // in milliseconds
 }
 
-type Store struct {
+type store struct {
 	data map[string]*Entry
 }
 
 func NewStore() Store {
-	return Store{
+	return &store{
 		data: make(map[string]*Entry),
 	}
 }
 
-func (store *Store) Get(key string) (any, bool) {
+func (store *store) Get(key string) (any, bool) {
 	entry, ok := store.data[key]
 	if !ok {
 		return nil, false
@@ -36,15 +46,15 @@ func (store *Store) Get(key string) (any, bool) {
 	return entry.Value, true
 }
 
-func (store *Store) Set(key string, value any) {
+func (store *store) Set(key string, value any) {
 	store.setWithTTL(key, value, constant.NO_EXPIRE)
 }
 
-func (store *Store) SetEx(key string, value any, ttlSeconds int64) {
+func (store *store) SetEx(key string, value any, ttlSeconds int64) {
 	store.setWithTTL(key, value, ttlSeconds)
 }
 
-func (store *Store) Del(key string) bool {
+func (store *store) Del(key string) bool {
 	_, ok := store.data[key]
 	if ok {
 		delete(store.data, key)
@@ -53,7 +63,7 @@ func (store *Store) Del(key string) bool {
 	return false
 }
 
-func (store *Store) GetEntry(key string) *Entry {
+func (store *store) GetEntry(key string) *Entry {
 	entry, ok := store.data[key]
 	if !ok {
 		return nil
@@ -61,7 +71,7 @@ func (store *Store) GetEntry(key string) *Entry {
 	return entry
 }
 
-func (store *Store) SetExpire(key string, ttlSeconds int64) bool {
+func (store *store) SetExpire(key string, ttlSeconds int64) bool {
 	entry, ok := store.data[key]
 	if !ok {
 		return false
@@ -75,7 +85,7 @@ func (store *Store) SetExpire(key string, ttlSeconds int64) bool {
 	return true
 }
 
-func (store *Store) SetValue(key string, value any) bool {
+func (store *store) SetValue(key string, value any) bool {
 	entry, ok := store.data[key]
 	if !ok {
 		return false
@@ -85,7 +95,7 @@ func (store *Store) SetValue(key string, value any) bool {
 	return true
 }
 
-func (store Store) setWithTTL(key string, value any, ttlSeconds int64) {
+func (store *store) setWithTTL(key string, value any, ttlSeconds int64) {
 	var expireAt int64 = constant.NO_EXPIRE
 	if ttlSeconds > 0 {
 		expireAt = time.Now().UnixMilli() + ttlSeconds*1000

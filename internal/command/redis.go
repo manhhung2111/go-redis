@@ -5,7 +5,7 @@ import (
 	"github.com/manhhung2111/go-redis/internal/storage"
 )
 
-type IRedis interface {
+type Redis interface {
 	Ping(cmd core.RedisCmd) []byte
 
 	Get(cmd core.RedisCmd) []byte
@@ -20,14 +20,14 @@ type IRedis interface {
 	DecrBy(cmd core.RedisCmd) []byte
 }
 
-type Redis struct {
+type redis struct {
 	Store storage.Store
 }
 
 func NewRedis(
 	store storage.Store,
-) IRedis {
-	return &Redis{
+) Redis {
+	return &redis{
 		Store: store,
 	}
 }
