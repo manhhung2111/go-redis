@@ -163,6 +163,10 @@ func (server *Server) handleCommand(cmd core.RedisCmd) []byte {
 		return server.redis.Decr(cmd)
 	case "DECRBY":
 		return server.redis.DecrBy(cmd)
+	case "MGET":
+		return server.redis.MGet(cmd)
+	case "MSET":
+		return server.redis.MSet(cmd)
 	}
 	return core.EncodeResp(util.InvalidCommand(cmd.Cmd), false)
 }

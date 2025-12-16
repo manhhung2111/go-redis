@@ -206,3 +206,43 @@ func (redis *redis) Expire(cmd core.RedisCmd) []byte {
 
 	return constant.RESP_EXPIRE_TIMEOUT_SET
 }
+
+/* Support MGET key [key ...] */
+func (redis *redis) MGet(cmd core.RedisCmd) []byte {
+	args := cmd.Args
+	if len(args) < 1 {
+		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+	}
+
+	res := make([]any, len(args))
+
+	for i := 0; i < len(args); i++ {
+		val, ok := redis.Store.Get(args[i])
+		if !ok {
+			res[i] = nil
+			continue
+		}
+
+		if s, ok := val.(string); ok {
+			res[i] = s
+		} else {
+			res[i] = nil
+		}
+	}
+
+	return core.EncodeResp(res, false)
+}
+
+/* Support MSET key value [key value ...] */
+func (redis *redis) MSet(cmd core.RedisCmd) []byte {
+	args := cmd.Args
+	if len(args) == 0 || len(args)&1 == 1 {
+		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+	}
+
+	for i := 0; i < len(args); i += 2 {
+		redis.Store.Set(args[i], args[i+1])
+	}
+
+	return constant.RESP_OK
+}

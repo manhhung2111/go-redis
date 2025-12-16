@@ -18,6 +18,9 @@ type Redis interface {
 	IncrBy(cmd core.RedisCmd) []byte
 	Decr(cmd core.RedisCmd) []byte
 	DecrBy(cmd core.RedisCmd) []byte
+
+	MGet(cmd core.RedisCmd) []byte
+	MSet(cmd core.RedisCmd) []byte
 }
 
 type redis struct {
