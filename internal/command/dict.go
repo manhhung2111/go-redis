@@ -152,8 +152,8 @@ func (redis *redis) Expire(cmd core.RedisCmd) []byte {
 		lt bool
 	)
 
-	if argsLen == 3 {
-		opt := strings.ToUpper(args[2])
+	for i := 2; i < argsLen; i++ {
+		opt := strings.ToUpper(args[i])
 		switch opt {
 		case "NX":
 			nx = true
