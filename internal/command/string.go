@@ -3,10 +3,10 @@ package command
 import (
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
+	"github.com/manhhung2111/go-redis/internal/storage"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
 
@@ -17,17 +17,17 @@ func (redis *redis) Get(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	value, exists := redis.Store.Get(cmd.Args[0])
+	rObj, exists := redis.Store.Get(cmd.Args[0])
 	if !exists {
 		return constant.RESP_NIL_BULK_STRING
 	}
 
-	str, ok := value.(string)
+	value, ok := rObj.StringValue()
 	if !ok {
 		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
 	}
 
-	return core.EncodeResp(str, false)
+	return core.EncodeResp(value, false)
 }
 
 /* Supports `SET key value [NX | XX] [EX seconds]` */
@@ -43,7 +43,7 @@ func (redis *redis) Set(cmd core.RedisCmd) []byte {
 	var (
 		nx        bool // SET if Not eXists
 		xx        bool // SET if eXists
-		expireSec int64
+		expireSec uint64
 	)
 
 	for i := 2; i < argsLen; i++ {
@@ -58,7 +58,7 @@ func (redis *redis) Set(cmd core.RedisCmd) []byte {
 				return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 			}
 
-			ttl, err := strconv.ParseInt(args[i+1], 10, 64)
+			ttl, err := strconv.ParseUint(args[i+1], 10, 64)
 			if err != nil || ttl <= 0 {
 				return core.EncodeResp(util.InvalidExpireTime(cmd.Cmd), false)
 			}
@@ -74,13 +74,13 @@ func (redis *redis) Set(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidCommandOption("NX|XX", cmd.Cmd), false)
 	}
 
-	entry := redis.Store.GetEntry(key)
+	_, exists := redis.Store.Get(key)
 
-	if nx && entry != nil {
+	if nx && exists {
 		return constant.RESP_NIL_BULK_STRING
 	}
 
-	if xx && entry == nil {
+	if xx && !exists {
 		return constant.RESP_NIL_BULK_STRING
 	}
 
@@ -112,22 +112,21 @@ func (redis *redis) Del(cmd core.RedisCmd) []byte {
 
 /* Supports `TTL key` */
 func (redis *redis) TTL(cmd core.RedisCmd) []byte {
-	argsLen := len(cmd.Args)
-	if argsLen != 1 {
+	if len(cmd.Args) != 1 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	entry := redis.Store.GetEntry(cmd.Args[0])
-	if entry == nil {
+	ttl := redis.Store.TTL(cmd.Args[0])
+
+	if ttl == constant.KEY_NOT_EXISTS {
 		return constant.RESP_TTL_KEY_NOT_EXIST
 	}
 
-	if entry.ExpireAt == constant.NO_EXPIRE {
+	if ttl == constant.NO_EXPIRE {
 		return constant.RESP_TTL_KEY_EXIST_NO_EXPIRE
 	}
 
-	remainingTTLSeconds := (entry.ExpireAt - time.Now().UnixMilli()) / 1000
-	return core.EncodeResp((int64)(remainingTTLSeconds), false)
+	return core.EncodeResp(ttl, false)
 }
 
 /* Supports EXPIRE key seconds [NX | XX | GT | LT] */
@@ -145,61 +144,30 @@ func (redis *redis) Expire(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidExpireTime(cmd.Cmd), false)
 	}
 
-	var (
-		nx bool // SET if Not eXists
-		xx bool // SET if eXists
-		gt bool
-		lt bool
-	)
+	var opt storage.ExpireOptions
 
 	for i := 2; i < argsLen; i++ {
-		opt := strings.ToUpper(args[i])
-		switch opt {
+		cmdOpt := strings.ToUpper(args[i])
+		switch cmdOpt {
 		case "NX":
-			nx = true
+			opt.NX = true
 		case "XX":
-			xx = true
+			opt.XX = true
 		case "GT":
-			gt = true
+			opt.GT = true
 		case "LT":
-			lt = true
+			opt.LT = true
 		default:
-			return core.EncodeResp(util.InvalidCommandOption(opt, cmd.Cmd), false)
+			return core.EncodeResp(util.InvalidCommandOption(cmdOpt, cmd.Cmd), false)
 		}
 	}
 
 	// The GT, LT and NX options are mutually exclusive.
-	if (nx && xx) || (gt && lt) || (nx && (gt || lt)) {
+	if (opt.NX && opt.XX) || (opt.GT && opt.LT) || (opt.NX && (opt.GT || opt.LT)) {
 		return constant.RESP_EXPIRE_OPTIONS_NOT_COMPATIBLE
 	}
 
-	entry := redis.Store.GetEntry(key)
-	if entry == nil {
-		return constant.RESP_EXPIRE_TIMEOUT_NOT_SET
-	}
-
-	if nx && entry.ExpireAt != constant.NO_EXPIRE {
-		return constant.RESP_EXPIRE_TIMEOUT_NOT_SET
-	}
-
-	if xx && entry.ExpireAt == constant.NO_EXPIRE {
-		return constant.RESP_EXPIRE_TIMEOUT_NOT_SET
-	}
-
-	if entry.ExpireAt != constant.NO_EXPIRE {
-		now := time.Now().UnixMilli()
-		currentTTL := (entry.ExpireAt - now) / 1000
-
-		if gt && currentTTL >= ttlSeconds {
-			return constant.RESP_EXPIRE_TIMEOUT_NOT_SET
-		}
-
-		if lt && currentTTL <= ttlSeconds {
-			return constant.RESP_EXPIRE_TIMEOUT_NOT_SET
-		}
-	}
-
-	ok := redis.Store.SetExpire(key, ttlSeconds)
+	ok := redis.Store.Expire(key, ttlSeconds, opt)
 	if !ok {
 		return constant.RESP_EXPIRE_TIMEOUT_NOT_SET
 	}
@@ -217,13 +185,13 @@ func (redis *redis) MGet(cmd core.RedisCmd) []byte {
 	res := make([]any, len(args))
 
 	for i := 0; i < len(args); i++ {
-		val, ok := redis.Store.Get(args[i])
+		rObj, ok := redis.Store.Get(args[i])
 		if !ok {
 			res[i] = nil
 			continue
 		}
 
-		if s, ok := val.(string); ok {
+		if s, ok := rObj.StringValue(); ok {
 			res[i] = s
 		} else {
 			res[i] = nil

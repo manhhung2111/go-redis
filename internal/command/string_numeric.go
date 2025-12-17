@@ -1,7 +1,6 @@
 package command
 
 import (
-	"math"
 	"strconv"
 
 	"github.com/manhhung2111/go-redis/internal/constant"
@@ -17,20 +16,12 @@ func (redis *redis) Incr(cmd core.RedisCmd) []byte {
 	}
 
 	key := args[0]
-	entryValue, exists := redis.Store.Get(key)
-	if exists && entryValue != nil {
-		valueStr, ok := entryValue.(string)
-		if !ok {
+	rObj, exists := redis.Store.Get(key)
+	if exists && rObj != nil {
+		res, succeeded := rObj.IncrBy(1)
+		if !succeeded {
 			return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
 		}
-
-		res, err := strconv.ParseInt(valueStr, 10, 64)
-		if err != nil || res == math.MaxInt64 {
-			return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
-		}
-
-		res++
-		redis.Store.SetValue(key, strconv.FormatInt(res, 10))
 		return core.EncodeResp(res, false)
 	} else {
 		var res int64 = 1
@@ -52,20 +43,12 @@ func (redis *redis) IncrBy(cmd core.RedisCmd) []byte {
 		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
 	}
 
-	entryValue, exists := redis.Store.Get(key)
-	if exists && entryValue != nil {
-		valueStr, ok := entryValue.(string)
-		if !ok {
+	rObj, exists := redis.Store.Get(key)
+	if exists && rObj != nil {
+		res, succeeded := rObj.IncrBy(increment)
+		if !succeeded {
 			return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
 		}
-
-		res, err := strconv.ParseInt(valueStr, 10, 64)
-		if err != nil || (increment > 0 && res > math.MaxInt64-increment) || (increment < 0 && res < math.MinInt64-increment) {
-			return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
-		}
-
-		res += increment
-		redis.Store.SetValue(key, strconv.FormatInt(res, 10))
 		return core.EncodeResp(res, false)
 	} else {
 		var res int64 = increment
@@ -82,20 +65,12 @@ func (redis *redis) Decr(cmd core.RedisCmd) []byte {
 	}
 
 	key := args[0]
-	entryValue, exists := redis.Store.Get(key)
-	if exists && entryValue != nil {
-		valueStr, ok := entryValue.(string)
-		if !ok {
+	rObj, exists := redis.Store.Get(key)
+	if exists && rObj != nil {
+		res, succeeded := rObj.IncrBy(-1)
+		if !succeeded {
 			return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
 		}
-
-		res, err := strconv.ParseInt(valueStr, 10, 64)
-		if err != nil || res == math.MinInt64 {
-			return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
-		}
-
-		res--
-		redis.Store.SetValue(key, strconv.FormatInt(res, 10))
 		return core.EncodeResp(res, false)
 	} else {
 		var res int64 = -1
@@ -117,20 +92,12 @@ func (redis *redis) DecrBy(cmd core.RedisCmd) []byte {
 		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
 	}
 
-	entryValue, exists := redis.Store.Get(key)
-	if exists && entryValue != nil {
-		valueStr, ok := entryValue.(string)
-		if !ok {
+	rObj, exists := redis.Store.Get(key)
+	if exists && rObj != nil {
+		res, succeeded := rObj.IncrBy(-decrement)
+		if !succeeded {
 			return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
 		}
-
-		res, err := strconv.ParseInt(valueStr, 10, 64)
-		if err != nil || (decrement > 0 && res < math.MinInt64+decrement) || (decrement < 0 && res > math.MaxInt64+decrement) {
-			return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
-		}
-
-		res -= decrement
-		redis.Store.SetValue(key, strconv.FormatInt(res, 10))
 		return core.EncodeResp(res, false)
 	} else {
 		var res int64 = -decrement
