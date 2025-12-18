@@ -6,7 +6,6 @@ import (
 
 	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
-	"github.com/manhhung2111/go-redis/internal/storage"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
 
@@ -110,71 +109,6 @@ func (redis *redis) Del(cmd core.RedisCmd) []byte {
 	return core.EncodeResp(deletedKeys, false)
 }
 
-/* Supports `TTL key` */
-func (redis *redis) TTL(cmd core.RedisCmd) []byte {
-	if len(cmd.Args) != 1 {
-		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
-	}
-
-	ttl := redis.Store.TTL(cmd.Args[0])
-
-	if ttl == constant.KEY_NOT_EXISTS {
-		return constant.RESP_TTL_KEY_NOT_EXIST
-	}
-
-	if ttl == constant.NO_EXPIRE {
-		return constant.RESP_TTL_KEY_EXIST_NO_EXPIRE
-	}
-
-	return core.EncodeResp(ttl, false)
-}
-
-/* Supports EXPIRE key seconds [NX | XX | GT | LT] */
-func (redis *redis) Expire(cmd core.RedisCmd) []byte {
-	args := cmd.Args
-	argsLen := len(args)
-
-	if argsLen < 2 {
-		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
-	}
-
-	key := args[0]
-	ttlSeconds, err := strconv.ParseInt(args[1], 10, 64)
-	if err != nil || ttlSeconds <= 0 {
-		return core.EncodeResp(util.InvalidExpireTime(cmd.Cmd), false)
-	}
-
-	var opt storage.ExpireOptions
-
-	for i := 2; i < argsLen; i++ {
-		cmdOpt := strings.ToUpper(args[i])
-		switch cmdOpt {
-		case "NX":
-			opt.NX = true
-		case "XX":
-			opt.XX = true
-		case "GT":
-			opt.GT = true
-		case "LT":
-			opt.LT = true
-		default:
-			return core.EncodeResp(util.InvalidCommandOption(cmdOpt, cmd.Cmd), false)
-		}
-	}
-
-	// The GT, LT and NX options are mutually exclusive.
-	if (opt.NX && opt.XX) || (opt.GT && opt.LT) || (opt.NX && (opt.GT || opt.LT)) {
-		return constant.RESP_EXPIRE_OPTIONS_NOT_COMPATIBLE
-	}
-
-	ok := redis.Store.Expire(key, ttlSeconds, opt)
-	if !ok {
-		return constant.RESP_EXPIRE_TIMEOUT_NOT_SET
-	}
-
-	return constant.RESP_EXPIRE_TIMEOUT_SET
-}
-
 /* Support MGET key [key ...] */
 func (redis *redis) MGet(cmd core.RedisCmd) []byte {
 	args := cmd.Args
@@ -213,4 +147,102 @@ func (redis *redis) MSet(cmd core.RedisCmd) []byte {
 	}
 
 	return constant.RESP_OK
+}
+
+/* Support INCR key */
+func (redis *redis) Incr(cmd core.RedisCmd) []byte {
+	args := cmd.Args
+	if len(args) != 1 {
+		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+	}
+
+	key := args[0]
+	rObj, exists := redis.Store.Get(key)
+	if exists && rObj != nil {
+		res, succeeded := rObj.IncrBy(1)
+		if !succeeded {
+			return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+		}
+		return core.EncodeResp(res, false)
+	} else {
+		var res int64 = 1
+		redis.Store.Set(key, strconv.FormatInt(res, 10))
+		return core.EncodeResp(res, false)
+	}
+}
+
+/* Support INCRBY key increment */
+func (redis *redis) IncrBy(cmd core.RedisCmd) []byte {
+	args := cmd.Args
+	if len(args) != 2 {
+		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+	}
+
+	key := args[0]
+	increment, err := strconv.ParseInt(args[1], 10, 64)
+	if err != nil {
+		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+	}
+
+	rObj, exists := redis.Store.Get(key)
+	if exists && rObj != nil {
+		res, succeeded := rObj.IncrBy(increment)
+		if !succeeded {
+			return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+		}
+		return core.EncodeResp(res, false)
+	} else {
+		var res int64 = increment
+		redis.Store.Set(key, strconv.FormatInt(res, 10))
+		return core.EncodeResp(res, false)
+	}
+}
+
+/* Support DECR key */
+func (redis *redis) Decr(cmd core.RedisCmd) []byte {
+	args := cmd.Args
+	if len(args) != 1 {
+		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+	}
+
+	key := args[0]
+	rObj, exists := redis.Store.Get(key)
+	if exists && rObj != nil {
+		res, succeeded := rObj.IncrBy(-1)
+		if !succeeded {
+			return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+		}
+		return core.EncodeResp(res, false)
+	} else {
+		var res int64 = -1
+		redis.Store.Set(key, strconv.FormatInt(res, 10))
+		return core.EncodeResp(res, false)
+	}
+}
+
+/* Support DECRBY key decrement */
+func (redis *redis) DecrBy(cmd core.RedisCmd) []byte {
+	args := cmd.Args
+	if len(args) != 2 {
+		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+	}
+
+	key := args[0]
+	decrement, err := strconv.ParseInt(args[1], 10, 64)
+	if err != nil {
+		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+	}
+
+	rObj, exists := redis.Store.Get(key)
+	if exists && rObj != nil {
+		res, succeeded := rObj.IncrBy(-decrement)
+		if !succeeded {
+			return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+		}
+		return core.EncodeResp(res, false)
+	} else {
+		var res int64 = -decrement
+		redis.Store.Set(key, strconv.FormatInt(res, 10))
+		return core.EncodeResp(res, false)
+	}
 }

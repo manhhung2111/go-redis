@@ -1,13 +1,13 @@
 package test
 
 import (
+	"math"
+	"strconv"
 	"testing"
 
 	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
-	"github.com/manhhung2111/go-redis/internal/util"
 )
-
 
 func TestGet(t *testing.T) {
 	r := newTestRedis()
@@ -71,171 +71,134 @@ func TestDel(t *testing.T) {
 	}
 }
 
-func TestTTL_NoKey(t *testing.T) {
+func TestIncr(t *testing.T) {
 	r := newTestRedis()
 
-	resp := r.TTL(cmd("TTL", "missing"))
-	if string(resp) != string(constant.RESP_TTL_KEY_NOT_EXIST) {
-		t.Fatalf("unexpected response %q", resp)
+	// INCR non-existing key -> 1
+	resp := r.Incr(cmd("INCR", "a"))
+	if string(resp) != ":1\r\n" {
+		t.Fatalf("expected :1, got %q", resp)
+	}
+
+	// INCR existing numeric
+	resp = r.Incr(cmd("INCR", "a"))
+	if string(resp) != ":2\r\n" {
+		t.Fatalf("expected :2, got %q", resp)
+	}
+
+	// INCR non-numeric
+	r.Set(cmd("SET", "b", "foo"))
+	resp = r.Incr(cmd("INCR", "b"))
+	if string(resp) != string(constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE) {
+		t.Fatalf("expected integer error, got %q", resp)
+	}
+
+	// INCR overflow
+	r.Set(cmd("SET", "c", "9223372036854775807"))
+	resp = r.Incr(cmd("INCR", "c"))
+	if string(resp) != string(constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE) {
+		t.Fatalf("expected overflow error, got %q", resp)
 	}
 }
 
-func TestTTL_NoExpire(t *testing.T) {
+func TestIncrBy(t *testing.T) {
 	r := newTestRedis()
 
-	r.Set(cmd("SET", "foo", "bar"))
-	resp := r.TTL(cmd("TTL", "foo"))
+	// INCRBY non-existing key
+	resp := r.IncrBy(cmd("INCRBY", "a", "5"))
+	if string(resp) != ":5\r\n" {
+		t.Fatalf("expected :5, got %q", resp)
+	}
 
-	if string(resp) != string(constant.RESP_TTL_KEY_EXIST_NO_EXPIRE) {
-		t.Fatalf("unexpected response %q", resp)
+	// INCRBY existing
+	resp = r.IncrBy(cmd("INCRBY", "a", "3"))
+	if string(resp) != ":8\r\n" {
+		t.Fatalf("expected :8, got %q", resp)
+	}
+
+	// INCRBY negative increment
+	resp = r.IncrBy(cmd("INCRBY", "a", "-2"))
+	if string(resp) != ":6\r\n" {
+		t.Fatalf("expected :6, got %q", resp)
+	}
+
+	// INCRBY non-numeric value
+	r.Set(cmd("SET", "b", "foo"))
+	resp = r.IncrBy(cmd("INCRBY", "b", "1"))
+	if string(resp) != string(constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE) {
+		t.Fatalf("expected integer error, got %q", resp)
+	}
+
+	// INCRBY overflow
+	r.Set(cmd("SET", "c", "9223372036854775807"))
+	resp = r.IncrBy(cmd("INCRBY", "c", "1"))
+	if string(resp) != string(constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE) {
+		t.Fatalf("expected overflow error, got %q", resp)
 	}
 }
 
-func TestTTL_WithExpire(t *testing.T) {
+func TestDecr(t *testing.T) {
 	r := newTestRedis()
 
-	r.Set(cmd("SET", "foo", "bar", "EX", "2"))
-	resp := r.TTL(cmd("TTL", "foo"))
-
-	val, _, err := core.DecodeResp(resp)
-	if err != nil {
-		t.Fatal(err)
+	// DECR non-existing key -> -1
+	resp := r.Decr(cmd("DECR", "a"))
+	if string(resp) != ":-1\r\n" {
+		t.Fatalf("expected :-1, got %q", resp)
 	}
 
-	if ttl := val.(int64); ttl <= 0 || ttl > 2 {
-		t.Fatalf("unexpected ttl %d", ttl)
+	// DECR existing
+	resp = r.Decr(cmd("DECR", "a"))
+	if string(resp) != ":-2\r\n" {
+		t.Fatalf("expected :-2, got %q", resp)
+	}
+
+	// DECR non-numeric
+	r.Set(cmd("SET", "b", "foo"))
+	resp = r.Decr(cmd("DECR", "b"))
+	if string(resp) != string(constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE) {
+		t.Fatalf("expected integer error, got %q", resp)
+	}
+
+	// DECR underflow
+	r.Set(cmd("SET", "c", "-9223372036854775808"))
+	resp = r.Decr(cmd("DECR", "c"))
+	if string(resp) != string(constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE) {
+		t.Fatalf("expected underflow error, got %q", resp)
 	}
 }
 
-func TestExpire_InvalidArity(t *testing.T) {
+func TestDecrBy(t *testing.T) {
 	r := newTestRedis()
 
-	resp := r.Expire(cmd("EXPIRE", "key"))
-	if string(resp) != string(core.EncodeResp(util.InvalidNumberOfArgs("EXPIRE"), false)) {
-		t.Fatalf("expected wrong arity error")
-	}
-}
-
-func TestExpire_InvalidTTL(t *testing.T) {
-	r := newTestRedis()
-	r.Set(cmd("SET", "k", "v"))
-
-	tests := [][]string{
-		{"k", "abc"},
-		{"k", "0"},
-		{"k", "-10"},
+	// DECRBY non-existing
+	resp := r.DecrBy(cmd("DECRBY", "a", "5"))
+	if string(resp) != ":-5\r\n" {
+		t.Fatalf("expected :-5, got %q", resp)
 	}
 
-	for _, args := range tests {
-		resp := r.Expire(cmd("EXPIRE", args...))
-		if string(resp) != string(core.EncodeResp(util.InvalidExpireTime("EXPIRE"), false)) {
-			t.Fatalf("expected invalid expire time for args=%v", args)
-		}
-	}
-}
-
-func TestExpire_InvalidOption(t *testing.T) {
-	r := newTestRedis()
-	r.Set(cmd("SET", "k", "v"))
-
-	resp := r.Expire(cmd("EXPIRE", "k", "10", "BAD"))
-	if string(resp) != string(core.EncodeResp(util.InvalidCommandOption("BAD", "EXPIRE"), false)) {
-		t.Fatalf("expected invalid option error")
-	}
-}
-
-func TestExpire_IncompatibleOptions(t *testing.T) {
-	r := newTestRedis()
-	r.Set(cmd("SET", "k", "v"))
-
-	cases := [][]string{
-		{"k", "10", "NX", "XX"},
-		{"k", "10", "GT", "LT"},
-		{"k", "10", "NX", "GT"},
+	// DECRBY existing
+	resp = r.DecrBy(cmd("DECRBY", "a", "3"))
+	if string(resp) != ":-8\r\n" {
+		t.Fatalf("expected :-8, got %q", resp)
 	}
 
-	for _, args := range cases {
-		resp := r.Expire(cmd("EXPIRE", args...))
-		if string(resp) != string(constant.RESP_EXPIRE_OPTIONS_NOT_COMPATIBLE) {
-			t.Fatalf("expected incompatible options for %v, got %q", args, resp)
-		}
-	}
-}
-
-func TestExpire_KeyNotExist(t *testing.T) {
-	r := newTestRedis()
-
-	resp := r.Expire(cmd("EXPIRE", "missing", "10"))
-	if string(resp) != string(constant.RESP_EXPIRE_TIMEOUT_NOT_SET) {
-		t.Fatalf("expected expire not set for missing key")
-	}
-}
-
-func TestExpire_NX(t *testing.T) {
-	r := newTestRedis()
-	r.Set(cmd("SET", "k", "v"))
-
-	// first time → OK
-	resp := r.Expire(cmd("EXPIRE", "k", "10", "NX"))
-	if string(resp) != string(constant.RESP_EXPIRE_TIMEOUT_SET) {
-		t.Fatalf("expected expire set")
+	// DECRBY negative decrement (acts like INCR)
+	resp = r.DecrBy(cmd("DECRBY", "a", "-2"))
+	if string(resp) != ":-6\r\n" {
+		t.Fatalf("expected :-6, got %q", resp)
 	}
 
-	// already has TTL → reject
-	resp = r.Expire(cmd("EXPIRE", "k", "20", "NX"))
-	if string(resp) != string(constant.RESP_EXPIRE_TIMEOUT_NOT_SET) {
-		t.Fatalf("expected NX reject")
-	}
-}
-
-func TestExpire_XX(t *testing.T) {
-	r := newTestRedis()
-	r.Set(cmd("SET", "k", "v"))
-
-	// no TTL yet → reject
-	resp := r.Expire(cmd("EXPIRE", "k", "10", "XX"))
-	if string(resp) != string(constant.RESP_EXPIRE_TIMEOUT_NOT_SET) {
-		t.Fatalf("expected XX reject")
+	// DECRBY non-numeric value
+	r.Set(cmd("SET", "b", "foo"))
+	resp = r.DecrBy(cmd("DECRBY", "b", "1"))
+	if string(resp) != string(constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE) {
+		t.Fatalf("expected integer error, got %q", resp)
 	}
 
-	// set TTL
-	r.Expire(cmd("EXPIRE", "k", "5"))
-
-	// now OK
-	resp = r.Expire(cmd("EXPIRE", "k", "10", "XX"))
-	if string(resp) != string(constant.RESP_EXPIRE_TIMEOUT_SET) {
-		t.Fatalf("expected XX success")
-	}
-}
-
-func TestExpire_GT(t *testing.T) {
-	r := newTestRedis()
-	r.Set(cmd("SET", "k", "v"))
-	r.Expire(cmd("EXPIRE", "k", "10"))
-
-	resp := r.Expire(cmd("EXPIRE", "k", "5", "GT"))
-	if string(resp) != string(constant.RESP_EXPIRE_TIMEOUT_NOT_SET) {
-		t.Fatalf("expected GT reject")
-	}
-
-	resp = r.Expire(cmd("EXPIRE", "k", "20", "GT"))
-	if string(resp) != string(constant.RESP_EXPIRE_TIMEOUT_SET) {
-		t.Fatalf("expected GT accept")
-	}
-}
-
-func TestExpire_LT(t *testing.T) {
-	r := newTestRedis()
-	r.Set(cmd("SET", "k", "v"))
-	r.Expire(cmd("EXPIRE", "k", "10"))
-
-	resp := r.Expire(cmd("EXPIRE", "k", "20", "LT"))
-	if string(resp) != string(constant.RESP_EXPIRE_TIMEOUT_NOT_SET) {
-		t.Fatalf("expected LT reject")
-	}
-
-	resp = r.Expire(cmd("EXPIRE", "k", "5", "LT"))
-	if string(resp) != string(constant.RESP_EXPIRE_TIMEOUT_SET) {
-		t.Fatalf("expected LT accept")
+	// DECRBY underflow
+	r.Set(cmd("SET", "c", strconv.FormatInt(math.MinInt64, 10)))
+	resp = r.DecrBy(cmd("DECRBY", "c", "1"))
+	if string(resp) != string(constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE) {
+		t.Fatalf("expected underflow error, got %q", resp)
 	}
 }
