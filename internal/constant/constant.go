@@ -12,6 +12,7 @@ var RESP_EXPIRE_TIMEOUT_NOT_SET []byte = []byte(":0\r\n")
 var RESP_EXPIRE_TIMEOUT_SET []byte = []byte(":1\r\n")
 
 var RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE []byte = []byte("-value is not an integer or out of range\r\n")
+var RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE []byte = []byte("-value is out of range, must be positive\r\n")
 
 const NO_EXPIRE int64 = -1
 const KEY_NOT_EXISTS int64 = -2

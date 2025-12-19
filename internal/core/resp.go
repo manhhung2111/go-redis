@@ -173,7 +173,16 @@ func EncodeResp(value interface{}, isSimpleString bool) []byte {
 		return []byte(fmt.Sprintf("-%s%s", v.Error(), CRLF))
 	case nil:
 		return constant.RESP_NIL_BULK_STRING
-	case []any:
+	case []string:
+		var buf []byte
+		buf = append(buf, []byte(fmt.Sprintf("*%d%s", len(v), CRLF))...)
+
+		for _, elem := range v {
+			buf = append(buf, EncodeResp(elem, false)...)
+		}
+
+		return buf
+	case []int64:
 		var buf []byte
 		buf = append(buf, []byte(fmt.Sprintf("*%d%s", len(v), CRLF))...)
 

@@ -5,11 +5,13 @@ type ObjectEncoding uint8
 
 const (
 	ObjString ObjectType = iota
+	ObjSet
 )
 
 const (
 	EncRaw ObjectEncoding = iota // string
 	EncInt                       // int64
+	EncHashTable
 )
 
 type RObj struct {
@@ -26,6 +28,15 @@ type Store interface {
 
 	TTL(key string) int64
 	Expire(key string, ttlSeconds int64, opt ExpireOptions) bool
+
+	SAdd(key string, members ...string) int64
+	SCard(key string) int64
+	SIsMember(key string, member string) bool
+	SMembers(key string) []string
+	SMIsMember(key string, member ...string) []bool
+	SRem(key string, members ...string) int64
+	SPop(key string, count int) []string
+	SRandMember(key string, count int) []string
 }
 
 type store struct {

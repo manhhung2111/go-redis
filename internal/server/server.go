@@ -10,7 +10,6 @@ import (
 	"github.com/manhhung2111/go-redis/internal/command"
 	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/manhhung2111/go-redis/internal/core"
-	"github.com/manhhung2111/go-redis/internal/util"
 )
 
 type Server struct {
@@ -125,7 +124,7 @@ func (server *Server) Start() error {
 					clients--
 					continue
 				}
-				response := server.handleCommand(*cmd)
+				response := server.redis.HandleCommand(*cmd)
 				comm.Write(response)
 			}
 		}
@@ -139,34 +138,4 @@ func readCommandFD(comm core.FDComm) (*core.RedisCmd, error) {
 		return nil, err
 	}
 	return core.ParseCmd(buf[:n])
-}
-
-func (server *Server) handleCommand(cmd core.RedisCmd) []byte {
-	switch cmd.Cmd {
-	case "PING":
-		return server.redis.Ping(cmd)
-	case "SET":
-		return server.redis.Set(cmd)
-	case "GET":
-		return server.redis.Get(cmd)
-	case "DEL":
-		return server.redis.Del(cmd)
-	case "TTL":
-		return server.redis.TTL(cmd)
-	case "EXPIRE":
-		return server.redis.Expire(cmd)
-	case "INCR":
-		return server.redis.Incr(cmd)
-	case "INCRBY":
-		return server.redis.IncrBy(cmd)
-	case "DECR":
-		return server.redis.Decr(cmd)
-	case "DECRBY":
-		return server.redis.DecrBy(cmd)
-	case "MGET":
-		return server.redis.MGet(cmd)
-	case "MSET":
-		return server.redis.MSet(cmd)
-	}
-	return core.EncodeResp(util.InvalidCommand(cmd.Cmd), false)
 }
