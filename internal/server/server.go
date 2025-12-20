@@ -1,10 +1,10 @@
 package server
 
 import (
+	"errors"
 	"log"
 	"net"
 	"os"
-	"os/signal"
 	"syscall"
 
 	"github.com/manhhung2111/go-redis/internal/command"
@@ -13,26 +13,26 @@ import (
 )
 
 type Server struct {
-	redis command.Redis
+	redis  command.Redis
+	kQueueFd int
 }
 
 func NewServer(
 	redis command.Redis,
 ) *Server {
 	return &Server{
-		redis: redis,
+		redis:  redis,
 	}
 }
 
-func (server *Server) Start() error {
+func (server *Server) Start(sigCh chan os.Signal) error {
 	log.Println("starting a TCP server listening on", config.HOST, config.PORT)
 
 	var events []syscall.Kevent_t = make([]syscall.Kevent_t, config.MAX_CONNECTION)
-	clients := 0
-
 	// Create a socket listening for new connections
 	serverFD, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
 	if err != nil {
+		log.Printf("error occurred when trying to create a socket listening for new connections. Err: %v \n", err.Error())
 		return err
 	}
 	defer syscall.Close(serverFD)
@@ -47,11 +47,13 @@ func (server *Server) Start() error {
 		Port: config.PORT,
 		Addr: [4]byte{ipV4[0], ipV4[1], ipV4[2], ipV4[3]},
 	}); err != nil {
+		log.Printf("error occurred when trying to bind PORT %v to server socket. Err: %v \n", config.PORT, err.Error())
 		return err
 	}
 
 	// Start listening
 	if err = syscall.Listen(serverFD, config.MAX_CONNECTION); err != nil {
+		log.Printf("error occurred when trying to listen socket server. Err: %v \n", err.Error())
 		return err
 	}
 
@@ -60,6 +62,7 @@ func (server *Server) Start() error {
 	if err != nil {
 		log.Fatal("error occurred when trying to create a new Kqueue instance", err)
 	}
+	server.kQueueFd = kQueueFd
 	defer syscall.Close(kQueueFd)
 
 	// Specify the events we want to monitor server socket FD, in here we are interested in READ event
@@ -71,32 +74,19 @@ func (server *Server) Start() error {
 
 	syscall.Kevent(kQueueFd, []syscall.Kevent_t{socketServerReadyEvent}, nil, nil)
 
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-sig
-		log.Println("shutting down server...")
-		syscall.Close(serverFD)
-		syscall.Close(kQueueFd)
-		os.Exit(0)
-	}()
-
 	for {
 		// block the main thread until one or more registered events become ready, then copy them into `events`
 		nEvents, err := syscall.Kevent(kQueueFd, nil, events, nil)
 		if err != nil {
+			if errors.Is(err, syscall.EBADF) {
+				break
+			}
 			continue
 		}
-
-		sig := make(chan os.Signal, 1)
-		signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 
 		for i := 0; i < nEvents; i++ {
 			// if the socket server itself is ready for an IO
 			if int(events[i].Ident) == serverFD {
-				clients++
-				log.Printf("new client: id=%d\n", clients)
-
 				connFD, _, err := syscall.Accept(serverFD)
 				if err != nil {
 					log.Print("error occurred when trying to accept a new client connection, err=", err)
@@ -121,7 +111,6 @@ func (server *Server) Start() error {
 				cmd, err := readCommandFD(comm)
 				if err != nil {
 					syscall.Close(int(events[i].Ident))
-					clients--
 					continue
 				}
 				response := server.redis.HandleCommand(*cmd)
@@ -129,6 +118,16 @@ func (server *Server) Start() error {
 			}
 		}
 	}
+
+	syscall.Close(serverFD)
+	log.Println("server shutdown complete")
+	return nil
+}
+
+func (server *Server) WaitingForSignals(sigCh chan os.Signal) {
+	<-sigCh
+	log.Println("shutdown signal received")
+	syscall.Close(server.kQueueFd)
 }
 
 func readCommandFD(comm core.FDComm) (*core.RedisCmd, error) {

@@ -2,6 +2,9 @@ package main
 
 import (
 	"flag"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/manhhung2111/go-redis/internal/wiring"
@@ -18,5 +21,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	server.Start()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+
+	go server.WaitingForSignals(sigCh)
+	server.Start(sigCh)
 }
