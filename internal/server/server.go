@@ -13,7 +13,7 @@ import (
 )
 
 type Server struct {
-	redis  command.Redis
+	redis    command.Redis
 	kQueueFd int
 }
 
@@ -21,7 +21,7 @@ func NewServer(
 	redis command.Redis,
 ) *Server {
 	return &Server{
-		redis:  redis,
+		redis: redis,
 	}
 }
 
@@ -107,14 +107,20 @@ func (server *Server) Start(sigCh chan os.Signal) error {
 					log.Fatal(err)
 				}
 			} else {
-				comm := core.FDComm{Fd: int(events[i].Ident)}
-				cmd, err := readCommandFD(comm)
+				clientFD := int(events[i].Ident)
+				var buf []byte = make([]byte, 512)
+				n, err := syscall.Read(clientFD, buf)
 				if err != nil {
-					syscall.Close(int(events[i].Ident))
+					syscall.Close(clientFD)
 					continue
 				}
-				response := server.redis.HandleCommand(*cmd)
-				comm.Write(response)
+				cmd, err := core.ParseCmd(buf[:n])
+				if err != nil {
+					syscall.Write(clientFD, core.EncodeResp(err, false))
+				} else {
+					response := server.redis.HandleCommand(*cmd)
+					syscall.Write(clientFD, response)
+				}
 			}
 		}
 	}
@@ -128,13 +134,4 @@ func (server *Server) WaitingForSignals(sigCh chan os.Signal) {
 	<-sigCh
 	log.Println("shutdown signal received")
 	syscall.Close(server.kQueueFd)
-}
-
-func readCommandFD(comm core.FDComm) (*core.RedisCmd, error) {
-	var buf []byte = make([]byte, 512)
-	n, err := comm.Read(buf)
-	if err != nil {
-		return nil, err
-	}
-	return core.ParseCmd(buf[:n])
 }
