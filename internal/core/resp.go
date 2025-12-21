@@ -169,6 +169,8 @@ func EncodeResp(value interface{}, isSimpleString bool) []byte {
 		return []byte(fmt.Sprintf("$%d%s%s%s", len(v), CRLF, v, CRLF))
 	case int64:
 		return []byte(fmt.Sprintf(":%d%s", v, CRLF))
+	case uint32:
+		return []byte(fmt.Sprintf(":%d%s", v, CRLF))
 	case error:
 		return []byte(fmt.Sprintf("-%s%s", v.Error(), CRLF))
 	case nil:

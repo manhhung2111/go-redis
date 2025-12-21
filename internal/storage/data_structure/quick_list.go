@@ -1,6 +1,8 @@
 package quicklist
 
 type QuickList interface {
+	Size() uint32
+
 	LPush(elements []string) uint32
 	LPop(count uint32) []string
 	RPush(elements []string) uint32
@@ -38,6 +40,10 @@ func newQuickListNode() *quickListNode {
 	return &quickListNode{
 		listPack: newListPack(),
 	}
+}
+
+func (q *quickList) Size() uint32 {
+	return q.size
 }
 
 func (q *quickList) LPush(elements []string) uint32 {

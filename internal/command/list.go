@@ -1,0 +1,148 @@
+package command
+
+import (
+	"strconv"
+
+	"github.com/manhhung2111/go-redis/internal/constant"
+	"github.com/manhhung2111/go-redis/internal/core"
+	"github.com/manhhung2111/go-redis/internal/storage"
+	"github.com/manhhung2111/go-redis/internal/util"
+)
+
+/* Support LPUSH key element [element ...] */
+func (redis *redis) LPush(cmd core.RedisCmd) []byte {
+	args := cmd.Args
+	if len(args) < 2 {
+		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+	}
+
+	rObj, exists := redis.Store.Get(args[0])
+	if exists && rObj.Type != storage.ObjList {
+		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	}
+
+	result := redis.Store.LPush(args[0], args[1:]...)
+	return core.EncodeResp(result, false)
+}
+
+/* Support LPOP key [count] */
+func (redis *redis) LPop(cmd core.RedisCmd) []byte {
+	args := cmd.Args
+	if len(args) < 1 {
+		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+	}
+
+	rObj, exists := redis.Store.Get(args[0])
+	if !exists {
+		return constant.RESP_NIL_BULK_STRING
+	}
+
+	if exists && rObj.Type != storage.ObjList {
+		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	}
+
+	var count uint32 = 1
+	if len(args) == 2 {
+		newCount, err := strconv.ParseInt(args[1], 10, 64)
+		if err != nil || newCount < 0 {
+			return constant.RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE
+		}
+
+		count = uint32(newCount)
+	}
+
+	result := redis.Store.LPop(args[0], count)
+	if result == nil {
+		return constant.RESP_NIL_BULK_STRING
+	}
+
+	if len(args) == 1 && len(result) > 0 {
+		return core.EncodeResp(result[0], false)
+	}
+
+	return core.EncodeResp(result, false)
+}
+
+/* Support RPUSH key element [element ...] */
+func (redis *redis) RPush(cmd core.RedisCmd) []byte {
+	args := cmd.Args
+	if len(args) < 2 {
+		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+	}
+
+	rObj, exists := redis.Store.Get(args[0])
+	if exists && rObj.Type != storage.ObjList {
+		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	}
+
+	result := redis.Store.RPush(args[0], args[1:]...)
+	return core.EncodeResp(result, false)
+}
+
+/* Support RPOP key [count] */
+func (redis *redis) RPop(cmd core.RedisCmd) []byte {
+	args := cmd.Args
+	if len(args) < 1 {
+		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+	}
+
+	rObj, exists := redis.Store.Get(args[0])
+	if !exists {
+		return constant.RESP_NIL_BULK_STRING
+	}
+
+	if exists && rObj.Type != storage.ObjList {
+		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	}
+
+	var count uint32 = 1
+	if len(args) == 2 {
+		newCount, err := strconv.ParseInt(args[1], 10, 64)
+		if err != nil || newCount < 0 {
+			return constant.RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE
+		}
+
+		count = uint32(newCount)
+	}
+
+	result := redis.Store.RPop(args[0], count)
+	if result == nil {
+		return constant.RESP_NIL_BULK_STRING
+	}
+
+	if len(args) == 1 && len(result) > 0 {
+		return core.EncodeResp(result[0], false)
+	}
+
+	return core.EncodeResp(result, false)
+}
+
+/* Support LRANGE key start stop */
+func (redis *redis) LRange(cmd core.RedisCmd) []byte {
+	args := cmd.Args
+	if len(args) != 3 {
+		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+	}
+
+	rObj, exists := redis.Store.Get(args[0])
+	if !exists {
+		return core.EncodeResp([]string{}, false)
+	}
+
+	if exists && rObj.Type != storage.ObjList {
+		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	}
+
+	start, err := strconv.ParseInt(args[1], 10, 32)
+	if err != nil {
+		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+	}
+
+	end, err := strconv.ParseInt(args[2], 10, 32)
+	if err != nil {
+		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+	}
+
+	result := redis.Store.LRange(args[0], int32(start), int32(end))
+	return core.EncodeResp(result, false)
+}

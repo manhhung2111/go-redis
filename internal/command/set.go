@@ -185,7 +185,7 @@ func (redis *redis) SRandMember(cmd core.RedisCmd) []byte {
 	}
 
 	randMembers := redis.Store.SRandMember(args[0], count)
-	if len(args) == 1 {
+	if len(args) == 1 && len(randMembers) > 0 {
 		return core.EncodeResp(randMembers[0], false)
 	}
 

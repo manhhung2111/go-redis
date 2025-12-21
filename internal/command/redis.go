@@ -32,6 +32,12 @@ type Redis interface {
 	SRem(cmd core.RedisCmd) []byte
 	SPop(cmd core.RedisCmd) []byte
 	SRandMember(cmd core.RedisCmd) []byte
+
+	LPush(cmd core.RedisCmd) []byte
+	LPop(cmd core.RedisCmd) []byte
+	RPush(cmd core.RedisCmd) []byte
+	RPop(cmd core.RedisCmd) []byte
+	LRange(cmd core.RedisCmd) []byte
 }
 
 type CommandHandler func(cmd core.RedisCmd) []byte
@@ -46,19 +52,19 @@ func NewRedis(
 ) Redis {
 	redis := &redis{Store: store}
 	redis.handlers = map[string]CommandHandler{
-		"PING":        redis.Ping,
+		"PING": redis.Ping,
 
-		"SET":         redis.Set,
-		"GET":         redis.Get,
-		"DEL":         redis.Del,
-		"TTL":         redis.TTL,
-		"EXPIRE":      redis.Expire,
-		"INCR":        redis.Incr,
-		"INCRBY":      redis.IncrBy,
-		"DECR":        redis.Decr,
-		"DECRBY":      redis.DecrBy,
-		"MGET":        redis.MGet,
-		"MSET":        redis.MSet,
+		"SET":    redis.Set,
+		"GET":    redis.Get,
+		"DEL":    redis.Del,
+		"TTL":    redis.TTL,
+		"EXPIRE": redis.Expire,
+		"INCR":   redis.Incr,
+		"INCRBY": redis.IncrBy,
+		"DECR":   redis.Decr,
+		"DECRBY": redis.DecrBy,
+		"MGET":   redis.MGet,
+		"MSET":   redis.MSet,
 
 		"SADD":        redis.SAdd,
 		"SCARD":       redis.SCard,
@@ -68,6 +74,12 @@ func NewRedis(
 		"SREM":        redis.SRem,
 		"SPOP":        redis.SPop,
 		"SRANDMEMBER": redis.SRandMember,
+
+		"LPUSH":  redis.LPush,
+		"LPOP":   redis.LPop,
+		"RPUSH":  redis.RPush,
+		"RPOP":   redis.RPop,
+		"LRANGE": redis.LRange,
 	}
 
 	return redis

@@ -6,12 +6,14 @@ type ObjectEncoding uint8
 const (
 	ObjString ObjectType = iota
 	ObjSet
+	ObjList
 )
 
 const (
 	EncRaw ObjectEncoding = iota // string
 	EncInt                       // int64
 	EncHashTable
+	EncQuickList
 )
 
 type RObj struct {
@@ -37,6 +39,12 @@ type Store interface {
 	SRem(key string, members ...string) int64
 	SPop(key string, count int) []string
 	SRandMember(key string, count int) []string
+
+	LPush(key string, elements ...string) uint32
+	LPop(key string, count uint32) []string
+	RPush(key string, elements ...string) uint32
+	RPop(key string, count uint32) []string
+	LRange(key string, start, end int32) []string
 }
 
 type store struct {
