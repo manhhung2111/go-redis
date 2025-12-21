@@ -1,0 +1,324 @@
+package quicklist
+
+type QuickList interface {
+	LPush(elements []string) uint32
+	LPop(count uint32) []string
+	RPush(elements []string) uint32
+	RPop(count uint32) []string
+	LRange(start, end int32) []string
+}
+
+type quickList struct {
+	head *quickListNode // sentinel node
+	tail *quickListNode // sentinel node
+	size uint32
+}
+
+type quickListNode struct {
+	next     *quickListNode
+	prev     *quickListNode
+	listPack *listPack
+}
+
+func NewQuickList() QuickList {
+	head := &quickListNode{}
+	tail := &quickListNode{}
+
+	head.next = tail
+	tail.prev = head
+
+	return &quickList{
+		head: head,
+		tail: tail,
+		size: 0,
+	}
+}
+
+func newQuickListNode() *quickListNode {
+	return &quickListNode{
+		listPack: newListPack(),
+	}
+}
+
+func (q *quickList) LPush(elements []string) uint32 {
+	if len(elements) == 0 {
+		return q.size
+	}
+
+	first := q.head.next
+
+	// Create first node if list is empty
+	if first == q.tail {
+		first = newQuickListNode()
+		first.prev = q.head
+		first.next = q.tail
+		q.head.next = first
+		q.tail.prev = first
+	}
+
+	remaining := elements
+	for len(remaining) > 0 {
+		// Calculate how many elements can fit in current node
+		canFit := 0
+		projectedSize := first.listPack.approxSizeBytes()
+
+		for canFit < len(remaining) {
+			elemSize := stringHeaderSize + uint64(len(remaining[canFit]))
+			if projectedSize+elemSize > listPackMaxSizeBytes {
+				break
+			}
+			projectedSize += elemSize
+			canFit++
+		}
+
+		if canFit > 0 {
+			// Insert batch into current node
+			first.listPack.lPush(remaining[:canFit])
+			q.size += uint32(canFit)
+			remaining = remaining[canFit:]
+		} else {
+			// Current node is full and can't fit even one element
+			// Create a new node and continue the loop
+			newNode := newQuickListNode()
+			newNode.prev = q.head
+			newNode.next = first
+			q.head.next = newNode
+			first.prev = newNode
+			first = newNode
+		}
+	}
+
+	return q.size
+}
+
+func (q *quickList) LPop(count uint32) []string {
+	if count == 0 || q.size == 0 {
+		return []string{}
+	}
+
+	if count >= q.size {
+		count = q.size
+	}
+
+	result := make([]string, 0, count)
+
+	for count > 0 && q.size > 0 {
+		first := q.head.next
+
+		// Skip and remove empty nodes
+		for first != q.tail && first.listPack.empty() {
+			q.removeNode(first)
+			first = q.head.next
+		}
+
+		if first == q.tail {
+			break
+		}
+
+		// Batch pop from current node
+		nodeSize := first.listPack.size()
+		popCount := min(count, nodeSize)
+
+		// Pop multiple elements at once
+		for range popCount {
+			result = append(result, first.listPack.lPop())
+			q.size--
+			count--
+		}
+
+		if first.listPack.empty() {
+			q.removeNode(first)
+		}
+	}
+
+	return result
+}
+
+func (q *quickList) RPush(elements []string) uint32 {
+	if len(elements) == 0 {
+		return q.size
+	}
+
+	last := q.tail.prev
+	if last == q.head {
+		last = newQuickListNode()
+		last.prev = q.head
+		last.next = q.tail
+		q.head.next = last
+		q.tail.prev = last
+	}
+
+	remaining := elements
+	for len(remaining) > 0 {
+		canFit := 0
+		listPackSize := last.listPack.approxSizeBytes()
+
+		for canFit < len(remaining) {
+			elemSize := stringHeaderSize + uint64(len(remaining[canFit]))
+			if listPackSize+elemSize > listPackMaxSizeBytes {
+				break
+			}
+			listPackSize += elemSize
+			canFit++
+		}
+
+		if canFit > 0 {
+			last.listPack.rPush(remaining[:canFit])
+			q.size += uint32(canFit)
+			remaining = remaining[canFit:]
+		} else {
+			newNode := newQuickListNode()
+			newNode.next = q.tail
+			q.tail.prev = newNode
+
+			last.next = newNode
+			newNode.prev = last
+
+			last = newNode
+		}
+	}
+
+	return q.size
+}
+
+func (q *quickList) RPop(count uint32) []string {
+	if count == 0 || q.size == 0 {
+		return []string{}
+	}
+
+	if count >= q.size {
+		count = q.size
+	}
+
+	result := make([]string, 0, int(count))
+	for count > 0 && q.size > 0 {
+		last := q.tail.prev
+
+		for last != q.head && last.listPack.empty() {
+			q.removeNode(last)
+			last = q.tail.prev
+		}
+
+		if last == q.head {
+			break
+		}
+
+		nodeSize := last.listPack.size()
+		popCount := min(count, nodeSize)
+
+		for range popCount {
+			result = append(result, last.listPack.rPop())
+			count--
+			q.size--
+		}
+
+		if last.listPack.empty() {
+			q.removeNode(last)
+		}
+	}
+
+	return result
+}
+
+func (q *quickList) LRange(start, end int32) []string {
+	qSize := int32(q.size)
+	if qSize == 0 {
+		return []string{}
+	}
+
+	if start < 0 {
+		start = qSize + start
+		if start < 0 {
+			start = 0 // Clamp to 0
+		}
+	}
+
+	if end < 0 {
+		end = qSize + end
+	}
+
+	if end >= qSize {
+		end = qSize - 1
+	}
+
+	if start >= qSize || start > end {
+		return []string{}
+	}
+
+	node, index := q.findPosition(uint32(start))
+
+	result := make([]string, 0, end-start+1)
+	for i := int32(0); i < end-start+1 && node != q.tail; i++ {
+		result = append(result, node.listPack.get(index))
+		index++
+
+		if index >= int32(node.listPack.size()) {
+			index = 0
+			node = node.next
+		}
+	}
+
+	return result
+}
+
+func (q *quickList) findPosition(index uint32) (*quickListNode, int32) {
+	if index == 0 {
+		return q.head.next, 0
+	}
+
+	if index == q.size-1 {
+		last := q.tail.prev
+		return last, int32(last.listPack.size() - 1)
+	}
+
+	leftNode := q.head.next
+	rightNode := q.tail.prev
+	leftAccum := uint32(0)
+	rightAccum := q.size - 1
+
+	for leftNode != q.tail {
+		leftSize := leftNode.listPack.size()
+
+		// Check if target is in current left node
+		if index >= leftAccum && index < leftAccum+leftSize {
+			return leftNode, int32(index - leftAccum)
+		}
+
+		// Check if target is in current right node
+		if rightNode != leftNode {
+			rightSize := rightNode.listPack.size()
+			if index >= rightAccum-rightSize+1 && index <= rightAccum {
+				localIdx := index - (rightAccum - rightSize + 1)
+				return rightNode, int32(localIdx)
+			}
+			rightAccum -= rightSize
+			rightNode = rightNode.prev
+		}
+
+		leftAccum += leftSize
+		leftNode = leftNode.next
+
+		// If pointers meet or cross, we've checked all nodes
+		if leftNode == rightNode.next {
+			break
+		}
+	}
+
+	// This line should never be reached if index is valid
+	panic("findPosition: index out of bounds")
+}
+
+func (q *quickList) removeNode(node *quickListNode) {
+	if node == q.head || node == q.tail {
+		return
+	}
+
+	prev := node.prev
+	next := node.next
+
+	prev.next = next
+	next.prev = prev
+
+	node.prev = nil
+	node.next = nil
+}
