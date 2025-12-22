@@ -444,3 +444,415 @@ func TestListPopMoreThanExists(t *testing.T) {
 		t.Fatalf("expected 3 elements, got: %q", resp)
 	}
 }
+
+// LIndex Tests
+func TestLIndex(t *testing.T) {
+	r := newTestRedis()
+	r.LPush(cmd("LPUSH", "k", "c", "b", "a"))
+
+	resp := r.LIndex(cmd("LINDEX", "k", "0"))
+	if !bytes.Equal(resp, []byte("$1\r\na\r\n")) {
+		t.Fatalf("expected 'a', got %q", resp)
+	}
+
+	resp = r.LIndex(cmd("LINDEX", "k", "2"))
+	if !bytes.Equal(resp, []byte("$1\r\nc\r\n")) {
+		t.Fatalf("expected 'c', got %q", resp)
+	}
+}
+
+func TestLIndexNegative(t *testing.T) {
+	r := newTestRedis()
+	r.LPush(cmd("LPUSH", "k", "c", "b", "a"))
+
+	resp := r.LIndex(cmd("LINDEX", "k", "-1"))
+	if !bytes.Equal(resp, []byte("$1\r\nc\r\n")) {
+		t.Fatalf("expected 'c', got %q", resp)
+	}
+}
+
+func TestLIndexOutOfRange(t *testing.T) {
+	r := newTestRedis()
+	r.LPush(cmd("LPUSH", "k", "a"))
+
+	resp := r.LIndex(cmd("LINDEX", "k", "10"))
+	if !bytes.Equal(resp, constant.RESP_NIL_BULK_STRING) {
+		t.Fatalf("expected nil bulk string, got %q", resp)
+	}
+}
+
+func TestLIndexNonExistentKey(t *testing.T) {
+	r := newTestRedis()
+
+	resp := r.LIndex(cmd("LINDEX", "missing", "0"))
+	if !bytes.Equal(resp, constant.RESP_NIL_BULK_STRING) {
+		t.Fatalf("expected nil bulk string")
+	}
+}
+
+func TestLIndexWrongType(t *testing.T) {
+	r := newTestRedis()
+	r.Set(cmd("SET", "k", "v"))
+
+	resp := r.LIndex(cmd("LINDEX", "k", "0"))
+	if !bytes.Equal(resp, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY) {
+		t.Fatalf("expected WRONGTYPE")
+	}
+}
+
+func TestLIndexInvalidIndex(t *testing.T) {
+	r := newTestRedis()
+	r.LPush(cmd("LPUSH", "k", "a"))
+
+	resp := r.LIndex(cmd("LINDEX", "k", "notanumber"))
+	if !bytes.Equal(resp, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE) {
+		t.Fatalf("expected integer error")
+	}
+}
+
+func TestLIndexWrongArgs(t *testing.T) {
+	r := newTestRedis()
+
+	resp := r.LIndex(cmd("LINDEX", "k"))
+	if !bytes.HasPrefix(resp, []byte("-ERR")) {
+		t.Fatal("expected ERR")
+	}
+}
+
+// LLen Tests
+func TestLLen(t *testing.T) {
+	r := newTestRedis()
+	r.LPush(cmd("LPUSH", "k", "a", "b", "c"))
+
+	resp := r.LLen(cmd("LLEN", "k"))
+	if !bytes.Equal(resp, []byte(":3\r\n")) {
+		t.Fatalf("expected 3, got %q", resp)
+	}
+}
+
+func TestLLenNonExistentKey(t *testing.T) {
+	r := newTestRedis()
+
+	resp := r.LLen(cmd("LLEN", "missing"))
+	if !bytes.Equal(resp, []byte(":0\r\n")) {
+		t.Fatalf("expected 0, got %q", resp)
+	}
+}
+
+func TestLLenWrongType(t *testing.T) {
+	r := newTestRedis()
+	r.Set(cmd("SET", "k", "v"))
+
+	resp := r.LLen(cmd("LLEN", "k"))
+	if !bytes.Equal(resp, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY) {
+		t.Fatalf("expected WRONGTYPE")
+	}
+}
+
+func TestLLenWrongArgs(t *testing.T) {
+	r := newTestRedis()
+
+	resp := r.LLen(cmd("LLEN"))
+	if !bytes.HasPrefix(resp, []byte("-ERR")) {
+		t.Fatal("expected ERR")
+	}
+}
+
+// LRem Tests
+func TestLRem(t *testing.T) {
+	r := newTestRedis()
+	r.RPush(cmd("RPUSH", "k", "a", "b", "a", "c", "a"))
+
+	resp := r.LRem(cmd("LREM", "k", "2", "a"))
+	if !bytes.Equal(resp, []byte(":2\r\n")) {
+		t.Fatalf("expected 2 removed, got %q", resp)
+	}
+}
+
+func TestLRemNegativeCount(t *testing.T) {
+	r := newTestRedis()
+	r.RPush(cmd("RPUSH", "k", "a", "b", "a", "c", "a"))
+
+	resp := r.LRem(cmd("LREM", "k", "-2", "a"))
+	if !bytes.Equal(resp, []byte(":2\r\n")) {
+		t.Fatalf("expected 2 removed from tail, got %q", resp)
+	}
+}
+
+func TestLRemZeroCount(t *testing.T) {
+	r := newTestRedis()
+	r.RPush(cmd("RPUSH", "k", "a", "b", "a", "c", "a"))
+
+	resp := r.LRem(cmd("LREM", "k", "0", "a"))
+	if !bytes.Equal(resp, []byte(":3\r\n")) {
+		t.Fatalf("expected all 'a' removed, got %q", resp)
+	}
+}
+
+func TestLRemNonExistentKey(t *testing.T) {
+	r := newTestRedis()
+
+	resp := r.LRem(cmd("LREM", "missing", "1", "a"))
+	if !bytes.Equal(resp, []byte(":0\r\n")) {
+		t.Fatalf("expected 0, got %q", resp)
+	}
+}
+
+func TestLRemWrongType(t *testing.T) {
+	r := newTestRedis()
+	r.Set(cmd("SET", "k", "v"))
+
+	resp := r.LRem(cmd("LREM", "k", "1", "a"))
+	if !bytes.Equal(resp, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY) {
+		t.Fatalf("expected WRONGTYPE")
+	}
+}
+
+func TestLRemInvalidCount(t *testing.T) {
+	r := newTestRedis()
+	r.LPush(cmd("LPUSH", "k", "a"))
+
+	resp := r.LRem(cmd("LREM", "k", "notanumber", "a"))
+	if !bytes.Equal(resp, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE) {
+		t.Fatalf("expected integer error")
+	}
+}
+
+func TestLRemWrongArgs(t *testing.T) {
+	r := newTestRedis()
+
+	resp := r.LRem(cmd("LREM", "k", "1"))
+	if !bytes.HasPrefix(resp, []byte("-ERR")) {
+		t.Fatal("expected ERR")
+	}
+}
+
+// LSet Tests
+func TestLSet(t *testing.T) {
+	r := newTestRedis()
+	r.LPush(cmd("LPUSH", "k", "c", "b", "a"))
+
+	resp := r.LSet(cmd("LSET", "k", "1", "x"))
+	if !bytes.Equal(resp, constant.RESP_OK) {
+		t.Fatalf("expected OK, got %q", resp)
+	}
+
+	// Verify the change
+	val := r.LIndex(cmd("LINDEX", "k", "1"))
+	if !bytes.Equal(val, []byte("$1\r\nx\r\n")) {
+		t.Fatalf("expected 'x', got %q", val)
+	}
+}
+
+func TestLSetNegativeIndex(t *testing.T) {
+	r := newTestRedis()
+	r.LPush(cmd("LPUSH", "k", "c", "b", "a"))
+
+	resp := r.LSet(cmd("LSET", "k", "-1", "z"))
+	if !bytes.Equal(resp, constant.RESP_OK) {
+		t.Fatalf("expected OK, got %q", resp)
+	}
+}
+
+func TestLSetOutOfRange(t *testing.T) {
+	r := newTestRedis()
+	r.LPush(cmd("LPUSH", "k", "a"))
+
+	resp := r.LSet(cmd("LSET", "k", "10", "x"))
+	if !bytes.HasPrefix(resp, []byte("-")) {
+		t.Fatalf("expected error for out of range, but got %q", resp)
+	}
+}
+
+func TestLSetNonExistentKey(t *testing.T) {
+	r := newTestRedis()
+
+	resp := r.LSet(cmd("LSET", "missing", "0", "x"))
+	if !bytes.HasPrefix(resp, []byte("-")) {
+		t.Fatalf("expected error for non-existent key, but got %q", resp)
+	}
+}
+
+func TestLSetWrongType(t *testing.T) {
+	r := newTestRedis()
+	r.Set(cmd("SET", "k", "v"))
+
+	resp := r.LSet(cmd("LSET", "k", "0", "x"))
+	if !bytes.Equal(resp, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY) {
+		t.Fatalf("expected WRONGTYPE")
+	}
+}
+
+func TestLSetInvalidIndex(t *testing.T) {
+	r := newTestRedis()
+	r.LPush(cmd("LPUSH", "k", "a"))
+
+	resp := r.LSet(cmd("LSET", "k", "notanumber", "x"))
+	if !bytes.Equal(resp, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE) {
+		t.Fatalf("expected integer error")
+	}
+}
+
+func TestLSetWrongArgs(t *testing.T) {
+	r := newTestRedis()
+
+	resp := r.LSet(cmd("LSET", "k", "0"))
+	if !bytes.HasPrefix(resp, []byte("-ERR")) {
+		t.Fatal("expected ERR")
+	}
+}
+
+// LTrim Tests
+func TestLTrim(t *testing.T) {
+	r := newTestRedis()
+	r.RPush(cmd("RPUSH", "k", "a", "b", "c", "d", "e"))
+
+	resp := r.LTrim(cmd("LTRIM", "k", "1", "3"))
+	if !bytes.Equal(resp, constant.RESP_OK) {
+		t.Fatalf("expected OK, got %q", resp)
+	}
+
+	// Verify the list was trimmed
+	length := r.LLen(cmd("LLEN", "k"))
+	if !bytes.Equal(length, []byte(":3\r\n")) {
+		t.Fatalf("expected length 3, got %q", length)
+	}
+}
+
+func TestLTrimNegativeIndices(t *testing.T) {
+	r := newTestRedis()
+	r.RPush(cmd("RPUSH", "k", "a", "b", "c", "d", "e"))
+
+	resp := r.LTrim(cmd("LTRIM", "k", "-3", "-1"))
+	if !bytes.Equal(resp, constant.RESP_OK) {
+		t.Fatalf("expected OK")
+	}
+}
+
+func TestLTrimNonExistentKey(t *testing.T) {
+	r := newTestRedis()
+
+	resp := r.LTrim(cmd("LTRIM", "missing", "0", "1"))
+	if !bytes.Equal(resp, constant.RESP_OK) {
+		t.Fatalf("expected OK for non-existent key")
+	}
+}
+
+func TestLTrimWrongType(t *testing.T) {
+	r := newTestRedis()
+	r.Set(cmd("SET", "k", "v"))
+
+	resp := r.LTrim(cmd("LTRIM", "k", "0", "1"))
+	if !bytes.Equal(resp, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY) {
+		t.Fatalf("expected WRONGTYPE")
+	}
+}
+
+func TestLTrimInvalidIndices(t *testing.T) {
+	r := newTestRedis()
+	r.LPush(cmd("LPUSH", "k", "a"))
+
+	resp := r.LTrim(cmd("LTRIM", "k", "notanumber", "1"))
+	if !bytes.Equal(resp, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE) {
+		t.Fatalf("expected integer error")
+	}
+}
+
+func TestLTrimWrongArgs(t *testing.T) {
+	r := newTestRedis()
+
+	resp := r.LTrim(cmd("LTRIM", "k", "0"))
+	if !bytes.HasPrefix(resp, []byte("-ERR")) {
+		t.Fatal("expected ERR")
+	}
+}
+
+// LPushX Tests
+func TestLPushX(t *testing.T) {
+	r := newTestRedis()
+	r.LPush(cmd("LPUSH", "k", "a"))
+
+	resp := r.LPushX(cmd("LPUSHX", "k", "b", "c"))
+	if !bytes.Equal(resp, []byte(":3\r\n")) {
+		t.Fatalf("expected 3, got %q", resp)
+	}
+}
+
+func TestLPushXNonExistentKey(t *testing.T) {
+	r := newTestRedis()
+
+	resp := r.LPushX(cmd("LPUSHX", "missing", "a"))
+	if !bytes.Equal(resp, []byte(":0\r\n")) {
+		t.Fatalf("expected 0, got %q", resp)
+	}
+
+	// Verify key was not created
+	length := r.LLen(cmd("LLEN", "missing"))
+	if !bytes.Equal(length, []byte(":0\r\n")) {
+		t.Fatalf("key should not exist")
+	}
+}
+
+func TestLPushXWrongType(t *testing.T) {
+	r := newTestRedis()
+	r.Set(cmd("SET", "k", "v"))
+
+	resp := r.LPushX(cmd("LPUSHX", "k", "a"))
+	if !bytes.Equal(resp, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY) {
+		t.Fatalf("expected WRONGTYPE")
+	}
+}
+
+func TestLPushXWrongArgs(t *testing.T) {
+	r := newTestRedis()
+
+	resp := r.LPushX(cmd("LPUSHX", "k"))
+	if !bytes.HasPrefix(resp, []byte("-ERR")) {
+		t.Fatal("expected ERR")
+	}
+}
+
+// RPushX Tests
+func TestRPushX(t *testing.T) {
+	r := newTestRedis()
+	r.RPush(cmd("RPUSH", "k", "a"))
+
+	resp := r.RPushX(cmd("RPUSHX", "k", "b", "c"))
+	if !bytes.Equal(resp, []byte(":3\r\n")) {
+		t.Fatalf("expected 3, got %q", resp)
+	}
+}
+
+func TestRPushXNonExistentKey(t *testing.T) {
+	r := newTestRedis()
+
+	resp := r.RPushX(cmd("RPUSHX", "missing", "a"))
+	if !bytes.Equal(resp, []byte(":0\r\n")) {
+		t.Fatalf("expected 0, got %q", resp)
+	}
+
+	// Verify key was not created
+	length := r.LLen(cmd("LLEN", "missing"))
+	if !bytes.Equal(length, []byte(":0\r\n")) {
+		t.Fatalf("key should not exist")
+	}
+}
+
+func TestRPushXWrongType(t *testing.T) {
+	r := newTestRedis()
+	r.Set(cmd("SET", "k", "v"))
+
+	resp := r.RPushX(cmd("RPUSHX", "k", "a"))
+	if !bytes.Equal(resp, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY) {
+		t.Fatalf("expected WRONGTYPE")
+	}
+}
+
+func TestRPushXWrongArgs(t *testing.T) {
+	r := newTestRedis()
+
+	resp := r.RPushX(cmd("RPUSHX", "k"))
+	if !bytes.HasPrefix(resp, []byte("-ERR")) {
+		t.Fatal("expected ERR")
+	}
+}
