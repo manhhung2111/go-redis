@@ -45,6 +45,11 @@ type Store interface {
 	RPush(key string, elements ...string) uint32
 	RPop(key string, count uint32) []string
 	LRange(key string, start, end int32) []string
+	LIndex(key string, index int32) (string, bool)
+	LLen(key string) uint32
+	LRem(key string, count int32, element string) uint32
+	LSet(key string, index int32, element string) error
+	LTrim(key string, start, end int32)
 }
 
 type store struct {

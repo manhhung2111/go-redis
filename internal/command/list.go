@@ -146,3 +146,172 @@ func (redis *redis) LRange(cmd core.RedisCmd) []byte {
 	result := redis.Store.LRange(args[0], int32(start), int32(end))
 	return core.EncodeResp(result, false)
 }
+
+/* Support LINDEX key index */
+func (redis *redis) LIndex(cmd core.RedisCmd) []byte {
+	args := cmd.Args
+	if len(args) != 2 {
+		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+	}
+
+	rObj, exists := redis.Store.Get(args[0])
+	if !exists {
+		return constant.RESP_NIL_BULK_STRING
+	}
+
+	if exists && rObj.Type != storage.ObjList {
+		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	}
+
+	index, err := strconv.ParseInt(args[1], 10, 64)
+	if err != nil {
+		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+	}
+
+	result, existing := redis.Store.LIndex(args[0], int32(index))
+	if !existing {
+		return constant.RESP_NIL_BULK_STRING
+	}
+
+	return core.EncodeResp(result, false)
+}
+
+/* Support LLEN key */
+func (redis *redis) LLen(cmd core.RedisCmd) []byte {
+	args := cmd.Args
+	if len(args) != 1 {
+		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+	}
+
+	rObj, exists := redis.Store.Get(args[0])
+	if !exists {
+		return core.EncodeResp(uint32(0), false)
+	}
+
+	if exists && rObj.Type != storage.ObjList {
+		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	}
+
+	result := redis.Store.LLen(args[0])
+	return core.EncodeResp(result, false)
+}
+
+/* Support LPUSHX key element [element ...] */
+func (redis *redis) LPushX(cmd core.RedisCmd) []byte {
+	args := cmd.Args
+	if len(args) < 2 {
+		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+	}
+
+	rObj, exists := redis.Store.Get(args[0])
+	if !exists {
+		return core.EncodeResp(uint32(0), false)
+	}
+
+	if exists && rObj.Type != storage.ObjList {
+		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	}
+
+	result := redis.Store.LPush(args[0], args[1:]...)
+	return core.EncodeResp(result, false)
+}
+
+/* Support LREM key count element */
+func (redis *redis) LRem(cmd core.RedisCmd) []byte {
+	args := cmd.Args
+	if len(args) != 3 {
+		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+	}
+
+	rObj, exists := redis.Store.Get(args[0])
+	if !exists {
+		return core.EncodeResp(uint32(0), false)
+	}
+
+	if exists && rObj.Type != storage.ObjList {
+		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	}
+
+	count, err := strconv.ParseInt(args[1], 10, 64)
+	if err != nil {
+		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+	}
+
+	result := redis.Store.LRem(args[0], int32(count), args[2])
+	return core.EncodeResp(result, false)
+}
+
+/* Support LSET key index element */
+func (redis *redis) LSet(cmd core.RedisCmd) []byte {
+	args := cmd.Args
+	if len(args) != 3 {
+		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+	}
+
+	rObj, exists := redis.Store.Get(args[0])
+	if exists && rObj.Type != storage.ObjList {
+		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	}
+
+	index, err := strconv.ParseInt(args[1], 10, 64)
+	if err != nil {
+		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+	}
+
+	err = redis.Store.LSet(args[0], int32(index), args[2])
+	if err != nil {
+		return core.EncodeResp(err, false)
+	}
+
+	return constant.RESP_OK
+}
+
+/* Support LTRIM key start stop */
+func (redis *redis) LTrim(cmd core.RedisCmd) []byte {
+	args := cmd.Args
+	if len(args) != 3 {
+		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+	}
+
+	rObj, exists := redis.Store.Get(args[0])
+	if !exists {
+		return constant.RESP_OK
+	}
+
+	if exists && rObj.Type != storage.ObjList {
+		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	}
+
+	start, err := strconv.ParseInt(args[1], 10, 64)
+	if err != nil {
+		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+	}
+
+	end, err := strconv.ParseInt(args[2], 10, 64)
+	if err != nil {
+		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+	}
+
+	redis.Store.LTrim(args[0], int32(start), int32(end))
+	return constant.RESP_OK
+}
+
+/* Support RPUSHX key element [element ...] */
+func (redis *redis) RPushX(cmd core.RedisCmd) []byte {
+	args := cmd.Args
+	if len(args) < 2 {
+		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+	}
+
+	rObj, exists := redis.Store.Get(args[0])
+	if !exists {
+		return core.EncodeResp(uint32(0), false)
+	}
+
+	if exists && rObj.Type != storage.ObjList {
+		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	}
+
+	result := redis.Store.RPush(args[0], args[1:]...)
+	return core.EncodeResp(result, false)
+}

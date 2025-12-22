@@ -38,6 +38,13 @@ type Redis interface {
 	RPush(cmd core.RedisCmd) []byte
 	RPop(cmd core.RedisCmd) []byte
 	LRange(cmd core.RedisCmd) []byte
+	LIndex(cmd core.RedisCmd) []byte
+	LLen(cmd core.RedisCmd) []byte
+	LRem(cmd core.RedisCmd) []byte
+	LSet(cmd core.RedisCmd) []byte
+	LTrim(cmd core.RedisCmd) []byte
+	LPushX(cmd core.RedisCmd) []byte
+	RPushX(cmd core.RedisCmd) []byte
 }
 
 type CommandHandler func(cmd core.RedisCmd) []byte
@@ -80,6 +87,13 @@ func NewRedis(
 		"RPUSH":  redis.RPush,
 		"RPOP":   redis.RPop,
 		"LRANGE": redis.LRange,
+		"LINDEX": redis.LIndex,
+		"LLEN":   redis.LLen,
+		"LREM":   redis.LRem,
+		"LSET":   redis.LSet,
+		"LTRIM":  redis.LTrim,
+		"LPUSHX": redis.LPushX,
+		"RPUSHX": redis.RPushX,
 	}
 
 	return redis
