@@ -459,6 +459,342 @@ func TestLRangeAcrossMultipleNodes(t *testing.T) {
 	}
 }
 
+func TestLIndexBasic(t *testing.T) {
+	ql := NewQuickList()
+	ql.RPush([]string{"a", "b", "c", "d", "e"})
+	
+	tests := []struct {
+		index    int32
+		expected string
+		exists   bool
+	}{
+		{0, "a", true},
+		{1, "b", true},
+		{4, "e", true},
+		{-1, "e", true},
+		{-2, "d", true},
+		{-5, "a", true},
+		{10, "", false},
+		{-10, "", false},
+	}
+	
+	for _, tt := range tests {
+		val, ok := ql.LIndex(tt.index)
+		if ok != tt.exists {
+			t.Errorf("LIndex(%d): expected exists=%v, got %v", tt.index, tt.exists, ok)
+		}
+		if ok && val != tt.expected {
+			t.Errorf("LIndex(%d): expected %s, got %s", tt.index, tt.expected, val)
+		}
+	}
+}
+
+func TestLIndexEmptyList(t *testing.T) {
+	ql := NewQuickList()
+	
+	val, ok := ql.LIndex(0)
+	if ok {
+		t.Error("LIndex on empty list should return false")
+	}
+	if val != "" {
+		t.Errorf("Expected empty string, got %s", val)
+	}
+}
+
+func TestLRemPositiveCount(t *testing.T) {
+	ql := NewQuickList()
+	ql.RPush([]string{"a", "b", "a", "c", "a", "d", "a"})
+	
+	// Remove first 2 occurrences of "a"
+	removed := ql.LRem(2, "a")
+	
+	if removed != 2 {
+		t.Errorf("Expected 2 removed, got %d", removed)
+	}
+	
+	result := ql.LRange(0, -1)
+	expected := []string{"b", "c", "a", "d", "a"}
+	
+	if !sliceEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
+
+func TestLRemNegativeCount(t *testing.T) {
+	ql := NewQuickList()
+	ql.RPush([]string{"a", "b", "a", "c", "a", "d", "a"})
+	
+	// Remove last 2 occurrences of "a"
+	removed := ql.LRem(-2, "a")
+	
+	if removed != 2 {
+		t.Errorf("Expected 2 removed, got %d", removed)
+	}
+	
+	result := ql.LRange(0, -1)
+	expected := []string{"a", "b", "a", "c", "d"}
+	
+	if !sliceEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
+
+func TestLRemZeroCount(t *testing.T) {
+	ql := NewQuickList()
+	ql.RPush([]string{"a", "b", "a", "c", "a"})
+	
+	// Remove all occurrences of "a"
+	removed := ql.LRem(0, "a")
+	
+	if removed != 3 {
+		t.Errorf("Expected 3 removed, got %d", removed)
+	}
+	
+	result := ql.LRange(0, -1)
+	expected := []string{"b", "c"}
+	
+	if !sliceEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
+
+func TestLRemNoMatch(t *testing.T) {
+	ql := NewQuickList()
+	ql.RPush([]string{"a", "b", "c"})
+	
+	removed := ql.LRem(5, "x")
+	
+	if removed != 0 {
+		t.Errorf("Expected 0 removed, got %d", removed)
+	}
+	
+	// List should be unchanged
+	result := ql.LRange(0, -1)
+	expected := []string{"a", "b", "c"}
+	
+	if !sliceEqual(result, expected) {
+		t.Errorf("List should be unchanged: expected %v, got %v", expected, result)
+	}
+}
+
+func TestLRemEmptyList(t *testing.T) {
+	ql := NewQuickList()
+	
+	removed := ql.LRem(5, "a")
+	
+	if removed != 0 {
+		t.Errorf("Expected 0 removed, got %d", removed)
+	}
+}
+
+func TestLRemAllElements(t *testing.T) {
+	ql := NewQuickList()
+	ql.RPush([]string{"a", "a", "a"})
+	
+	removed := ql.LRem(0, "a")
+	
+	if removed != 3 {
+		t.Errorf("Expected 3 removed, got %d", removed)
+	}
+	
+	// List should be empty
+	if ql.Size() != 0 {
+		t.Errorf("List should be empty, size is %d", ql.Size())
+	}
+}
+
+func TestLSetBasic(t *testing.T) {
+	ql := NewQuickList()
+	ql.RPush([]string{"a", "b", "c"})
+	
+	// Set first element
+	err := ql.LSet(0, "x")
+	if err != nil {
+		t.Errorf("LSet failed: %v", err)
+	}
+	
+	result := ql.LRange(0, -1)
+	expected := []string{"x", "b", "c"}
+	
+	if !sliceEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
+
+func TestLSetNegativeIndex(t *testing.T) {
+	ql := NewQuickList()
+	ql.RPush([]string{"a", "b", "c"})
+	
+	// Set last element
+	err := ql.LSet(-1, "z")
+	if err != nil {
+		t.Errorf("LSet failed: %v", err)
+	}
+	
+	result := ql.LRange(0, -1)
+	expected := []string{"a", "b", "z"}
+	
+	if !sliceEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
+
+func TestLSetOutOfBounds(t *testing.T) {
+	ql := NewQuickList()
+	ql.RPush([]string{"a", "b", "c"})
+	
+	tests := []int32{10, -10, 3, -4}
+	
+	for _, index := range tests {
+		err := ql.LSet(index, "x")
+		if err == nil {
+			t.Errorf("LSet(%d) should return error for out of bounds", index)
+		}
+	}
+}
+
+func TestLSetMiddle(t *testing.T) {
+	ql := NewQuickList()
+	ql.RPush([]string{"a", "b", "c", "d", "e"})
+	
+	err := ql.LSet(2, "X")
+	if err != nil {
+		t.Errorf("LSet failed: %v", err)
+	}
+	
+	val, _ := ql.LIndex(2)
+	if val != "X" {
+		t.Errorf("Expected X at index 2, got %s", val)
+	}
+}
+
+func TestLTrimBasic(t *testing.T) {
+	ql := NewQuickList()
+	ql.RPush([]string{"a", "b", "c", "d", "e"})
+	
+	// Keep elements from index 1 to 3
+	ql.LTrim(1, 3)
+	
+	result := ql.LRange(0, -1)
+	expected := []string{"b", "c", "d"}
+	
+	if !sliceEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
+
+func TestLTrimKeepAll(t *testing.T) {
+	ql := NewQuickList()
+	ql.RPush([]string{"a", "b", "c"})
+	
+	// Keep all elements
+	ql.LTrim(0, -1)
+	
+	result := ql.LRange(0, -1)
+	expected := []string{"a", "b", "c"}
+	
+	if !sliceEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
+
+func TestLTrimNegativeIndices(t *testing.T) {
+	ql := NewQuickList()
+	ql.RPush([]string{"a", "b", "c", "d", "e"})
+	
+	// Keep last 3 elements
+	ql.LTrim(-3, -1)
+	
+	result := ql.LRange(0, -1)
+	expected := []string{"c", "d", "e"}
+	
+	if !sliceEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
+
+func TestLTrimClearList(t *testing.T) {
+	ql := NewQuickList()
+	ql.RPush([]string{"a", "b", "c"})
+	
+	// Invalid range clears the list
+	ql.LTrim(10, 20)
+	
+	if ql.Size() != 0 {
+		t.Errorf("List should be empty, size is %d", ql.Size())
+	}
+}
+
+func TestLTrimEmptyList(t *testing.T) {
+	ql := NewQuickList()
+	
+	// Should not panic
+	ql.LTrim(0, 5)
+	
+	if ql.Size() != 0 {
+		t.Error("Empty list should remain empty")
+	}
+}
+
+func TestLTrimSingleElement(t *testing.T) {
+	ql := NewQuickList()
+	ql.RPush([]string{"a", "b", "c", "d", "e"})
+	
+	// Keep only element at index 2
+	ql.LTrim(2, 2)
+	
+	result := ql.LRange(0, -1)
+	expected := []string{"c"}
+	
+	if !sliceEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
+
+func TestLTrimFromStart(t *testing.T) {
+	ql := NewQuickList()
+	ql.RPush([]string{"a", "b", "c", "d", "e"})
+	
+	// Keep first 3 elements
+	ql.LTrim(0, 2)
+	
+	result := ql.LRange(0, -1)
+	expected := []string{"a", "b", "c"}
+	
+	if !sliceEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
+
+func TestLTrimToEnd(t *testing.T) {
+	ql := NewQuickList()
+	ql.RPush([]string{"a", "b", "c", "d", "e"})
+	
+	// Remove first 2, keep the rest
+	ql.LTrim(2, 10)
+	
+	result := ql.LRange(0, -1)
+	expected := []string{"c", "d", "e"}
+	
+	if !sliceEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
+
+func TestLTrimStartGreaterThanEnd(t *testing.T) {
+	ql := NewQuickList()
+	ql.RPush([]string{"a", "b", "c"})
+	
+	// Invalid range
+	ql.LTrim(3, 1)
+	
+	// Should clear the list
+	if ql.Size() != 0 {
+		t.Errorf("List should be empty, size is %d", ql.Size())
+	}
+}
+
+
 func sliceEqual(a, b []string) bool {
 	if len(a) != len(b) {
 		return false

@@ -124,7 +124,21 @@ func (lp *listPack) approxSizeBytes() uint64 {
 	return totalSize
 }
 
-func (lp *listPack) canAppendElement(value string) bool {
-	nextSize := lp.approxSizeBytes() + stringHeaderSize + uint64(len(value))
-	return nextSize <= listPackMaxSizeBytes
+func (lp *listPack) removeAt(index int32) {
+	if index < 0 || index >= int32(len(lp.data)) {
+		panic("removeAt called on invalid index of listPack")
+	}
+	
+	// Shift elements left to fill the gap
+	copy(lp.data[index:], lp.data[index+1:])
+	// Shrink the slice
+	lp.data = lp.data[:len(lp.data)-1]
+}
+
+func (lp *listPack) set(index int32, value string) {
+	if index < 0 || index >= int32(len(lp.data)) {
+		panic("set called on invalid index of listPack")
+	}
+	
+	lp.data[index] = value
 }

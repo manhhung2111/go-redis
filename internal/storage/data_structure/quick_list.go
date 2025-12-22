@@ -1,5 +1,7 @@
 package quicklist
 
+import "errors"
+
 type QuickList interface {
 	Size() uint32
 
@@ -8,6 +10,10 @@ type QuickList interface {
 	RPush(elements []string) uint32
 	RPop(count uint32) []string
 	LRange(start, end int32) []string
+	LIndex(index int32) (string, bool)
+	LRem(count int32, element string) uint32
+	LSet(index int32, element string) error
+	LTrim(start, end int32)
 }
 
 type quickList struct {
@@ -267,6 +273,184 @@ func (q *quickList) LRange(start, end int32) []string {
 	return result
 }
 
+func (q *quickList) LIndex(index int32) (string, bool) {
+	qSize := int32(q.size)
+	if qSize == 0 {
+		return "", false
+	}
+
+	if index < 0 {
+		index = qSize + index
+	}
+
+	if index < 0 || index >= int32(q.size) {
+		return "", false
+	}
+
+	node, index := q.findPosition(uint32(index))
+	return node.listPack.get(index), true
+}
+
+func (q *quickList) LRem(count int32, element string) uint32 {
+	if q.size == 0 {
+		return 0
+	}
+
+	var removed uint32 = 0
+	absCount := count
+	if absCount < 0 {
+		absCount = -absCount
+	}
+
+	if count >= 0 {
+		// Remove from head to tail
+		node := q.head.next
+		for node != q.tail {
+			nextNode := node.next
+			removed += q.removeFromNode(node, element, absCount, removed, count == 0)
+			
+			// Stop if we've removed enough (unless count is 0, meaning remove all)
+			if count != 0 && removed >= uint32(absCount) {
+				break
+			}
+			
+			node = nextNode
+		}
+	} else {
+		// Remove from tail to head (count < 0)
+		node := q.tail.prev
+		for node != q.head {
+			prevNode := node.prev
+			removed += q.removeFromNodeReverse(node, element, absCount, removed)
+			
+			if removed >= uint32(absCount) {
+				break
+			}
+			
+			node = prevNode
+		}
+	}
+
+	return removed
+}
+
+func (q *quickList) LSet(index int32, element string) error {
+	qSize := int32(q.size)
+	if qSize == 0 {
+		return nil
+	}
+
+	if index < 0 {
+		index = qSize + index
+	}
+
+	if index < 0 || index >= qSize {
+		return errors.New("index out of range")
+	}
+
+	node, localIndex := q.findPosition(uint32(index))
+	node.listPack.set(localIndex, element)
+	return nil
+}
+
+func (q *quickList) LTrim(start, end int32) {
+	qSize := int32(q.size)
+	if qSize == 0 {
+		return
+	}
+
+	if start < 0 {
+		start = max(qSize + start, 0)
+	}
+
+	if end < 0 {
+		end = qSize + end
+	}
+
+	if end >= qSize {
+		end = qSize - 1
+	}
+
+	// If range is invalid, clear the entire list
+	if start > end || start >= qSize {
+		q.clear()
+		return
+	}
+
+	// Remove elements before start
+	if start > 0 {
+		q.removeFromHead(uint32(start))
+	}
+
+	// Remove elements after end
+	newEnd := end - start
+	newSize := int32(q.size)
+	if newEnd < newSize-1 {
+		toRemove := newSize - newEnd - 1
+		q.removeFromTail(uint32(toRemove))
+	}
+}
+
+func (q *quickList) removeFromHead(count uint32) {
+	for count > 0 && q.size > 0 {
+		first := q.head.next
+		if first == q.tail {
+			break
+		}
+
+		nodeSize := first.listPack.size()
+		removeCount := min(count, nodeSize)
+
+		for i := uint32(0); i < removeCount; i++ {
+			first.listPack.lPop()
+			q.size--
+			count--
+		}
+
+		// Remove node if empty
+		if first.listPack.empty() {
+			q.removeNode(first)
+		}
+	}
+}
+
+func (q *quickList) removeFromTail(count uint32) {
+	for count > 0 && q.size > 0 {
+		last := q.tail.prev
+		if last == q.head {
+			break
+		}
+
+		nodeSize := last.listPack.size()
+		removeCount := min(count, nodeSize)
+
+		for i := uint32(0); i < removeCount; i++ {
+			last.listPack.rPop()
+			q.size--
+			count--
+		}
+
+		// Remove node if empty
+		if last.listPack.empty() {
+			q.removeNode(last)
+		}
+	}
+}
+
+func (q *quickList) clear() {
+	node := q.head.next
+	for node != q.tail {
+		next := node.next
+		node.prev = nil
+		node.next = nil
+		node = next
+	}
+	
+	q.head.next = q.tail
+	q.tail.prev = q.head
+	q.size = 0
+}
+
 func (q *quickList) findPosition(index uint32) (*quickListNode, int32) {
 	if index == 0 {
 		return q.head.next, 0
@@ -327,4 +511,55 @@ func (q *quickList) removeNode(node *quickListNode) {
 
 	node.prev = nil
 	node.next = nil
+}
+
+func (q *quickList) removeFromNode(node *quickListNode, element string, limit int32, alreadyRemoved uint32, removeAll bool) uint32 {
+	removed := uint32(0)
+	i := int32(0)
+	
+	for i < int32(node.listPack.size()) {
+		if node.listPack.get(i) == element {
+			node.listPack.removeAt(i)
+			removed++
+			q.size--
+			
+			if !removeAll && alreadyRemoved+removed >= uint32(limit) {
+				break
+			}
+		} else {
+			i++
+		}
+	}
+	
+	// Remove node if empty
+	if node.listPack.empty() {
+		q.removeNode(node)
+	}
+	
+	return removed
+}
+
+func (q *quickList) removeFromNodeReverse(node *quickListNode, element string, limit int32, alreadyRemoved uint32) uint32 {
+	removed := uint32(0)
+	i := int32(node.listPack.size()) - 1
+	
+	for i >= 0 {
+		if node.listPack.get(i) == element {
+			node.listPack.removeAt(i)
+			removed++
+			q.size--
+			
+			if alreadyRemoved+removed >= uint32(limit) {
+				break
+			}
+		}
+		i--
+	}
+	
+	// Remove node if empty
+	if node.listPack.empty() {
+		q.removeNode(node)
+	}
+	
+	return removed
 }
