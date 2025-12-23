@@ -1,4 +1,4 @@
-package quicklist
+package data_structure
 
 import (
 	"github.com/dustin/go-humanize"
@@ -128,7 +128,7 @@ func (lp *listPack) removeAt(index int32) {
 	if index < 0 || index >= int32(len(lp.data)) {
 		panic("removeAt called on invalid index of listPack")
 	}
-	
+
 	// Shift elements left to fill the gap
 	copy(lp.data[index:], lp.data[index+1:])
 	// Shrink the slice
@@ -139,6 +139,6 @@ func (lp *listPack) set(index int32, value string) {
 	if index < 0 || index >= int32(len(lp.data)) {
 		panic("set called on invalid index of listPack")
 	}
-	
+
 	lp.data[index] = value
 }

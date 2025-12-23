@@ -3,13 +3,13 @@ package storage
 import (
 	"errors"
 
-	quicklist "github.com/manhhung2111/go-redis/internal/storage/data_structure"
+	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
 )
 
 func (s *store) LPush(key string, elements ...string) uint32 {
 	rObj, exists := s.data[key]
 	if exists {
-		quickList, ok := rObj.Value.(quicklist.QuickList)
+		quickList, ok := rObj.Value.(data_structure.QuickList)
 		if !ok {
 			return 0
 		}
@@ -17,7 +17,7 @@ func (s *store) LPush(key string, elements ...string) uint32 {
 		return quickList.LPush(elements)
 	}
 
-	quicklist := quicklist.NewQuickList()
+	quicklist := data_structure.NewQuickList()
 	res := quicklist.LPush(elements)
 
 	s.data[key] = &RObj{
@@ -35,7 +35,7 @@ func (s *store) LPop(key string, count uint32) []string {
 		return nil
 	}
 
-	quickList, ok := rObj.Value.(quicklist.QuickList)
+	quickList, ok := rObj.Value.(data_structure.QuickList)
 	if !ok {
 		return nil
 	}
@@ -51,7 +51,7 @@ func (s *store) LPop(key string, count uint32) []string {
 func (s *store) RPush(key string, elements ...string) uint32 {
 	rObj, exists := s.data[key]
 	if exists {
-		quickList, ok := rObj.Value.(quicklist.QuickList)
+		quickList, ok := rObj.Value.(data_structure.QuickList)
 		if !ok {
 			return 0
 		}
@@ -59,7 +59,7 @@ func (s *store) RPush(key string, elements ...string) uint32 {
 		return quickList.RPush(elements)
 	}
 
-	quicklist := quicklist.NewQuickList()
+	quicklist := data_structure.NewQuickList()
 	res := quicklist.RPush(elements)
 
 	s.data[key] = &RObj{
@@ -77,7 +77,7 @@ func (s *store) RPop(key string, count uint32) []string {
 		return nil
 	}
 
-	quickList, ok := rObj.Value.(quicklist.QuickList)
+	quickList, ok := rObj.Value.(data_structure.QuickList)
 	if !ok {
 		return nil
 	}
@@ -96,7 +96,7 @@ func (s *store) LRange(key string, start int32, end int32) []string {
 		return nil
 	}
 
-	quickList, ok := rObj.Value.(quicklist.QuickList)
+	quickList, ok := rObj.Value.(data_structure.QuickList)
 	if !ok {
 		return nil
 	}
@@ -110,7 +110,7 @@ func (s *store) LIndex(key string, index int32) (string, bool) {
 		return "", false
 	}
 
-	quickList, ok := rObj.Value.(quicklist.QuickList)
+	quickList, ok := rObj.Value.(data_structure.QuickList)
 	if !ok {
 		return "", false
 	}
@@ -124,7 +124,7 @@ func (s *store) LLen(key string) uint32 {
 		return 0
 	}
 
-	quickList, ok := rObj.Value.(quicklist.QuickList)
+	quickList, ok := rObj.Value.(data_structure.QuickList)
 	if !ok {
 		return 0
 	}
@@ -138,7 +138,7 @@ func (s *store) LRem(key string, count int32, element string) uint32 {
 		return 0
 	}
 
-	quickList, ok := rObj.Value.(quicklist.QuickList)
+	quickList, ok := rObj.Value.(data_structure.QuickList)
 	if !ok {
 		return 0
 	}
@@ -157,7 +157,7 @@ func (s *store) LSet(key string, index int32, element string) error {
 		return errors.New("no such key")
 	}
 
-	quickList, ok := rObj.Value.(quicklist.QuickList)
+	quickList, ok := rObj.Value.(data_structure.QuickList)
 	if !ok {
 		return errors.New("invalid rObj, can not cast to quicklist")
 	}
@@ -171,7 +171,7 @@ func (s *store) LTrim(key string, start, end int32) {
 		return
 	}
 
-	quickList, ok := rObj.Value.(quicklist.QuickList)
+	quickList, ok := rObj.Value.(data_structure.QuickList)
 	if !ok {
 		return
 	}

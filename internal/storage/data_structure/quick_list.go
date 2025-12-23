@@ -1,4 +1,4 @@
-package quicklist
+package data_structure
 
 import "errors"
 
