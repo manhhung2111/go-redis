@@ -1,6 +1,7 @@
 package data_structure
 
 import (
+	"strconv"
 	"testing"
 )
 
@@ -8,36 +9,36 @@ func TestSimpleSetAdd(t *testing.T) {
 	s := NewSimpleSet()
 	
 	// Add single member
-	added := s.Add("a")
-	if added != 1 {
-		t.Errorf("Expected 1 added, got %d", added)
+	added, ok := s.Add("a")
+	if !ok || added != 1 {
+		t.Errorf("Expected (1, true), got (%d, %v)", added, ok)
 	}
 	
 	// Add duplicate member
-	added = s.Add("a")
-	if added != 0 {
-		t.Errorf("Expected 0 added for duplicate, got %d", added)
+	added, ok = s.Add("a")
+	if !ok || added != 0 {
+		t.Errorf("Expected (0, true) for duplicate, got (%d, %v)", added, ok)
 	}
 	
 	// Add multiple members
-	added = s.Add("b", "c", "d")
-	if added != 3 {
-		t.Errorf("Expected 3 added, got %d", added)
+	added, ok = s.Add("b", "c", "d")
+	if !ok || added != 3 {
+		t.Errorf("Expected (3, true), got (%d, %v)", added, ok)
 	}
 	
 	// Add mix of new and duplicate
-	added = s.Add("d", "e", "f")
-	if added != 2 {
-		t.Errorf("Expected 2 added (d is duplicate), got %d", added)
+	added, ok = s.Add("d", "e", "f")
+	if !ok || added != 2 {
+		t.Errorf("Expected (2, true) (d is duplicate), got (%d, %v)", added, ok)
 	}
 }
 
 func TestSimpleSetAddEmpty(t *testing.T) {
 	s := NewSimpleSet()
 	
-	added := s.Add()
-	if added != 0 {
-		t.Errorf("Expected 0 added for empty call, got %d", added)
+	added, ok := s.Add()
+	if !ok || added != 0 {
+		t.Errorf("Expected (0, true) for empty call, got (%d, %v)", added, ok)
 	}
 }
 
@@ -218,21 +219,21 @@ func TestIntSetAdd(t *testing.T) {
 	s := NewIntSet()
 	
 	// Add single member
-	added := s.Add("1")
-	if added != 1 {
-		t.Errorf("Expected 1 added, got %d", added)
+	added, ok := s.Add("1")
+	if !ok || added != 1 {
+		t.Errorf("Expected (1, true), got (%d, %v)", added, ok)
 	}
 	
 	// Add duplicate
-	added = s.Add("1")
-	if added != 0 {
-		t.Errorf("Expected 0 added for duplicate, got %d", added)
+	added, ok = s.Add("1")
+	if !ok || added != 0 {
+		t.Errorf("Expected (0, true) for duplicate, got (%d, %v)", added, ok)
 	}
 	
 	// Add multiple members
-	added = s.Add("5", "3", "7")
-	if added != 3 {
-		t.Errorf("Expected 3 added, got %d", added)
+	added, ok = s.Add("5", "3", "7")
+	if !ok || added != 3 {
+		t.Errorf("Expected (3, true), got (%d, %v)", added, ok)
 	}
 	
 	// Verify sorted order
@@ -248,9 +249,9 @@ func TestIntSetAdd(t *testing.T) {
 func TestIntSetAddNegativeNumbers(t *testing.T) {
 	s := NewIntSet()
 	
-	added := s.Add("-5", "-1", "0", "3")
-	if added != 4 {
-		t.Errorf("Expected 4 added, got %d", added)
+	added, ok := s.Add("-5", "-1", "0", "3")
+	if !ok || added != 4 {
+		t.Errorf("Expected (4, true), got (%d, %v)", added, ok)
 	}
 	
 	members := s.Members()
@@ -540,5 +541,109 @@ func TestIntSetDeleteLast(t *testing.T) {
 		if members[i] != expected[i] {
 			t.Errorf("Index %d: expected %s, got %s", i, expected[i], members[i])
 		}
+	}
+}
+
+func TestIntSetAddInvalidString(t *testing.T) {
+	s := NewIntSet()
+	
+	// Try to add invalid integer string
+	added, ok := s.Add("abc")
+	if ok {
+		t.Error("Expected ok=false for invalid integer string")
+	}
+	if added != 0 {
+		t.Errorf("Expected 0 added, got %d", added)
+	}
+	
+	// Size should be 0
+	if s.Size() != 0 {
+		t.Errorf("Expected size 0, got %d", s.Size())
+	}
+}
+
+func TestIntSetAddPartialFailure(t *testing.T) {
+	s := NewIntSet()
+	
+	// Add mix of valid and invalid
+	_, ok := s.Add("1", "abc", "2")
+	if ok {
+		t.Error("Expected ok=false when any member is invalid")
+	}
+	
+	// Should not add any members on partial failure
+	if s.Size() != 0 {
+		t.Errorf("Expected size 0 after failed add, got %d", s.Size())
+	}
+}
+
+func TestIntSetAddCapacityExceeded(t *testing.T) {
+	s := NewIntSet().(*intSet)
+	
+	// Fill to capacity
+	capacity := cap(s.contents)
+	for i := 0; i < capacity; i++ {
+		added, ok := s.Add(strconv.Itoa(i))
+		if !ok || added != 1 {
+			t.Fatalf("Failed to add element %d", i)
+		}
+	}
+	
+	// Try to add one more (should fail)
+	added, ok := s.Add(strconv.Itoa(capacity))
+	if ok {
+		t.Error("Expected ok=false when capacity exceeded")
+	}
+	if added != 0 {
+		t.Errorf("Expected 0 added when capacity exceeded, got %d", added)
+	}
+	
+	// Size should remain at capacity
+	if s.Size() != int64(capacity) {
+		t.Errorf("Expected size %d, got %d", capacity, s.Size())
+	}
+}
+
+func TestIntSetIsMemberInvalidString(t *testing.T) {
+	s := NewIntSet()
+	s.Add("1", "2", "3")
+	
+	// Check with invalid string (should return false, not panic)
+	if s.IsMember("abc") {
+		t.Error("Expected false for invalid integer string")
+	}
+}
+
+func TestIntSetDeleteInvalidString(t *testing.T) {
+	s := NewIntSet()
+	s.Add("1", "2", "3")
+	
+	// Try to delete invalid string (should be skipped)
+	removed := s.Delete("abc", "2", "xyz")
+	if removed != 1 {
+		t.Errorf("Expected 1 removed (only '2'), got %d", removed)
+	}
+	
+	// Verify '2' was deleted but others remain
+	if s.IsMember("2") {
+		t.Error("'2' should have been deleted")
+	}
+	if !s.IsMember("1") || !s.IsMember("3") {
+		t.Error("'1' and '3' should still be present")
+	}
+}
+
+func TestSimpleSetAlwaysReturnsTrue(t *testing.T) {
+	s := NewSimpleSet()
+	
+	// SimpleSet should always return true for ok
+	_, ok := s.Add("a", "b", "c")
+	if !ok {
+		t.Error("SimpleSet Add should always return true")
+	}
+	
+	_, ok = s.Add()
+	if !ok {
+		t.Error("SimpleSet Add should always return true, even for empty")
 	}
 }

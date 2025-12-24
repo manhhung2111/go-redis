@@ -1,7 +1,6 @@
 package data_structure
 
 import (
-	"fmt"
 	"math/bits"
 	"strconv"
 
@@ -18,18 +17,25 @@ func NewIntSet() Set {
 	}
 }
 
-func (set *intSet) Add(members ...string) int64 {
-	if len(set.contents)+len(members) > cap(set.contents) {
-		// This condition should never be reached
-		panic("intset SAdd operation will result in size overflow")
-	}
-
+func (set *intSet) Add(members ...string) (int64, bool) {
 	added := 0
+	oldContents := make([]int64, len(set.contents))
+	copy(oldContents, set.contents)
+
 	for i := range members {
-		value := toInt64(members[i])
+		value, err := strconv.ParseInt(members[i], 10, 64)
+		if err != nil {
+			set.contents = oldContents
+			return 0, false
+		}
 
 		insertionIndex, exists := set.getInsertIndex(value)
 		if !exists {
+			if len(set.contents) + 1 > cap(set.contents) {
+				set.contents = oldContents
+				return 0, false
+			}
+
 			set.contents = append(set.contents, 0)
 			copy(set.contents[insertionIndex+1:], set.contents[insertionIndex:])
 			set.contents[insertionIndex] = value
@@ -37,7 +43,7 @@ func (set *intSet) Add(members ...string) int64 {
 		}
 	}
 
-	return int64(added)
+	return int64(added), true
 }
 
 func (set *intSet) Size() int64 {
@@ -45,7 +51,10 @@ func (set *intSet) Size() int64 {
 }
 
 func (set *intSet) IsMember(member string) bool {
-	value := toInt64(member)
+	value, err := strconv.ParseInt(member, 10, 64)
+	if err != nil {
+		return false
+	}
 	return set.binarySearch(value) != -1
 }
 
@@ -94,7 +103,11 @@ func (set *intSet) Members() []string {
 func (set *intSet) Delete(members ...string) int64 {
 	removed := 0
 	for i := range members {
-		value := toInt64(members[i])
+		value, err := strconv.ParseInt(members[i], 10, 64)
+		if err != nil {
+			continue
+		}
+
 		index := set.binarySearch(value)
 		if index != -1 {
 			copy(set.contents[index:], set.contents[index+1:])
@@ -156,13 +169,4 @@ func (set *intSet) getInsertIndex(target int64) (int32, bool) {
 	}
 
 	return index, false
-}
-
-func toInt64(str string) int64 {
-	value, err := strconv.ParseInt(str, 10, 64)
-	if err != nil {
-		panic(fmt.Sprintf("string cannot be converted to int64, str=%s", str))
-	}
-
-	return value
 }

@@ -10,7 +10,7 @@ func NewSimpleSet() Set {
 	}
 }
 
-func (s *simpleSet) Add(members ...string) int64 {
+func (s *simpleSet) Add(members ...string) (int64, bool) {
 	var added int64 = 0
 	for _, m := range members {
 		if _, ok := s.contents[m]; !ok {
@@ -18,7 +18,7 @@ func (s *simpleSet) Add(members ...string) int64 {
 			added++
 		}
 	}
-	return added
+	return added, true
 }
 
 func (s *simpleSet) Delete(members ...string) int64 {
