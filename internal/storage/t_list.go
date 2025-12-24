@@ -42,7 +42,7 @@ func (s *store) LPop(key string, count uint32) []string {
 
 	poppedElements := quickList.LPop(count)
 	if quickList.Size() == 0 {
-		delete(s.data, key)
+		s.Del(key)
 	}
 
 	return poppedElements
@@ -84,7 +84,7 @@ func (s *store) RPop(key string, count uint32) []string {
 
 	poppedElements := quickList.RPop(count)
 	if quickList.Size() == 0 {
-		delete(s.data, key)
+		s.Del(key)
 	}
 
 	return poppedElements
@@ -145,7 +145,7 @@ func (s *store) LRem(key string, count int32, element string) uint32 {
 
 	removedElements := quickList.LRem(count, element)
 	if quickList.Size() == 0 {
-		delete(s.data, key)
+		s.Del(key)
 	}
 
 	return removedElements
@@ -178,6 +178,6 @@ func (s *store) LTrim(key string, start, end int32) {
 
 	quickList.LTrim(start, end)
 	if quickList.Size() == 0 {
-		delete(s.data, key)
+		s.Del(key)
 	}
 }

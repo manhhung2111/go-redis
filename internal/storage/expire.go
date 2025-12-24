@@ -19,7 +19,6 @@ func (s *store) TTL(key string) int64 {
 	if expireAt, ok := s.expires[key]; ok {
 		now := uint64(time.Now().UnixMilli())
 		if expireAt <= now {
-			// lazy expiration
 			s.Del(key)
 			return -2
 		}
@@ -30,7 +29,6 @@ func (s *store) TTL(key string) int64 {
 }
 
 func (s *store) Expire(key string, ttlSeconds int64, opt ExpireOptions) bool {
-	// Key must exist
 	if _, ok := s.data[key]; !ok {
 		return false
 	}
@@ -53,7 +51,6 @@ func (s *store) Expire(key string, ttlSeconds int64, opt ExpireOptions) bool {
 	// GT / LT only apply if key already has expire
 	if hasExpire {
 		if oldExpireAt <= uint64(now) {
-			// lazy delete
 			s.Del(key)
 			return false
 		}

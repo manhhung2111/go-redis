@@ -59,8 +59,8 @@ func (s *store) Get(key string) (*RObj, bool) {
 		now := time.Now().UnixMilli()
 		if ttl <= uint64(now) {
 			s.Del(key)
+			return nil, false
 		}
-		return nil, false
 	}
 
 	return obj, true
