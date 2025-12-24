@@ -2,40 +2,74 @@ package storage
 
 import (
 	"math/rand"
+	"strconv"
 	"time"
-)
 
-type simpleSet map[string]struct{}
+	"github.com/manhhung2111/go-redis/internal/config"
+	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
+)
 
 func (s *store) SAdd(key string, members ...string) int64 {
 	s.expireIfNeeded(key)
 
-	obj, exists := s.data[key]
+	rObj, exists := s.data[key]
 	if exists {
-		set := obj.Value.(simpleSet)
+		if rObj.Type != ObjSet {
+			panic("SAdd called on non-set object")
+		}
 
-		var added int64 = 0
-		for _, m := range members {
-			if _, ok := set[m]; !ok {
-				set[m] = struct{}{}
-				added++
+		if rObj.Encoding == EncIntSet {
+			// Upgrade to SimpleSet if one of the following condition holds:
+			// members contain an element can not be converted to int64
+			// adding members resulting in exceeding the config.SET_MAX_INTSET_ENTRIES
+			intset := rObj.Value.(data_structure.Set)
+			added, succeeded := intset.Add(members...)
+			if !succeeded {
+				// Upgrade to SimpleSet
+				simpleSet := data_structure.NewSimpleSet()
+				simpleSet.Add(intset.Members()...)
+				added, _ := simpleSet.Add(members...)
+
+				// Update existing RObj
+				rObj.Encoding = EncHashTable
+				rObj.Value = simpleSet
+
+				return added
+			} else {
+				return added
 			}
 		}
+
+		simpleSet := rObj.Value.(data_structure.Set)
+		added, _ := simpleSet.Add(members...)
 		return added
 	}
 
-	set := make(simpleSet, len(members))
-	for _, m := range members {
-		set[m] = struct{}{}
+	// Key doesn't exist - create new set
+	if canBeConvertedToInt64(members...) {
+		intset := data_structure.NewIntSet()
+		added, succeeded := intset.Add(members...)
+		if succeeded {
+			s.data[key] = &RObj{
+				Type:     ObjSet,
+				Encoding: EncIntSet,
+				Value:    intset,
+			}
+			return added
+		}
+		// If IntSet failed (capacity), fall through to SimpleSet
 	}
+
+	simpleSet := data_structure.NewSimpleSet()
+	added, _ := simpleSet.Add(members...)
 
 	s.data[key] = &RObj{
 		Type:     ObjSet,
 		Encoding: EncHashTable,
-		Value:    set,
+		Value:    simpleSet,
 	}
 
-	return int64(len(set))
+	return added
 }
 
 func (s *store) SCard(key string) int64 {
@@ -48,7 +82,12 @@ func (s *store) SCard(key string) int64 {
 		return 0
 	}
 
-	return int64(len(rObj.Value.(simpleSet)))
+	if rObj.Type != ObjSet {
+		panic("SCard called on non-set object")
+	}
+
+	set := rObj.Value.(data_structure.Set)
+	return set.Size()
 }
 
 func (s *store) SIsMember(key string, member string) bool {
@@ -61,9 +100,12 @@ func (s *store) SIsMember(key string, member string) bool {
 		return false
 	}
 
-	set := rObj.Value.(simpleSet)
-	_, ok := set[member]
-	return ok
+	if rObj.Type != ObjSet {
+		panic("SIsMember called on non-set object")
+	}
+
+	set := rObj.Value.(data_structure.Set)
+	return set.IsMember(member)
 }
 
 func (s *store) SMembers(key string) []string {
@@ -76,14 +118,12 @@ func (s *store) SMembers(key string) []string {
 		return []string{}
 	}
 
-	set := rObj.Value.(simpleSet)
-	result := make([]string, 0, len(set))
-
-	for k := range set {
-		result = append(result, k)
+	if rObj.Type != ObjSet {
+		panic("SMembers called on non-set object")
 	}
 
-	return result
+	set := rObj.Value.(data_structure.Set)
+	return set.Members()
 }
 
 func (s *store) SMIsMember(key string, members ...string) []bool {
@@ -101,14 +141,12 @@ func (s *store) SMIsMember(key string, members ...string) []bool {
 		return result
 	}
 
-	set := rObj.Value.(simpleSet)
-	for i := range members {
-		if _, ok := set[members[i]]; ok {
-			result[i] = true
-		}
+	if rObj.Type != ObjSet {
+		panic("SMIsMember called on non-set object")
 	}
 
-	return result
+	set := rObj.Value.(data_structure.Set)
+	return set.MIsMember(members...)
 }
 
 func (s *store) SRem(key string, members ...string) int64 {
@@ -121,55 +159,48 @@ func (s *store) SRem(key string, members ...string) int64 {
 		return 0
 	}
 
-	set := rObj.Value.(simpleSet)
-	var removedMembers int64 = 0
-	for i := range members {
-		if _, ok := set[members[i]]; ok {
-			delete(set, members[i])
-			removedMembers++
-		}
+	if rObj.Type != ObjSet {
+		panic("SRem called on non-set object")
 	}
 
-	return removedMembers
+	set := rObj.Value.(data_structure.Set)
+	return set.Delete(members...)
 }
 
 func (s *store) SPop(key string, count int) []string {
 	if isExpired := s.expireIfNeeded(key); isExpired {
 		return []string{}
 	}
-	
+
 	rObj, exists := s.data[key]
 	if !exists {
 		return []string{}
 	}
 
-	set := rObj.Value.(simpleSet)
-	setLen := len(set)
+	set := rObj.Value.(data_structure.Set)
+	setLen := int(set.Size())
 	if setLen == 0 {
 		return []string{}
 	}
 
 	// Pop everything
 	if count >= setLen {
-		result := make([]string, 0, setLen)
-		for m := range set {
-			result = append(result, m)
-		}
+		result := set.Members()
 		s.Del(key)
 		return result
 	}
 
 	indices := floydSamplingIndices(setLen, count)
+	members := set.Members()
 	result := make([]string, 0, count)
 
-	idx := 0
-	for m := range set {
+	for idx, m := range members {
 		if _, ok := indices[idx]; ok {
 			result = append(result, m)
-			delete(set, m)
 		}
-		idx++
 	}
+
+	set.Delete(result...)
 
 	return result
 }
@@ -178,18 +209,18 @@ func (s *store) SRandMember(key string, count int) []string {
 	if count == 0 {
 		return []string{}
 	}
-	
+
 	if isExpired := s.expireIfNeeded(key); isExpired {
 		return []string{}
 	}
-	
+
 	rObj, exists := s.data[key]
 	if !exists {
 		return []string{}
 	}
 
-	set := rObj.Value.(simpleSet)
-	setLen := len(set)
+	set := rObj.Value.(data_structure.Set)
+	setLen := int(set.Size())
 	if setLen == 0 {
 		return []string{}
 	}
@@ -198,22 +229,17 @@ func (s *store) SRandMember(key string, count int) []string {
 	if count > 0 {
 		// If count >= size → return all members
 		if count >= setLen {
-			result := make([]string, 0, setLen)
-			for m := range set {
-				result = append(result, m)
-			}
-			return result
+			return set.Members()
 		}
 
 		indices := floydSamplingIndices(setLen, count)
-
+		members := set.Members()
 		result := make([]string, 0, count)
-		idx := 0
-		for m := range set {
+
+		for idx, m := range members {
 			if _, ok := indices[idx]; ok {
 				result = append(result, m)
 			}
-			idx++
 		}
 
 		return result
@@ -221,11 +247,7 @@ func (s *store) SRandMember(key string, count int) []string {
 
 	k := -count
 	result := make([]string, 0, k)
-
-	members := make([]string, 0, setLen)
-	for m := range set {
-		members = append(members, m)
-	}
+	members := set.Members()
 
 	for range k {
 		result = append(result, members[rand.Intn(setLen)])
@@ -257,4 +279,18 @@ func floydSamplingIndices(n, k int) map[int]struct{} {
 	}
 
 	return selected
+}
+
+func canBeConvertedToInt64(members ...string) bool {
+	if len(members) == 0 || len(members) > config.SET_MAX_INTSET_ENTRIES {
+		return false
+	}
+
+	for i := range members {
+		if _, err := strconv.ParseInt(members[i], 10, 64); err != nil {
+			return false
+		}
+	}
+
+	return true
 }

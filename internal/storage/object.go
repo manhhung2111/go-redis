@@ -12,6 +12,7 @@ const (
 const (
 	EncRaw ObjectEncoding = iota // string
 	EncInt                       // int64
+	EncIntSet
 	EncHashTable
 	EncQuickList
 )
