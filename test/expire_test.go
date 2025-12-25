@@ -3,6 +3,9 @@ package test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
 	"github.com/manhhung2111/go-redis/internal/util"
@@ -12,9 +15,7 @@ func TestTTL_NoKey(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.TTL(cmd("TTL", "missing"))
-	if string(resp) != string(constant.RESP_TTL_KEY_NOT_EXIST) {
-		t.Fatalf("unexpected response %q", resp)
-	}
+	assert.Equal(t, constant.RESP_TTL_KEY_NOT_EXIST, resp)
 }
 
 func TestTTL_NoExpire(t *testing.T) {
@@ -23,9 +24,7 @@ func TestTTL_NoExpire(t *testing.T) {
 	r.Set(cmd("SET", "foo", "bar"))
 	resp := r.TTL(cmd("TTL", "foo"))
 
-	if string(resp) != string(constant.RESP_TTL_KEY_EXIST_NO_EXPIRE) {
-		t.Fatalf("unexpected response %q", resp)
-	}
+	assert.Equal(t, constant.RESP_TTL_KEY_EXIST_NO_EXPIRE, resp)
 }
 
 func TestTTL_WithExpire(t *testing.T) {
@@ -35,40 +34,50 @@ func TestTTL_WithExpire(t *testing.T) {
 	resp := r.TTL(cmd("TTL", "foo"))
 
 	val, _, err := core.DecodeResp(resp)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	if ttl := val.(int64); ttl <= 0 || ttl > 2 {
-		t.Fatalf("unexpected ttl %d", ttl)
-	}
+	ttl := val.(int64)
+	assert.Greater(t, ttl, int64(0))
+	assert.LessOrEqual(t, ttl, int64(2))
 }
 
 func TestExpire_InvalidArity(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.Expire(cmd("EXPIRE", "key"))
-	if string(resp) != string(core.EncodeResp(util.InvalidNumberOfArgs("EXPIRE"), false)) {
-		t.Fatalf("expected wrong arity error")
-	}
+	expected := core.EncodeResp(util.InvalidNumberOfArgs("EXPIRE"), false)
+
+	assert.Equal(t, expected, resp)
 }
 
-func TestExpire_InvalidTTL(t *testing.T) {
+func TestExpire_InvalidTTL_NonNumeric(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "k", "v"))
 
-	tests := [][]string{
-		{"k", "abc"},
-		{"k", "0"},
-		{"k", "-10"},
-	}
+	resp := r.Expire(cmd("EXPIRE", "k", "abc"))
+	expected := core.EncodeResp(util.InvalidExpireTime("EXPIRE"), false)
 
-	for _, args := range tests {
-		resp := r.Expire(cmd("EXPIRE", args...))
-		if string(resp) != string(core.EncodeResp(util.InvalidExpireTime("EXPIRE"), false)) {
-			t.Fatalf("expected invalid expire time for args=%v", args)
-		}
-	}
+	assert.Equal(t, expected, resp)
+}
+
+func TestExpire_InvalidTTL_Zero(t *testing.T) {
+	r := newTestRedis()
+	r.Set(cmd("SET", "k", "v"))
+
+	resp := r.Expire(cmd("EXPIRE", "k", "0"))
+	expected := core.EncodeResp(util.InvalidExpireTime("EXPIRE"), false)
+
+	assert.Equal(t, expected, resp)
+}
+
+func TestExpire_InvalidTTL_Negative(t *testing.T) {
+	r := newTestRedis()
+	r.Set(cmd("SET", "k", "v"))
+
+	resp := r.Expire(cmd("EXPIRE", "k", "-10"))
+	expected := core.EncodeResp(util.InvalidExpireTime("EXPIRE"), false)
+
+	assert.Equal(t, expected, resp)
 }
 
 func TestExpire_InvalidOption(t *testing.T) {
@@ -76,103 +85,108 @@ func TestExpire_InvalidOption(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.Expire(cmd("EXPIRE", "k", "10", "BAD"))
-	if string(resp) != string(core.EncodeResp(util.InvalidCommandOption("BAD", "EXPIRE"), false)) {
-		t.Fatalf("expected invalid option error")
-	}
+	expected := core.EncodeResp(util.InvalidCommandOption("BAD", "EXPIRE"), false)
+
+	assert.Equal(t, expected, resp)
 }
 
-func TestExpire_IncompatibleOptions(t *testing.T) {
+func TestExpire_IncompatibleOptions_NX_XX(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "k", "v"))
 
-	cases := [][]string{
-		{"k", "10", "NX", "XX"},
-		{"k", "10", "GT", "LT"},
-		{"k", "10", "NX", "GT"},
-	}
+	resp := r.Expire(cmd("EXPIRE", "k", "10", "NX", "XX"))
+	assert.Equal(t, constant.RESP_EXPIRE_OPTIONS_NOT_COMPATIBLE, resp)
+}
 
-	for _, args := range cases {
-		resp := r.Expire(cmd("EXPIRE", args...))
-		if string(resp) != string(constant.RESP_EXPIRE_OPTIONS_NOT_COMPATIBLE) {
-			t.Fatalf("expected incompatible options for %v, got %q", args, resp)
-		}
-	}
+func TestExpire_IncompatibleOptions_GT_LT(t *testing.T) {
+	r := newTestRedis()
+	r.Set(cmd("SET", "k", "v"))
+
+	resp := r.Expire(cmd("EXPIRE", "k", "10", "GT", "LT"))
+	assert.Equal(t, constant.RESP_EXPIRE_OPTIONS_NOT_COMPATIBLE, resp)
+}
+
+func TestExpire_IncompatibleOptions_NX_GT(t *testing.T) {
+	r := newTestRedis()
+	r.Set(cmd("SET", "k", "v"))
+
+	resp := r.Expire(cmd("EXPIRE", "k", "10", "NX", "GT"))
+	assert.Equal(t, constant.RESP_EXPIRE_OPTIONS_NOT_COMPATIBLE, resp)
 }
 
 func TestExpire_KeyNotExist(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.Expire(cmd("EXPIRE", "missing", "10"))
-	if string(resp) != string(constant.RESP_EXPIRE_TIMEOUT_NOT_SET) {
-		t.Fatalf("expected expire not set for missing key")
-	}
+	assert.Equal(t, constant.RESP_EXPIRE_TIMEOUT_NOT_SET, resp)
 }
 
-func TestExpire_NX(t *testing.T) {
+func TestExpire_NX_FirstSet(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "k", "v"))
 
-	// first time → OK
 	resp := r.Expire(cmd("EXPIRE", "k", "10", "NX"))
-	if string(resp) != string(constant.RESP_EXPIRE_TIMEOUT_SET) {
-		t.Fatalf("expected expire set")
-	}
-
-	// already has TTL → reject
-	resp = r.Expire(cmd("EXPIRE", "k", "20", "NX"))
-	if string(resp) != string(constant.RESP_EXPIRE_TIMEOUT_NOT_SET) {
-		t.Fatalf("expected NX reject")
-	}
+	assert.Equal(t, constant.RESP_EXPIRE_TIMEOUT_SET, resp)
 }
 
-func TestExpire_XX(t *testing.T) {
+func TestExpire_NX_RejectWhenTTLExists(t *testing.T) {
+	r := newTestRedis()
+	r.Set(cmd("SET", "k", "v"))
+	r.Expire(cmd("EXPIRE", "k", "10"))
+
+	resp := r.Expire(cmd("EXPIRE", "k", "20", "NX"))
+	assert.Equal(t, constant.RESP_EXPIRE_TIMEOUT_NOT_SET, resp)
+}
+
+func TestExpire_XX_RejectWhenNoTTL(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "k", "v"))
 
-	// no TTL yet → reject
 	resp := r.Expire(cmd("EXPIRE", "k", "10", "XX"))
-	if string(resp) != string(constant.RESP_EXPIRE_TIMEOUT_NOT_SET) {
-		t.Fatalf("expected XX reject")
-	}
+	assert.Equal(t, constant.RESP_EXPIRE_TIMEOUT_NOT_SET, resp)
+}
 
-	// set TTL
+func TestExpire_XX_AcceptWhenTTLExists(t *testing.T) {
+	r := newTestRedis()
+	r.Set(cmd("SET", "k", "v"))
 	r.Expire(cmd("EXPIRE", "k", "5"))
 
-	// now OK
-	resp = r.Expire(cmd("EXPIRE", "k", "10", "XX"))
-	if string(resp) != string(constant.RESP_EXPIRE_TIMEOUT_SET) {
-		t.Fatalf("expected XX success")
-	}
+	resp := r.Expire(cmd("EXPIRE", "k", "10", "XX"))
+	assert.Equal(t, constant.RESP_EXPIRE_TIMEOUT_SET, resp)
 }
 
-func TestExpire_GT(t *testing.T) {
+func TestExpire_GT_RejectSmallerTTL(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "k", "v"))
 	r.Expire(cmd("EXPIRE", "k", "10"))
 
 	resp := r.Expire(cmd("EXPIRE", "k", "5", "GT"))
-	if string(resp) != string(constant.RESP_EXPIRE_TIMEOUT_NOT_SET) {
-		t.Fatalf("expected GT reject")
-	}
-
-	resp = r.Expire(cmd("EXPIRE", "k", "20", "GT"))
-	if string(resp) != string(constant.RESP_EXPIRE_TIMEOUT_SET) {
-		t.Fatalf("expected GT accept")
-	}
+	assert.Equal(t, constant.RESP_EXPIRE_TIMEOUT_NOT_SET, resp)
 }
 
-func TestExpire_LT(t *testing.T) {
+func TestExpire_GT_AcceptLargerTTL(t *testing.T) {
+	r := newTestRedis()
+	r.Set(cmd("SET", "k", "v"))
+	r.Expire(cmd("EXPIRE", "k", "10"))
+
+	resp := r.Expire(cmd("EXPIRE", "k", "20", "GT"))
+	assert.Equal(t, constant.RESP_EXPIRE_TIMEOUT_SET, resp)
+}
+
+func TestExpire_LT_RejectLargerTTL(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "k", "v"))
 	r.Expire(cmd("EXPIRE", "k", "10"))
 
 	resp := r.Expire(cmd("EXPIRE", "k", "20", "LT"))
-	if string(resp) != string(constant.RESP_EXPIRE_TIMEOUT_NOT_SET) {
-		t.Fatalf("expected LT reject")
-	}
+	assert.Equal(t, constant.RESP_EXPIRE_TIMEOUT_NOT_SET, resp)
+}
 
-	resp = r.Expire(cmd("EXPIRE", "k", "5", "LT"))
-	if string(resp) != string(constant.RESP_EXPIRE_TIMEOUT_SET) {
-		t.Fatalf("expected LT accept")
-	}
+func TestExpire_LT_AcceptSmallerTTL(t *testing.T) {
+	r := newTestRedis()
+	r.Set(cmd("SET", "k", "v"))
+	r.Expire(cmd("EXPIRE", "k", "10"))
+
+	resp := r.Expire(cmd("EXPIRE", "k", "5", "LT"))
+	assert.Equal(t, constant.RESP_EXPIRE_TIMEOUT_SET, resp)
 }

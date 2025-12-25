@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
 )
@@ -12,49 +14,32 @@ import (
 func TestGet(t *testing.T) {
 	r := newTestRedis()
 
-	// missing key
 	resp := r.Get(cmd("GET", "a"))
-	if string(resp) != string(constant.RESP_NIL_BULK_STRING) {
-		t.Fatalf("expected nil bulk string")
-	}
+	assert.Equal(t, constant.RESP_NIL_BULK_STRING, resp)
 
-	// set + get
 	r.Set(cmd("SET", "a", "hello"))
 	resp = r.Get(cmd("GET", "a"))
 	expected := core.EncodeResp("hello", false)
+	assert.Equal(t, expected, resp)
 
-	if string(resp) != string(expected) {
-		t.Fatalf("expected %q, got %q", expected, resp)
-	}
-
-	// non-existing key
 	resp = r.Get(cmd("GET", "b"))
-	if string(resp) != string(constant.RESP_NIL_BULK_STRING) {
-		t.Fatalf("expected nil bulk string, got %q", resp)
-	}
+	assert.Equal(t, constant.RESP_NIL_BULK_STRING, resp)
 }
+
+/* -------------------- SET -------------------- */
 
 func TestSet(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.Set(cmd("SET", "a", "1"))
-	if string(resp) != string(constant.RESP_OK) {
-		t.Fatalf("SET failed")
-	}
+	assert.Equal(t, constant.RESP_OK, resp)
 
-	// Test SET NX existing
 	r.Set(cmd("SET", "foo", "bar"))
 	resp = r.Set(cmd("SET", "foo", "baz", "NX"))
+	assert.Equal(t, constant.RESP_NIL_BULK_STRING, resp)
 
-	if string(resp) != string(constant.RESP_NIL_BULK_STRING) {
-		t.Fatalf("expected nil, got %q", resp)
-	}
-
-	// Test SET XX existing
 	resp = r.Set(cmd("SET", "foo", "bar", "XX"))
-	if string(resp) != string(constant.RESP_OK) {
-		t.Fatalf("expected OK, got %q", resp)
-	}
+	assert.Equal(t, constant.RESP_OK, resp)
 }
 
 func TestDel(t *testing.T) {
@@ -65,140 +50,83 @@ func TestDel(t *testing.T) {
 
 	resp := r.Del(cmd("DEL", "a", "b", "c"))
 	expected := core.EncodeResp(int64(2), false)
-
-	if string(resp) != string(expected) {
-		t.Fatalf("expected %q, got %q", expected, resp)
-	}
+	assert.Equal(t, expected, resp)
 }
 
 func TestIncr(t *testing.T) {
 	r := newTestRedis()
 
-	// INCR non-existing key -> 1
 	resp := r.Incr(cmd("INCR", "a"))
-	if string(resp) != ":1\r\n" {
-		t.Fatalf("expected :1, got %q", resp)
-	}
+	assert.Equal(t, []byte(":1\r\n"), resp)
 
-	// INCR existing numeric
 	resp = r.Incr(cmd("INCR", "a"))
-	if string(resp) != ":2\r\n" {
-		t.Fatalf("expected :2, got %q", resp)
-	}
+	assert.Equal(t, []byte(":2\r\n"), resp)
 
-	// INCR non-numeric
 	r.Set(cmd("SET", "b", "foo"))
 	resp = r.Incr(cmd("INCR", "b"))
-	if string(resp) != string(constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE) {
-		t.Fatalf("expected integer error, got %q", resp)
-	}
+	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
 
-	// INCR overflow
 	r.Set(cmd("SET", "c", "9223372036854775807"))
 	resp = r.Incr(cmd("INCR", "c"))
-	if string(resp) != string(constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE) {
-		t.Fatalf("expected overflow error, got %q", resp)
-	}
+	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
 }
 
 func TestIncrBy(t *testing.T) {
 	r := newTestRedis()
 
-	// INCRBY non-existing key
 	resp := r.IncrBy(cmd("INCRBY", "a", "5"))
-	if string(resp) != ":5\r\n" {
-		t.Fatalf("expected :5, got %q", resp)
-	}
+	assert.Equal(t, []byte(":5\r\n"), resp)
 
-	// INCRBY existing
 	resp = r.IncrBy(cmd("INCRBY", "a", "3"))
-	if string(resp) != ":8\r\n" {
-		t.Fatalf("expected :8, got %q", resp)
-	}
+	assert.Equal(t, []byte(":8\r\n"), resp)
 
-	// INCRBY negative increment
 	resp = r.IncrBy(cmd("INCRBY", "a", "-2"))
-	if string(resp) != ":6\r\n" {
-		t.Fatalf("expected :6, got %q", resp)
-	}
+	assert.Equal(t, []byte(":6\r\n"), resp)
 
-	// INCRBY non-numeric value
 	r.Set(cmd("SET", "b", "foo"))
 	resp = r.IncrBy(cmd("INCRBY", "b", "1"))
-	if string(resp) != string(constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE) {
-		t.Fatalf("expected integer error, got %q", resp)
-	}
+	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
 
-	// INCRBY overflow
 	r.Set(cmd("SET", "c", "9223372036854775807"))
 	resp = r.IncrBy(cmd("INCRBY", "c", "1"))
-	if string(resp) != string(constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE) {
-		t.Fatalf("expected overflow error, got %q", resp)
-	}
+	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
 }
 
 func TestDecr(t *testing.T) {
 	r := newTestRedis()
 
-	// DECR non-existing key -> -1
 	resp := r.Decr(cmd("DECR", "a"))
-	if string(resp) != ":-1\r\n" {
-		t.Fatalf("expected :-1, got %q", resp)
-	}
+	assert.Equal(t, []byte(":-1\r\n"), resp)
 
-	// DECR existing
 	resp = r.Decr(cmd("DECR", "a"))
-	if string(resp) != ":-2\r\n" {
-		t.Fatalf("expected :-2, got %q", resp)
-	}
+	assert.Equal(t, []byte(":-2\r\n"), resp)
 
-	// DECR non-numeric
 	r.Set(cmd("SET", "b", "foo"))
 	resp = r.Decr(cmd("DECR", "b"))
-	if string(resp) != string(constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE) {
-		t.Fatalf("expected integer error, got %q", resp)
-	}
+	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
 
-	// DECR underflow
 	r.Set(cmd("SET", "c", "-9223372036854775808"))
 	resp = r.Decr(cmd("DECR", "c"))
-	if string(resp) != string(constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE) {
-		t.Fatalf("expected underflow error, got %q", resp)
-	}
+	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
 }
 
 func TestDecrBy(t *testing.T) {
 	r := newTestRedis()
 
-	// DECRBY non-existing
 	resp := r.DecrBy(cmd("DECRBY", "a", "5"))
-	if string(resp) != ":-5\r\n" {
-		t.Fatalf("expected :-5, got %q", resp)
-	}
+	assert.Equal(t, []byte(":-5\r\n"), resp)
 
-	// DECRBY existing
 	resp = r.DecrBy(cmd("DECRBY", "a", "3"))
-	if string(resp) != ":-8\r\n" {
-		t.Fatalf("expected :-8, got %q", resp)
-	}
+	assert.Equal(t, []byte(":-8\r\n"), resp)
 
-	// DECRBY negative decrement (acts like INCR)
 	resp = r.DecrBy(cmd("DECRBY", "a", "-2"))
-	if string(resp) != ":-6\r\n" {
-		t.Fatalf("expected :-6, got %q", resp)
-	}
+	assert.Equal(t, []byte(":-6\r\n"), resp)
 
-	// DECRBY non-numeric value
 	r.Set(cmd("SET", "b", "foo"))
 	resp = r.DecrBy(cmd("DECRBY", "b", "1"))
-	if string(resp) != string(constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE) {
-		t.Fatalf("expected integer error, got %q", resp)
-	}
+	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
 
-	// DECRBY underflow
 	r.Set(cmd("SET", "c", strconv.FormatInt(math.MinInt64, 10)))
 	resp = r.DecrBy(cmd("DECRBY", "c", "1"))
-	if string(resp) != string(constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE) {
-		t.Fatalf("expected underflow error, got %q", resp)
-	}
+	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
 }
