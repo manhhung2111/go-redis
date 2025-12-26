@@ -12,7 +12,7 @@ type Hash interface {
 	GetAll() []string
 	GetKeys() []string
 	GetValues() []string
-	Size() int64
+	Size() uint32
 	IncBy(key string, increment int64) (int64, error)
 	Set(fieldValue map[string]string) int64
 	SetNX(key, value string) bool
@@ -156,8 +156,8 @@ func (s *simpleHash) Delete(keys ...string) int64 {
 	return deleted
 }
 
-func (s *simpleHash) Size() int64 {
-	return int64(len(s.contents))
+func (s *simpleHash) Size() uint32 {
+	return uint32(len(s.contents))
 }
 
 func (s *simpleHash) Exists(key string) bool {

@@ -12,7 +12,7 @@ import (
 func TestNewHash(t *testing.T) {
 	h := NewHash()
 	require.NotNil(t, h)
-	assert.Equal(t, int64(0), h.Size())
+	assert.Equal(t, uint32(0), h.Size())
 }
 
 func TestHashSetSingle(t *testing.T) {
@@ -20,7 +20,7 @@ func TestHashSetSingle(t *testing.T) {
 
 	added := h.Set(map[string]string{"key1": "value1"})
 	assert.Equal(t, int64(1), added)
-	assert.Equal(t, int64(1), h.Size())
+	assert.Equal(t, uint32(1), h.Size())
 }
 
 func TestHashSetMultiple(t *testing.T) {
@@ -33,7 +33,7 @@ func TestHashSetMultiple(t *testing.T) {
 		"email": "alice@example.com",
 	})
 	assert.Equal(t, int64(4), added)
-	assert.Equal(t, int64(4), h.Size())
+	assert.Equal(t, uint32(4), h.Size())
 }
 
 func TestHashSetUpdate(t *testing.T) {
@@ -46,7 +46,7 @@ func TestHashSetUpdate(t *testing.T) {
 	// Update existing and add new
 	added = h.Set(map[string]string{"key1": "newvalue1", "key3": "value3"})
 	assert.Equal(t, int64(1), added, "only key3 should be counted as new")
-	assert.Equal(t, int64(3), h.Size())
+	assert.Equal(t, uint32(3), h.Size())
 
 	// Verify update worked
 	val, ok := h.Get("key1")
@@ -59,7 +59,7 @@ func TestHashSetEmpty(t *testing.T) {
 
 	added := h.Set(map[string]string{})
 	assert.Equal(t, int64(0), added)
-	assert.Equal(t, int64(0), h.Size())
+	assert.Equal(t, uint32(0), h.Size())
 }
 
 func TestHashGet(t *testing.T) {
@@ -220,7 +220,7 @@ func TestHashSetNX(t *testing.T) {
 	// Set new field
 	set := h.SetNX("key1", "value1")
 	assert.True(t, set)
-	assert.Equal(t, int64(1), h.Size())
+	assert.Equal(t, uint32(1), h.Size())
 
 	val, ok := h.Get("key1")
 	assert.True(t, ok)
@@ -242,7 +242,7 @@ func TestHashSetNXMultiple(t *testing.T) {
 	assert.True(t, h.SetNX("key1", "value1"))
 	assert.True(t, h.SetNX("key2", "value2"))
 	assert.False(t, h.SetNX("key1", "newvalue"))
-	assert.Equal(t, int64(2), h.Size())
+	assert.Equal(t, uint32(2), h.Size())
 }
 
 func TestHashDelete(t *testing.T) {
@@ -252,13 +252,13 @@ func TestHashDelete(t *testing.T) {
 	// Delete existing key
 	deleted := h.Delete("key1")
 	assert.Equal(t, int64(1), deleted)
-	assert.Equal(t, int64(2), h.Size())
+	assert.Equal(t, uint32(2), h.Size())
 	assert.False(t, h.Exists("key1"))
 
 	// Delete non-existing key
 	deleted = h.Delete("nonexistent")
 	assert.Equal(t, int64(0), deleted)
-	assert.Equal(t, int64(2), h.Size())
+	assert.Equal(t, uint32(2), h.Size())
 }
 
 func TestHashDeleteMultiple(t *testing.T) {
@@ -267,7 +267,7 @@ func TestHashDeleteMultiple(t *testing.T) {
 
 	deleted := h.Delete("key1", "key3")
 	assert.Equal(t, int64(2), deleted)
-	assert.Equal(t, int64(2), h.Size())
+	assert.Equal(t, uint32(2), h.Size())
 	assert.False(t, h.Exists("key1"))
 	assert.False(t, h.Exists("key3"))
 	assert.True(t, h.Exists("key2"))
@@ -281,7 +281,7 @@ func TestHashDeleteMixed(t *testing.T) {
 	// Mix of existing and non-existing
 	deleted := h.Delete("key1", "nonexistent", "key2", "missing")
 	assert.Equal(t, int64(2), deleted)
-	assert.Equal(t, int64(0), h.Size())
+	assert.Equal(t, uint32(0), h.Size())
 }
 
 func TestHashDeleteEmpty(t *testing.T) {
@@ -290,7 +290,7 @@ func TestHashDeleteEmpty(t *testing.T) {
 
 	deleted := h.Delete()
 	assert.Equal(t, int64(0), deleted)
-	assert.Equal(t, int64(1), h.Size())
+	assert.Equal(t, uint32(1), h.Size())
 }
 
 func TestHashDeleteFromEmpty(t *testing.T) {
@@ -396,19 +396,19 @@ func TestHashIncByLargeNumbers(t *testing.T) {
 func TestHashSize(t *testing.T) {
 	h := NewHash()
 
-	assert.Equal(t, int64(0), h.Size())
+	assert.Equal(t, uint32(0), h.Size())
 
 	h.Set(map[string]string{"key1": "value1"})
-	assert.Equal(t, int64(1), h.Size())
+	assert.Equal(t, uint32(1), h.Size())
 
 	h.Set(map[string]string{"key2": "value2", "key3": "value3"})
-	assert.Equal(t, int64(3), h.Size())
+	assert.Equal(t, uint32(3), h.Size())
 
 	h.Delete("key1")
-	assert.Equal(t, int64(2), h.Size())
+	assert.Equal(t, uint32(2), h.Size())
 
 	h.Delete("key2", "key3")
-	assert.Equal(t, int64(0), h.Size())
+	assert.Equal(t, uint32(0), h.Size())
 }
 
 func TestHashComplexWorkflow(t *testing.T) {
@@ -448,7 +448,7 @@ func TestHashComplexWorkflow(t *testing.T) {
 	assert.True(t, set)
 
 	// Verify size
-	assert.Equal(t, int64(4), h.Size())
+	assert.Equal(t, uint32(4), h.Size())
 
 	// Get all keys
 	keys := h.GetKeys()
@@ -464,7 +464,7 @@ func TestHashComplexWorkflow(t *testing.T) {
 	// Delete some fields
 	deleted := h.Delete("user:1:email", "user:1:phone")
 	assert.Equal(t, int64(2), deleted)
-	assert.Equal(t, int64(3), h.Size())
+	assert.Equal(t, uint32(3), h.Size())
 
 	// Get all remaining
 	all := h.GetAll()
@@ -483,7 +483,7 @@ func TestHashEmptyStringValues(t *testing.T) {
 
 	// Should still exist
 	assert.True(t, h.Exists("empty"))
-	assert.Equal(t, int64(1), h.Size())
+	assert.Equal(t, uint32(1), h.Size())
 }
 
 func TestHashOverwriteWithEmptyString(t *testing.T) {
@@ -525,7 +525,7 @@ func TestHashMultipleOperations(t *testing.T) {
 	}
 	added := h.Set(fields)
 	assert.Equal(t, int64(100), added)
-	assert.Equal(t, int64(100), h.Size())
+	assert.Equal(t, uint32(100), h.Size())
 
 	// Delete half
 	keysToDelete := make([]string, 50)
@@ -534,7 +534,7 @@ func TestHashMultipleOperations(t *testing.T) {
 	}
 	deleted := h.Delete(keysToDelete...)
 	assert.Equal(t, int64(50), deleted)
-	assert.Equal(t, int64(50), h.Size())
+	assert.Equal(t, uint32(50), h.Size())
 
 	// Verify correct keys remain
 	for i := 50; i < 100; i++ {

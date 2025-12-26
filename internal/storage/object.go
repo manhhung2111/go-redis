@@ -7,6 +7,7 @@ const (
 	ObjString ObjectType = iota
 	ObjSet
 	ObjList
+	ObjHash
 )
 
 const (
@@ -51,6 +52,18 @@ type Store interface {
 	LRem(key string, count int32, element string) uint32
 	LSet(key string, index int32, element string) error
 	LTrim(key string, start, end int32)
+
+	HGet(key, field string) (string, bool)
+	HGetAll(key string) []string
+	HMGet(key string, fields []string) []*string
+	HIncrBy(key string, field string, increment int64) (int64, error)
+	HKeys(key string) []string
+	HVals(key string) []string
+	HLen(key string) uint32
+	HSet(key string, fieldValue map[string]string) int64
+	HSetNx(key, field, value string) int64
+	HDel(key string, fields []string) int64
+	HExists(key, field string) int64
 }
 
 type store struct {
