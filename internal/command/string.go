@@ -116,7 +116,7 @@ func (redis *redis) MGet(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	res := make([]any, len(args))
+	res := make([]*string, len(args))
 
 	for i := 0; i < len(args); i++ {
 		rObj, ok := redis.Store.Get(args[i])
@@ -126,7 +126,7 @@ func (redis *redis) MGet(cmd core.RedisCmd) []byte {
 		}
 
 		if s, ok := rObj.StringValue(); ok {
-			res[i] = s
+			res[i] = &s
 		} else {
 			res[i] = nil
 		}

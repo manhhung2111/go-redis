@@ -11,6 +11,13 @@ import (
 	"github.com/manhhung2111/go-redis/internal/util"
 )
 
+func TestTTL_InvalidNumberOfArgs(t *testing.T) {
+	r := newTestRedis()
+
+	resp := r.TTL(cmd("TTL"))
+	assert.Equal(t, core.EncodeResp(util.InvalidNumberOfArgs("TTL"), false), resp)
+}
+
 func TestTTL_NoKey(t *testing.T) {
 	r := newTestRedis()
 

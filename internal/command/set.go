@@ -124,7 +124,7 @@ func (redis *redis) SRem(cmd core.RedisCmd) []byte {
 /* Support SPOP key [count] */
 func (redis *redis) SPop(cmd core.RedisCmd) []byte {
 	args := cmd.Args
-	if len(args) < 1 {
+	if len(args) != 1 && len(args) != 2 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
@@ -161,7 +161,7 @@ func (redis *redis) SPop(cmd core.RedisCmd) []byte {
 /* Support SRANDMEMBER key [count] */
 func (redis *redis) SRandMember(cmd core.RedisCmd) []byte {
 	args := cmd.Args
-	if len(args) < 1 {
+	if len(args) != 1 && len(args) != 2 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
