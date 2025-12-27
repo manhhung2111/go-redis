@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -15,123 +16,183 @@ import (
 type Server struct {
 	redis    command.Redis
 	kQueueFd int
+	serverFd int
 }
 
-func NewServer(
-	redis command.Redis,
-) *Server {
+func NewServer(redis command.Redis) *Server {
 	return &Server{
 		redis: redis,
 	}
 }
 
-func (server *Server) Start(sigCh chan os.Signal) error {
-	log.Println("starting a TCP server listening on", config.HOST, config.PORT)
+func (s *Server) Start(sigCh chan os.Signal) error {
+	log.Printf("starting TCP server on %s:%d", config.HOST, config.PORT)
 
-	var events []syscall.Kevent_t = make([]syscall.Kevent_t, config.MAX_CONNECTION)
-	// Create a socket listening for new connections
+	var err error
+	s.serverFd, err = s.createServerSocket()
+	if err != nil {
+		return fmt.Errorf("failed to create server socket: %w", err)
+	}
+	defer syscall.Close(s.serverFd)
+
+	s.kQueueFd, err = s.initKqueue()
+	if err != nil {
+		return fmt.Errorf("failed to initialize kqueue: %w", err)
+	}
+	defer syscall.Close(s.kQueueFd)
+
+	if err := s.registerServerSocket(); err != nil {
+		return fmt.Errorf("failed to register server socket: %w", err)
+	}
+
+	return s.eventLoop()
+}
+
+func (s *Server) createServerSocket() (int, error) {
 	serverFD, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
 	if err != nil {
-		log.Printf("error occurred when trying to create a socket listening for new connections. Err: %v \n", err.Error())
-		return err
-	}
-	defer syscall.Close(serverFD)
-
-	if err = syscall.SetNonblock(serverFD, true); err != nil {
-		return err
+		return 0, fmt.Errorf("socket creation failed: %w", err)
 	}
 
-	// Bind the IP and the port to the server socket FD.
+	if err := syscall.SetNonblock(serverFD, true); err != nil {
+		syscall.Close(serverFD)
+		return 0, fmt.Errorf("failed to set non-blocking mode: %w", err)
+	}
+
 	ipV4 := net.ParseIP(config.HOST)
-	if err = syscall.Bind(serverFD, &syscall.SockaddrInet4{
+	if ipV4 == nil {
+		syscall.Close(serverFD)
+		return 0, fmt.Errorf("invalid IP address: %s", config.HOST)
+	}
+
+	sockAddr := &syscall.SockaddrInet4{
 		Port: config.PORT,
 		Addr: [4]byte{ipV4[0], ipV4[1], ipV4[2], ipV4[3]},
-	}); err != nil {
-		log.Printf("error occurred when trying to bind PORT %v to server socket. Err: %v \n", config.PORT, err.Error())
-		return err
 	}
 
-	// Start listening
-	if err = syscall.Listen(serverFD, config.MAX_CONNECTION); err != nil {
-		log.Printf("error occurred when trying to listen socket server. Err: %v \n", err.Error())
-		return err
+	if err := syscall.Bind(serverFD, sockAddr); err != nil {
+		syscall.Close(serverFD)
+		return 0, fmt.Errorf("bind to port %d failed: %w", config.PORT, err)
 	}
 
-	// A kernel event queue used to register and receive readiness notifications for other FDs
+	if err := syscall.Listen(serverFD, config.MAX_CONNECTION); err != nil {
+		syscall.Close(serverFD)
+		return 0, fmt.Errorf("listen failed: %w", err)
+	}
+
+	return serverFD, nil
+}
+
+func (s *Server) initKqueue() (int, error) {
 	kQueueFd, err := syscall.Kqueue()
 	if err != nil {
-		log.Fatal("error occurred when trying to create a new Kqueue instance", err)
+		return 0, fmt.Errorf("kqueue creation failed: %w", err)
 	}
-	server.kQueueFd = kQueueFd
-	defer syscall.Close(kQueueFd)
+	return kQueueFd, nil
+}
 
-	// Specify the events we want to monitor server socket FD, in here we are interested in READ event
-	var socketServerReadyEvent syscall.Kevent_t = syscall.Kevent_t{
-		Ident:  uint64(serverFD),
+func (s *Server) registerServerSocket() error {
+	event := syscall.Kevent_t{
+		Ident:  uint64(s.serverFd),
 		Filter: syscall.EVFILT_READ,
 		Flags:  syscall.EV_ADD,
 	}
 
-	syscall.Kevent(kQueueFd, []syscall.Kevent_t{socketServerReadyEvent}, nil, nil)
+	_, err := syscall.Kevent(s.kQueueFd, []syscall.Kevent_t{event}, nil, nil)
+	if err != nil {
+		return fmt.Errorf("failed to register server socket with kqueue: %w", err)
+	}
+	return nil
+}
+
+func (s *Server) eventLoop() error {
+	events := make([]syscall.Kevent_t, config.MAX_CONNECTION)
 
 	for {
-		// block the main thread until one or more registered events become ready, then copy them into `events`
-		nEvents, err := syscall.Kevent(kQueueFd, nil, events, nil)
+		nEvents, err := syscall.Kevent(s.kQueueFd, nil, events, nil)
 		if err != nil {
 			if errors.Is(err, syscall.EBADF) {
+				log.Println("kqueue closed, shutting down")
 				break
 			}
+			log.Printf("kevent error: %v", err)
 			continue
 		}
 
 		for i := 0; i < nEvents; i++ {
-			// if the socket server itself is ready for an IO
-			if int(events[i].Ident) == serverFD {
-				connFD, _, err := syscall.Accept(serverFD)
-				if err != nil {
-					log.Print("error occurred when trying to accept a new client connection, err=", err)
-					continue
-				}
-
-				if err = syscall.SetNonblock(connFD, true); err != nil {
-					return err
-				}
-
-				clientReadEvent := syscall.Kevent_t{
-					Ident:  uint64(connFD),
-					Filter: syscall.EVFILT_READ,
-					Flags:  syscall.EV_ADD,
-				}
-
-				if _, err = syscall.Kevent(kQueueFd, []syscall.Kevent_t{clientReadEvent}, nil, nil); err != nil {
-					log.Fatal(err)
-				}
-			} else {
-				clientFD := int(events[i].Ident)
-				var buf []byte = make([]byte, 512)
-				n, err := syscall.Read(clientFD, buf)
-				if err != nil {
-					syscall.Close(clientFD)
-					continue
-				}
-				cmd, err := core.ParseCmd(buf[:n])
-				if err != nil {
-					syscall.Write(clientFD, core.EncodeResp(err, false))
-				} else {
-					response := server.redis.HandleCommand(*cmd)
-					syscall.Write(clientFD, response)
-				}
+			if err := s.handleEvent(events[i]); err != nil {
+				log.Printf("error handling event: %v", err)
 			}
 		}
 	}
 
-	syscall.Close(serverFD)
 	log.Println("server shutdown complete")
 	return nil
 }
 
-func (server *Server) WaitingForSignals(sigCh chan os.Signal) {
+func (s *Server) handleEvent(event syscall.Kevent_t) error {
+	if int(event.Ident) == s.serverFd {
+		return s.acceptConnection()
+	}
+	return s.handleClientRequest(int(event.Ident))
+}
+
+func (s *Server) acceptConnection() error {
+	connFD, _, err := syscall.Accept(s.serverFd)
+	if err != nil {
+		return fmt.Errorf("accept failed: %w", err)
+	}
+
+	if err := syscall.SetNonblock(connFD, true); err != nil {
+		syscall.Close(connFD)
+		return fmt.Errorf("failed to set client socket to non-blocking: %w", err)
+	}
+
+	clientReadEvent := syscall.Kevent_t{
+		Ident:  uint64(connFD),
+		Filter: syscall.EVFILT_READ,
+		Flags:  syscall.EV_ADD,
+	}
+
+	if _, err := syscall.Kevent(s.kQueueFd, []syscall.Kevent_t{clientReadEvent}, nil, nil); err != nil {
+		syscall.Close(connFD)
+		return fmt.Errorf("failed to register client socket: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Server) handleClientRequest(clientFD int) error {
+	buf := make([]byte, 512)
+	n, err := syscall.Read(clientFD, buf)
+	if err != nil {
+		syscall.Close(clientFD)
+		return fmt.Errorf("read from client failed: %w", err)
+	}
+
+	if n == 0 {
+		syscall.Close(clientFD)
+		return nil
+	}
+
+	cmd, err := core.ParseCmd(buf[:n])
+	var response []byte
+	if err != nil {
+		response = core.EncodeResp(err, false)
+	} else {
+		response = s.redis.HandleCommand(*cmd)
+	}
+
+	if _, err := syscall.Write(clientFD, response); err != nil {
+		syscall.Close(clientFD)
+		return fmt.Errorf("write to client failed: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Server) WaitingForSignals(sigCh chan os.Signal) {
 	<-sigCh
 	log.Println("shutdown signal received")
-	syscall.Close(server.kQueueFd)
+	syscall.Close(s.kQueueFd)
 }
