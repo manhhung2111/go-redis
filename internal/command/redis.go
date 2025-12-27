@@ -45,6 +45,18 @@ type Redis interface {
 	LTrim(cmd core.RedisCmd) []byte
 	LPushX(cmd core.RedisCmd) []byte
 	RPushX(cmd core.RedisCmd) []byte
+
+	HGet(cmd core.RedisCmd) []byte
+	HGetAll(cmd core.RedisCmd) []byte
+	HMGet(cmd core.RedisCmd) []byte
+	HIncrBy(cmd core.RedisCmd) []byte
+	HKeys(cmd core.RedisCmd) []byte
+	HVals(cmd core.RedisCmd) []byte
+	HLen(cmd core.RedisCmd) []byte
+	HSet(cmd core.RedisCmd) []byte
+	HSetNx(cmd core.RedisCmd) []byte
+	HDel(cmd core.RedisCmd) []byte
+	HExists(cmd core.RedisCmd) []byte
 }
 
 type CommandHandler func(cmd core.RedisCmd) []byte
@@ -94,6 +106,18 @@ func NewRedis(
 		"LTRIM":  redis.LTrim,
 		"LPUSHX": redis.LPushX,
 		"RPUSHX": redis.RPushX,
+
+		"HGET":    redis.HGet,
+		"HGETALL": redis.HGetAll,
+		"HMGET":   redis.HMGet,
+		"HINCRBY": redis.HIncrBy,
+		"HKEYS":   redis.HKeys,
+		"HVALS":   redis.HVals,
+		"HLEN":    redis.HLen,
+		"HSET":    redis.HSet,
+		"HSETNX":  redis.HSetNx,
+		"HDEL":    redis.HDel,
+		"HEXISTS": redis.HExists,
 	}
 
 	return redis
