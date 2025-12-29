@@ -469,3 +469,47 @@ func (sl *skipList) countByLex(minValue, maxValue string) int {
 
 	return right - left
 }
+
+func (sl *skipList) popMin(count int) []*skipListNode {
+	if count <= 0 || sl.length == 0 {
+		return nil
+	}
+
+	result := make([]*skipListNode, 0, count)
+
+	for count > 0 && sl.length > 0 {
+		// smallest element is always head.levels[0].forward
+		node := sl.head.levels[0].forward
+		if node == nil {
+			break
+		}
+
+		result = append(result, node)
+		sl.delete(node.value, node.score)
+		count--
+	}
+
+	return result
+}
+
+func (sl *skipList) popMax(count int) []*skipListNode {
+	if count <= 0 || sl.length == 0 {
+		return nil
+	}
+
+	result := make([]*skipListNode, 0, count)
+
+	for count > 0 && sl.length > 0 {
+		// largest element is always tail
+		node := sl.tail
+		if node == nil {
+			break
+		}
+
+		result = append(result, node)
+		sl.delete(node.value, node.score)
+		count--
+	}
+
+	return result
+}

@@ -616,3 +616,170 @@ func TestSkipList_countByLex_MatchesRangeByLex(t *testing.T) {
 
 	assert.Equal(t, len(rangeNodes), count)
 }
+
+func TestSkipList_PopMin_Basic(t *testing.T) {
+	sl := newSkipList()
+
+	sl.insert("a", 1)
+	sl.insert("b", 2)
+	sl.insert("c", 3)
+
+	nodes := sl.popMin(1)
+
+	require.Len(t, nodes, 1)
+	assert.Equal(t, "a", nodes[0].value)
+	assert.Equal(t, 2, sl.size())
+
+	// Remaining order
+	assertOrder(t, sl, "b", "c")
+}
+
+func TestSkipList_PopMin_Multiple(t *testing.T) {
+	sl := newSkipList()
+
+	sl.insert("a", 1)
+	sl.insert("b", 2)
+	sl.insert("c", 3)
+	sl.insert("d", 4)
+
+	nodes := sl.popMin(2)
+
+	require.Len(t, nodes, 2)
+	assert.Equal(t, "a", nodes[0].value)
+	assert.Equal(t, "b", nodes[1].value)
+
+	assert.Equal(t, 2, sl.size())
+	assertOrder(t, sl, "c", "d")
+}
+
+func TestSkipList_PopMin_CountGreaterThanSize(t *testing.T) {
+	sl := newSkipList()
+
+	sl.insert("a", 1)
+	sl.insert("b", 2)
+
+	nodes := sl.popMin(10)
+
+	require.Len(t, nodes, 2)
+	assert.Equal(t, "a", nodes[0].value)
+	assert.Equal(t, "b", nodes[1].value)
+
+	assert.Equal(t, 0, sl.size())
+	assert.Nil(t, sl.tail)
+}
+
+func TestSkipList_PopMin_EmptyAndInvalid(t *testing.T) {
+	sl := newSkipList()
+
+	assert.Nil(t, sl.popMin(1))
+	assert.Nil(t, sl.popMin(0))
+	assert.Nil(t, sl.popMin(-1))
+}
+
+func TestSkipList_PopMax_Basic(t *testing.T) {
+	sl := newSkipList()
+
+	sl.insert("a", 1)
+	sl.insert("b", 2)
+	sl.insert("c", 3)
+
+	nodes := sl.popMax(1)
+
+	require.Len(t, nodes, 1)
+	assert.Equal(t, "c", nodes[0].value)
+	assert.Equal(t, 2, sl.size())
+
+	assertOrder(t, sl, "a", "b")
+}
+
+func TestSkipList_PopMax_Multiple(t *testing.T) {
+	sl := newSkipList()
+
+	sl.insert("a", 1)
+	sl.insert("b", 2)
+	sl.insert("c", 3)
+	sl.insert("d", 4)
+
+	nodes := sl.popMax(3)
+
+	require.Len(t, nodes, 3)
+	assert.Equal(t, "d", nodes[0].value)
+	assert.Equal(t, "c", nodes[1].value)
+	assert.Equal(t, "b", nodes[2].value)
+
+	assert.Equal(t, 1, sl.size())
+	assertOrder(t, sl, "a")
+}
+
+func TestSkipList_PopMax_CountGreaterThanSize(t *testing.T) {
+	sl := newSkipList()
+
+	sl.insert("a", 1)
+	sl.insert("b", 2)
+
+	nodes := sl.popMax(5)
+
+	require.Len(t, nodes, 2)
+	assert.Equal(t, "b", nodes[0].value)
+	assert.Equal(t, "a", nodes[1].value)
+
+	assert.Equal(t, 0, sl.size())
+	assert.Nil(t, sl.tail)
+}
+
+func TestSkipList_PopMax_EmptyAndInvalid(t *testing.T) {
+	sl := newSkipList()
+
+	assert.Nil(t, sl.popMax(1))
+	assert.Nil(t, sl.popMax(0))
+	assert.Nil(t, sl.popMax(-1))
+}
+
+func TestSkipList_PopMin_SameScoreLexOrder(t *testing.T) {
+	sl := newSkipList()
+
+	sl.insert("z", 1)
+	sl.insert("a", 1)
+	sl.insert("m", 1)
+
+	nodes := sl.popMin(2)
+
+	require.Len(t, nodes, 2)
+	assert.Equal(t, "a", nodes[0].value)
+	assert.Equal(t, "m", nodes[1].value)
+
+	assertOrder(t, sl, "z")
+}
+
+func TestSkipList_PopMax_SameScoreLexOrder(t *testing.T) {
+	sl := newSkipList()
+
+	sl.insert("z", 1)
+	sl.insert("a", 1)
+	sl.insert("m", 1)
+
+	nodes := sl.popMax(2)
+
+	require.Len(t, nodes, 2)
+	assert.Equal(t, "z", nodes[0].value)
+	assert.Equal(t, "m", nodes[1].value)
+
+	assertOrder(t, sl, "a")
+}
+
+func TestSkipList_PopMinMax_BackwardPointers(t *testing.T) {
+	sl := newSkipList()
+
+	sl.insert("a", 1)
+	sl.insert("b", 2)
+	sl.insert("c", 3)
+	sl.insert("d", 4)
+
+	sl.popMin(1) // removes "a"
+	sl.popMax(1) // removes "d"
+
+	assertOrder(t, sl, "b", "c")
+	require.NotNil(t, sl.tail)
+	assert.Equal(t, "c", sl.tail.value)
+	assert.Equal(t, "b", sl.tail.backward.value)
+}
