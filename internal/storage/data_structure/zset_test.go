@@ -3,6 +3,7 @@ package data_structure
 import (
 	"fmt"
 	"math"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -439,4 +440,137 @@ func TestZSet_ZPop_ReducesCountCorrectly(t *testing.T) {
 
 	z.ZPopMax(4)
 	assert.Equal(t, uint32(3), z.ZCount(-100, 100))
+}
+
+func TestZRandMember_ZeroAndEmpty(t *testing.T) {
+	z := NewZSet()
+	z.ZAdd(map[float64]string{1: "a", 2: "b"}, ZAddOptions{})
+
+	assert.Empty(t, z.ZRandMember(0, false))
+	assert.Empty(t, NewZSet().ZRandMember(5, false))
+}
+
+func TestZRandMember_PositiveCount(t *testing.T) {
+	tests := []struct {
+		name       string
+		data       map[float64]string
+		count      int
+		withScores bool
+		wantLen    int
+	}{
+		{"lt size no score", map[float64]string{1: "a", 2: "b", 3: "c"}, 2, false, 2},
+		{"eq size no score", map[float64]string{1: "a", 2: "b"}, 2, false, 2},
+		{"gt size no score", map[float64]string{1: "a", 2: "b"}, 10, false, 2},
+		{"lt size with score", map[float64]string{1: "a", 2: "b", 3: "c"}, 2, true, 4},
+		{"gt size with score", map[float64]string{1: "a", 2: "b"}, 10, true, 4},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			z := NewZSet()
+			z.ZAdd(tt.data, ZAddOptions{})
+			res := z.ZRandMember(tt.count, tt.withScores)
+
+			require.Len(t, res, tt.wantLen)
+
+			if tt.withScores {
+				assertMemberScorePairs(t, z, res)
+			} else {
+				assertMembersExist(t, z, res)
+				assert.Len(t, unique(res), len(res))
+			}
+		})
+	}
+}
+
+func TestZRandMember_NegativeCount(t *testing.T) {
+	tests := []struct {
+		name       string
+		data       map[float64]string
+		count      int
+		withScores bool
+		wantLen    int
+	}{
+		{"dup no score", map[float64]string{1: "a", 2: "b"}, -5, false, 5},
+		{"dup with score", map[float64]string{1: "a"}, -3, true, 6},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			z := NewZSet()
+			z.ZAdd(tt.data, ZAddOptions{})
+			res := z.ZRandMember(tt.count, tt.withScores)
+
+			require.Len(t, res, tt.wantLen)
+
+			if tt.withScores {
+				assertMemberScorePairs(t, z, res)
+			} else {
+				assertMembersExist(t, z, res)
+			}
+		})
+	}
+}
+
+func TestZRandMember_ScoreFormatting(t *testing.T) {
+	z := NewZSet()
+	z.ZAdd(map[float64]string{1.0: "a", -2.5: "b", 3.14159: "c"}, ZAddOptions{})
+
+	res := z.ZRandMember(3, true)
+	assertMemberScorePairs(t, z, res)
+}
+
+func assertMembersExist(t *testing.T, z *ZSet, members []string) {
+	for _, m := range members {
+		_, ok := z.data[m]
+		assert.True(t, ok, "member %s should exist", m)
+	}
+}
+
+func TestZRandMember_Uniqueness(t *testing.T) {
+	z := NewZSet()
+	for i := 0; i < 100; i++ {
+		z.ZAdd(map[float64]string{float64(i): strconv.Itoa(i)}, ZAddOptions{})
+	}
+
+	res := z.ZRandMember(20, false)
+	assert.Len(t, unique(res), 20)
+
+	res2 := z.ZRandMember(-100, false)
+	assert.Len(t, res2, 100)
+}
+
+func TestFloydSamplingIndices(t *testing.T) {
+	tests := []struct {
+		n, k int
+	}{
+		{10, 5},
+		{5, 5},
+		{10, 1},
+	}
+
+	for _, tt := range tests {
+		idx := floydSamplingIndices(tt.n, tt.k)
+		assert.Len(t, idx, tt.k)
+		for i := range idx {
+			assert.True(t, i >= 0 && i < tt.n)
+		}
+	}
+}
+
+func assertMemberScorePairs(t *testing.T, z *ZSet, result []string) {
+	require.True(t, len(result)%2 == 0)
+	for i := 0; i < len(result); i += 2 {
+		score, err := strconv.ParseFloat(result[i+1], 64)
+		require.NoError(t, err)
+		assert.Equal(t, z.data[result[i]], score)
+	}
+}
+
+func unique(arr []string) map[string]struct{} {
+	m := make(map[string]struct{})
+	for _, v := range arr {
+		m[v] = struct{}{}
+	}
+	return m
 }

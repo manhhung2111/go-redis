@@ -2,6 +2,7 @@ package data_structure
 
 import (
 	"math"
+	"math/rand"
 	"strconv"
 )
 
@@ -47,7 +48,7 @@ func (zset *ZSet) ZAdd(scoreMember map[float64]string, options ZAddOptions) *uin
 
 	result := uint32(0)
 	for newScore, member := range scoreMember {
-		oldScore, exists := zset.data[member];
+		oldScore, exists := zset.data[member]
 
 		if options.NX && exists {
 			continue
@@ -87,26 +88,26 @@ func (zset *ZSet) ZCard() uint32 {
 }
 
 func (zset *ZSet) ZCount(minScore, maxScore float64) uint32 {
-  return uint32(zset.skipList.countByScore(minScore, maxScore))
+	return uint32(zset.skipList.countByScore(minScore, maxScore))
 }
 
 func (zset *ZSet) ZIncrBy(member string, increment float64) (float64, bool) {
-  score, exists := zset.data[member]
-  if !exists {
-    zset.skipList.insert(member, increment)
-	zset.data[member] = increment
-	return increment, true
-  }
+	score, exists := zset.data[member]
+	if !exists {
+		zset.skipList.insert(member, increment)
+		zset.data[member] = increment
+		return increment, true
+	}
 
-  newScore := score + increment
+	newScore := score + increment
 	if math.IsInf(newScore, 0) || math.IsNaN(newScore) {
 		return 0, false
 	}
 
-  zset.skipList.update(member, score, newScore)
-  zset.data[member] = newScore
+	zset.skipList.update(member, score, newScore)
+	zset.data[member] = newScore
 
-  return newScore, true
+	return newScore, true
 }
 
 func (zset *ZSet) ZLexCount(minValue, maxValue string) uint32 {
@@ -156,5 +157,76 @@ func (zset *ZSet) ZPopMin(count int) []string {
 	return result
 }
 
+func (zset *ZSet) ZRandMember(count int, withScores bool) []string {
+	if count == 0 {
+		return []string{}
+	}
 
+	if count > 0 {
+		arrLen := min(count, len(zset.data))
+		if withScores {
+			arrLen *= 2
+		}
 
+		result := make([]string, 0, arrLen)
+		if count >= len(zset.data) {
+			for member, score := range zset.data {
+				result = append(result, member)
+				if withScores {
+					result = append(result, strconv.FormatFloat(score, 'g', -1, 64))
+				}
+			}
+		} else {
+			indices := floydSamplingIndices(len(zset.data), count)
+			i := 0
+			for member, score := range zset.data {
+				if _, selected := indices[i]; selected {
+					result = append(result, member)
+					if withScores {
+						result = append(result, strconv.FormatFloat(score, 'g', -1, 64))
+					}
+				}
+				i++
+			}
+		}
+
+		return result
+	}
+
+	members := make([]string, 0, len(zset.data))
+	for m := range zset.data {
+		members = append(members, m)
+	}
+
+	arrLen := -count
+	if withScores {
+		arrLen *= 2
+	}
+
+	result := make([]string, 0, arrLen)
+	for i := 0; i < -count; i++ {
+		m := members[rand.Intn(len(members))]
+		result = append(result, m)
+
+		if withScores {
+			result = append(result, strconv.FormatFloat(zset.data[m], 'g', -1, 64))
+		}
+	}
+
+	return result
+}
+
+func floydSamplingIndices(n, k int) map[int]struct{} {
+	selected := make(map[int]struct{}, k)
+
+	for i := n - k; i < n; i++ {
+		r := rand.Intn(i + 1)
+		if _, exists := selected[r]; exists {
+			selected[i] = struct{}{}
+		} else {
+			selected[r] = struct{}{}
+		}
+	}
+
+	return selected
+}
