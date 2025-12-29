@@ -783,3 +783,101 @@ func TestSkipList_PopMinMax_BackwardPointers(t *testing.T) {
 	assert.Equal(t, "c", sl.tail.value)
 	assert.Equal(t, "b", sl.tail.backward.value)
 }
+
+func TestSkipList_GetRevRangeByScore(t *testing.T) {
+	sl := buildSkipList(
+		struct{ v string; s float64 }{"a", 1},
+		struct{ v string; s float64 }{"b", 2},
+		struct{ v string; s float64 }{"c", 3},
+		struct{ v string; s float64 }{"d", 4},
+	)
+
+	t.Run("empty skiplist", func(t *testing.T) {
+		empty := newSkipList()
+		assert.Len(t, empty.getRevRangeByScore(5, 1), 0)
+	})
+
+	t.Run("no elements in range", func(t *testing.T) {
+		assert.Len(t, sl.getRevRangeByScore(10, 6), 0)
+	})
+
+	t.Run("partial range reversed", func(t *testing.T) {
+		nodes := sl.getRevRangeByScore(3, 2)
+
+		require.Len(t, nodes, 2)
+		assert.Equal(t, "c", nodes[0].value)
+		assert.Equal(t, "b", nodes[1].value)
+	})
+
+	t.Run("full range reversed", func(t *testing.T) {
+		nodes := sl.getRevRangeByScore(4, 1)
+
+		require.Len(t, nodes, 4)
+		assert.Equal(t, []string{"d", "c", "b", "a"},
+			[]string{nodes[0].value, nodes[1].value, nodes[2].value, nodes[3].value})
+	})
+
+	t.Run("single element range", func(t *testing.T) {
+		nodes := sl.getRevRangeByScore(2, 2)
+
+		require.Len(t, nodes, 1)
+		assert.Equal(t, "b", nodes[0].value)
+	})
+
+	t.Run("inclusive boundaries", func(t *testing.T) {
+		nodes := sl.getRevRangeByScore(4, 4)
+
+		require.Len(t, nodes, 1)
+		assert.Equal(t, "d", nodes[0].value)
+	})
+}
+
+func TestSkipList_GetRevRangeByLex(t *testing.T) {
+	sl := newSkipList()
+
+	// All scores equal (required for lex ops)
+	sl.insert("apple", 0)
+	sl.insert("banana", 0)
+	sl.insert("cherry", 0)
+	sl.insert("date", 0)
+
+	t.Run("empty skiplist", func(t *testing.T) {
+		empty := newSkipList()
+		assert.Len(t, empty.getRevRangeByLex("z", "a"), 0)
+	})
+
+	t.Run("no elements in range", func(t *testing.T) {
+		assert.Len(t, sl.getRevRangeByLex("zzz", "yyy"), 0)
+	})
+
+	t.Run("partial range reversed", func(t *testing.T) {
+		nodes := sl.getRevRangeByLex("date", "banana")
+
+		require.Len(t, nodes, 3)
+		assert.Equal(t, "date", nodes[0].value)
+		assert.Equal(t, "cherry", nodes[1].value)
+		assert.Equal(t, "banana", nodes[2].value)
+	})
+
+	t.Run("full range reversed", func(t *testing.T) {
+		nodes := sl.getRevRangeByLex("date", "apple")
+
+		require.Len(t, nodes, 4)
+		assert.Equal(t, []string{"date", "cherry", "banana", "apple"},
+			[]string{nodes[0].value, nodes[1].value, nodes[2].value, nodes[3].value})
+	})
+
+	t.Run("single element range", func(t *testing.T) {
+		nodes := sl.getRevRangeByLex("banana", "banana")
+
+		require.Len(t, nodes, 1)
+		assert.Equal(t, "banana", nodes[0].value)
+	})
+
+	t.Run("inclusive boundaries", func(t *testing.T) {
+		nodes := sl.getRevRangeByLex("apple", "apple")
+
+		require.Len(t, nodes, 1)
+		assert.Equal(t, "apple", nodes[0].value)
+	})
+}

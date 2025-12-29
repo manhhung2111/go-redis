@@ -350,7 +350,7 @@ func (sl *skipList) getRevRangeByRank(start, end int) []*skipListNode {
 
 	// Convert REV ranks → forward ranks
 	forwardStart := sl.length - 1 - end
-	forwardEnd   := sl.length - 1 - start
+	forwardEnd := sl.length - 1 - start
 
 	// Jump to forwardEnd (same logic as getRangeByRank)
 	traversed := 0
@@ -509,6 +509,40 @@ func (sl *skipList) popMax(count int) []*skipListNode {
 		result = append(result, node)
 		sl.delete(node.value, node.score)
 		count--
+	}
+
+	return result
+}
+
+func (sl *skipList) getRevRangeByLex(maxValue, minValue string) []*skipListNode {
+	current := sl.head
+	for i := sl.level - 1; i >= 0; i-- {
+		for current.levels[i].forward != nil && current.levels[i].forward.value <= maxValue {
+			current = current.levels[i].forward
+		}
+	}
+
+	result := make([]*skipListNode, 0)
+	for current != nil && current.value >= minValue {
+		result = append(result, current)
+		current = current.backward
+	}
+
+	return result
+}
+
+func (sl *skipList) getRevRangeByScore(maxScore, minScore float64) []*skipListNode {
+	current := sl.head
+	for i := sl.level - 1; i >= 0; i-- {
+		for current.levels[i].forward != nil && current.levels[i].forward.score <= maxScore {
+			current = current.levels[i].forward
+		}
+	}
+
+	result := make([]*skipListNode, 0)
+	for current != nil && current.score >= minScore {
+		result = append(result, current)
+		current = current.backward
 	}
 
 	return result
