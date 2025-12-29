@@ -1,5 +1,10 @@
 package data_structure
 
+import (
+	"math"
+	"strconv"
+)
+
 type ZSet struct {
 	skipList *skipList
 	data     map[string]float64
@@ -80,4 +85,76 @@ func (zset *ZSet) ZAdd(scoreMember map[float64]string, options ZAddOptions) *uin
 func (zset *ZSet) ZCard() uint32 {
 	return uint32(len(zset.data))
 }
+
+func (zset *ZSet) ZCount(minScore, maxScore float64) uint32 {
+  return uint32(zset.skipList.countByScore(minScore, maxScore))
+}
+
+func (zset *ZSet) ZIncrBy(member string, increment float64) (float64, bool) {
+  score, exists := zset.data[member]
+  if !exists {
+    zset.skipList.insert(member, increment)
+	zset.data[member] = increment
+	return increment, true
+  }
+
+  newScore := score + increment
+	if math.IsInf(newScore, 0) || math.IsNaN(newScore) {
+		return 0, false
+	}
+
+  zset.skipList.update(member, score, newScore)
+  zset.data[member] = newScore
+
+  return newScore, true
+}
+
+func (zset *ZSet) ZLexCount(minValue, maxValue string) uint32 {
+	return uint32(zset.skipList.countByLex(minValue, maxValue))
+}
+
+func (zset *ZSet) ZMScore(members []string) []*float64 {
+	result := make([]*float64, len(members))
+	for i := 0; i < len(members); i++ {
+		if score, exists := zset.data[members[i]]; exists {
+			result[i] = &score
+		} else {
+			result[i] = nil
+		}
+	}
+
+	return result
+}
+
+func (zset *ZSet) ZPopMax(count int) []string {
+	poppedNodes := zset.skipList.popMax(count)
+	if poppedNodes == nil {
+		return []string{}
+	}
+
+	result := make([]string, 0, len(poppedNodes)*2)
+	for i := range poppedNodes {
+		result = append(result, poppedNodes[i].value)
+		result = append(result, strconv.FormatFloat(poppedNodes[i].score, 'g', -1, 64))
+	}
+
+	return result
+}
+
+func (zset *ZSet) ZPopMin(count int) []string {
+	poppedNodes := zset.skipList.popMin(count)
+	if poppedNodes == nil {
+		return []string{}
+	}
+
+	result := make([]string, 0, len(poppedNodes)*2)
+	for i := range poppedNodes {
+		result = append(result, poppedNodes[i].value)
+		result = append(result, strconv.FormatFloat(poppedNodes[i].score, 'g', -1, 64))
+	}
+
+	return result
+}
+
+
 

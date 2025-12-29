@@ -1,6 +1,8 @@
 package data_structure
 
 import (
+	"fmt"
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -148,4 +150,293 @@ func TestZSet_ZCard_AfterUpdates(t *testing.T) {
 
 	z.ZAdd(map[float64]string{4: "d"}, ZAddOptions{})
 	assert.Equal(t, uint32(4), z.ZCard())
+}
+
+func TestZSet_ZCount(t *testing.T) {
+	z := NewZSet()
+
+	z.ZIncrBy("a", 1)
+	z.ZIncrBy("b", 2)
+	z.ZIncrBy("c", 3)
+	z.ZIncrBy("d", 3)
+	z.ZIncrBy("e", 5)
+
+	tests := []struct {
+		min, max float64
+		expected uint32
+	}{
+		{0, 10, 5},
+		{1, 1, 1},
+		{3, 3, 2},
+		{2, 4, 3},
+		{6, 10, 0},
+		{4, 2, 0},
+	}
+
+	for _, tt := range tests {
+		assert.Equal(t, tt.expected, z.ZCount(tt.min, tt.max))
+	}
+}
+
+func TestZSet_ZCount_Empty(t *testing.T) {
+	z := NewZSet()
+	assert.Equal(t, uint32(0), z.ZCount(-100, 100))
+}
+
+func TestZSet_ZCount_Boundaries(t *testing.T) {
+	z := NewZSet()
+
+	z.ZIncrBy("a", 1.0)
+	z.ZIncrBy("b", 2.0)
+	z.ZIncrBy("c", 2.0)
+	z.ZIncrBy("d", 3.0)
+
+	assert.Equal(t, uint32(2), z.ZCount(2.0, 2.0))
+	assert.Equal(t, uint32(1), z.ZCount(1.0, 1.0))
+	assert.Equal(t, uint32(4), z.ZCount(1.0, 3.0))
+}
+
+func TestZSet_ZCount_NegativeScores(t *testing.T) {
+	z := NewZSet()
+
+	z.ZIncrBy("a", -5)
+	z.ZIncrBy("b", -1)
+	z.ZIncrBy("c", 0)
+
+	assert.Equal(t, uint32(2), z.ZCount(-5, -1))
+	assert.Equal(t, uint32(3), z.ZCount(-10, 0))
+}
+
+func TestZSet_ZIncrBy(t *testing.T) {
+	z := NewZSet()
+
+	score, ok := z.ZIncrBy("a", 1.5)
+	require.True(t, ok)
+	assert.Equal(t, 1.5, score)
+
+	score, ok = z.ZIncrBy("a", 2.5)
+	require.True(t, ok)
+	assert.Equal(t, 4.0, score)
+
+	// negative increment
+	score, ok = z.ZIncrBy("a", -1.0)
+	require.True(t, ok)
+	assert.Equal(t, 3.0, score)
+}
+
+func TestZSet_ZIncrBy_Invalid(t *testing.T) {
+	z := NewZSet()
+
+	z.ZIncrBy("a", math.MaxFloat64)
+
+	_, ok := z.ZIncrBy("a", math.MaxFloat64)
+	assert.False(t, ok)
+
+	_, ok = z.ZIncrBy("a", math.NaN())
+	assert.False(t, ok)
+}
+
+func TestZSet_ZIncrBy_ZeroIncrement(t *testing.T) {
+	z := NewZSet()
+
+	score, ok := z.ZIncrBy("a", 0)
+	require.True(t, ok)
+	assert.Equal(t, 0.0, score)
+
+	score, ok = z.ZIncrBy("a", 0)
+	require.True(t, ok)
+	assert.Equal(t, 0.0, score)
+}
+
+func TestZSet_ZIncrBy_RepeatedUpdates(t *testing.T) {
+	z := NewZSet()
+
+	for i := 0; i < 10; i++ {
+		score, ok := z.ZIncrBy("counter", 1)
+		require.True(t, ok)
+		assert.Equal(t, float64(i+1), score)
+	}
+
+	assert.Equal(t, uint32(1), z.ZCount(10, 10))
+}
+
+func TestZSet_ZIncrBy_DecreaseBelowZero(t *testing.T) {
+	z := NewZSet()
+
+	z.ZIncrBy("a", 5)
+	score, ok := z.ZIncrBy("a", -10)
+
+	require.True(t, ok)
+	assert.Equal(t, -5.0, score)
+}
+
+func TestZSet_ZLexCount(t *testing.T) {
+	z := NewZSet()
+
+	z.ZIncrBy("apple", 0)
+	z.ZIncrBy("banana", 0)
+	z.ZIncrBy("cherry", 0)
+	z.ZIncrBy("date", 0)
+
+	assert.Equal(t, uint32(4), z.ZLexCount("apple", "date"))
+	assert.Equal(t, uint32(2), z.ZLexCount("banana", "cherry"))
+	assert.Equal(t, uint32(0), z.ZLexCount("x", "z"))
+}
+
+func TestZSet_ZLexCount_Empty(t *testing.T) {
+	z := NewZSet()
+	assert.Equal(t, uint32(0), z.ZLexCount("a", "z"))
+}
+
+func TestZSet_ZLexCount_ExactMiss(t *testing.T) {
+	z := NewZSet()
+
+	z.ZIncrBy("apple", 0)
+	z.ZIncrBy("banana", 0)
+
+	assert.Equal(t, uint32(0), z.ZLexCount("apricot", "apricot"))
+}
+
+func TestZSet_ZLexCount_PrefixOverlap(t *testing.T) {
+	z := NewZSet()
+
+	z.ZIncrBy("a", 0)
+	z.ZIncrBy("aa", 0)
+	z.ZIncrBy("aaa", 0)
+	z.ZIncrBy("b", 0)
+
+	assert.Equal(t, uint32(3), z.ZLexCount("a", "aaa"))
+}
+
+func TestZSet_ZMScore(t *testing.T) {
+	z := NewZSet()
+
+	z.ZIncrBy("a", 1)
+	z.ZIncrBy("b", 2)
+
+	scores := z.ZMScore([]string{"a", "x", "b"})
+
+	require.Len(t, scores, 3)
+
+	require.NotNil(t, scores[0])
+	assert.Equal(t, 1.0, *scores[0])
+
+	assert.Nil(t, scores[1])
+
+	require.NotNil(t, scores[2])
+	assert.Equal(t, 2.0, *scores[2])
+}
+
+func TestZSet_ZMScore_EmptyInput(t *testing.T) {
+	z := NewZSet()
+	res := z.ZMScore([]string{})
+	assert.Empty(t, res)
+}
+
+func TestZSet_ZMScore_AllMissing(t *testing.T) {
+	z := NewZSet()
+
+	res := z.ZMScore([]string{"a", "b"})
+	assert.Len(t, res, 2)
+	assert.Nil(t, res[0])
+	assert.Nil(t, res[1])
+}
+
+func TestZSet_ZMScore_Duplicates(t *testing.T) {
+	z := NewZSet()
+	z.ZIncrBy("a", 1)
+
+	res := z.ZMScore([]string{"a", "a"})
+	require.Len(t, res, 2)
+
+	assert.NotNil(t, res[0])
+	assert.NotNil(t, res[1])
+	assert.Equal(t, 1.0, *res[0])
+	assert.Equal(t, 1.0, *res[1])
+}
+
+func TestZSet_ZPopMax(t *testing.T) {
+	z := NewZSet()
+
+	z.ZIncrBy("a", 1)
+	z.ZIncrBy("b", 2)
+	z.ZIncrBy("c", 3)
+
+	res := z.ZPopMax(2)
+
+	require.Equal(t, []string{"c", "3", "b", "2"}, res)
+	assert.Equal(t, uint32(1), z.ZCount(-100, 100))
+}
+
+func TestZSet_ZPopMin(t *testing.T) {
+	z := NewZSet()
+
+	z.ZIncrBy("a", 1)
+	z.ZIncrBy("b", 2)
+	z.ZIncrBy("c", 3)
+
+	res := z.ZPopMin(2)
+
+	require.Equal(t, []string{"a", "1", "b", "2"}, res)
+	assert.Equal(t, uint32(1), z.ZCount(-100, 100))
+}
+
+func TestZSet_ZPop_OverCount(t *testing.T) {
+	z := NewZSet()
+
+	z.ZIncrBy("a", 1)
+	z.ZIncrBy("b", 2)
+
+	assert.Len(t, z.ZPopMax(10), 4)
+	assert.Len(t, z.ZPopMin(10), 0)
+}
+
+func TestZSet_ZPop_CountZero(t *testing.T) {
+	z := NewZSet()
+	z.ZIncrBy("a", 1)
+
+	assert.Empty(t, z.ZPopMax(0))
+	assert.Empty(t, z.ZPopMin(0))
+}
+
+func TestZSet_ZPop_ExactSize(t *testing.T) {
+	z := NewZSet()
+
+	z.ZIncrBy("a", 1)
+	z.ZIncrBy("b", 2)
+
+	res := z.ZPopMin(2)
+	assert.Equal(t, []string{"a", "1", "b", "2"}, res)
+
+	assert.Equal(t, uint32(0), z.ZCount(-100, 100))
+}
+
+func TestZSet_ZPop_OrderAfterPartialPop(t *testing.T) {
+	z := NewZSet()
+
+	z.ZIncrBy("a", 1)
+	z.ZIncrBy("b", 2)
+	z.ZIncrBy("c", 3)
+	z.ZIncrBy("d", 4)
+
+	z.ZPopMax(1) // removes d
+	z.ZPopMin(1) // removes a
+
+	assert.Equal(t, uint32(2), z.ZCount(-100, 100))
+	assert.Equal(t, uint32(1), z.ZCount(2, 2))
+	assert.Equal(t, uint32(1), z.ZCount(3, 3))
+}
+
+func TestZSet_ZPop_ReducesCountCorrectly(t *testing.T) {
+	z := NewZSet()
+
+	for i := 0; i < 10; i++ {
+		z.ZIncrBy(fmt.Sprintf("k%d", i), float64(i))
+	}
+
+	z.ZPopMin(3)
+	assert.Equal(t, uint32(7), z.ZCount(-100, 100))
+
+	z.ZPopMax(4)
+	assert.Equal(t, uint32(3), z.ZCount(-100, 100))
 }
