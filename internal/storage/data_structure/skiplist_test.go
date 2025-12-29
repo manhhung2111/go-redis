@@ -497,3 +497,122 @@ func TestSkipList_CountByScore_Large(t *testing.T) {
 	assert.Equal(t, 1000, sl.rankByScore(1000))
 	assert.Equal(t, 500, sl.countByScore(250, 749))
 }
+
+func TestSkipList_rankByLex_Basic(t *testing.T) {
+	sl := newSkipList()
+
+	// All scores are the same (REQUIRED)
+	sl.insert("apple", 0)
+	sl.insert("banana", 0)
+	sl.insert("cherry", 0)
+	sl.insert("date", 0)
+
+	tests := []struct {
+		value    string
+		expected int
+	}{
+		{"apple", 0},
+		{"banana", 1},
+		{"cherry", 2},
+		{"date", 3},
+	}
+
+	for _, tt := range tests {
+		assert.Equal(t, tt.expected, sl.rankByLex(tt.value), "rankByLex(%q)", tt.value)
+	}
+}
+
+func TestSkipList_rankByLex_NonExisting(t *testing.T) {
+	sl := newSkipList()
+
+	sl.insert("apple", 0)
+	sl.insert("banana", 0)
+	sl.insert("cherry", 0)
+
+	tests := []struct {
+		value    string
+		expected int
+	}{
+		{"a", 0},        // before all
+		{"apricot", 1},  // between apple and banana
+		{"blueberry", 2},
+		{"zoo", 3},      // after all
+	}
+
+	for _, tt := range tests {
+		assert.Equal(t, tt.expected, sl.rankByLex(tt.value), "rankByLex(%q)", tt.value)
+	}
+}
+
+func TestSkipList_rankByLex_Empty(t *testing.T) {
+	sl := newSkipList()
+	assert.Equal(t, 0, sl.rankByLex("anything"))
+}
+
+func TestSkipList_countByLex_Basic(t *testing.T) {
+	sl := newSkipList()
+
+	sl.insert("apple", 0)
+	sl.insert("banana", 0)
+	sl.insert("cherry", 0)
+	sl.insert("date", 0)
+
+	tests := []struct {
+		min, max string
+		expected int
+	}{
+		{"apple", "date", 4},
+		{"banana", "date", 3},
+		{"banana", "cherry", 2},
+		{"apple", "apple", 1},
+		{"date", "date", 1},
+	}
+
+	for _, tt := range tests {
+		assert.Equal(t, tt.expected, sl.countByLex(tt.min, tt.max), "countByLex(%q, %q)", tt.min, tt.max)
+	}
+}
+
+func TestSkipList_countByLex_EmptyAndInvalidRanges(t *testing.T) {
+	sl := newSkipList()
+
+	sl.insert("apple", 0)
+	sl.insert("banana", 0)
+
+	tests := []struct {
+		min, max string
+		expected int
+	}{
+		{"x", "z", 0},        // above all
+		{"a", "a", 0},        // exact miss
+		{"banana", "apple", 0}, // invalid range
+	}
+
+	for _, tt := range tests {
+		assert.Equal(t, tt.expected, sl.countByLex(tt.min, tt.max), "countByLex(%q, %q)", tt.min, tt.max)
+	}
+}
+
+func TestSkipList_countByLex_EmptySet(t *testing.T) {
+	sl := newSkipList()
+	assert.Equal(t, 0, sl.countByLex("a", "z"))
+}
+
+func TestSkipList_countByLex_MatchesRangeByLex(t *testing.T) {
+	sl := newSkipList()
+
+	values := []string{
+		"apple", "banana", "cherry", "date", "fig", "grape",
+	}
+
+	for _, v := range values {
+		sl.insert(v, 0)
+	}
+
+	min, max := "banana", "fig"
+
+	rangeNodes := sl.getRangeByLex(min, max)
+	count := sl.countByLex(min, max)
+
+	assert.Equal(t, len(rangeNodes), count)
+}

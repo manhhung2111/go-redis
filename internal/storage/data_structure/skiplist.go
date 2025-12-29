@@ -45,13 +45,12 @@ func newSkipList() *skipList {
 	}
 }
 
-// Precondition: caller must check if the element exists in list or not
+// Preconditions: The element (value, score) does NOT already exist in the skiplist
 func (sl *skipList) insert(value string, score float64) *skipListNode {
 	update := make([]*skipListNode, skipListMaxLevel)
 	rank := make([]int, skipListMaxLevel)
 	current := sl.head
 
-	// Find the position to update
 	for i := sl.level - 1; i >= 0; i-- {
 		if i == sl.level-1 {
 			rank[i] = 0
@@ -69,7 +68,6 @@ func (sl *skipList) insert(value string, score float64) *skipListNode {
 		update[i] = current
 	}
 
-	// Create new node
 	newLevel := sl.randomLevel()
 	if newLevel > sl.level {
 		for i := sl.level; i < newLevel; i++ {
@@ -114,7 +112,7 @@ func (sl *skipList) insert(value string, score float64) *skipListNode {
 	return newNode
 }
 
-// Precondition: element must exist in list with (value, oldScore)
+// Preconditions: The element (value, oldScore) EXISTS in the skiplist
 func (sl *skipList) update(value string, oldScore float64, newScore float64) *skipListNode {
 	update := make([]*skipListNode, skipListMaxLevel)
 	current := sl.head
@@ -164,9 +162,10 @@ func (sl *skipList) delete(value string, score float64) bool {
 	return true
 }
 
-/* Preconditions:
-- node exists in the skiplist
-- update[i] is the last node before node at level i
+/*
+Preconditions:
+- node EXISTS in the skiplist
+- update[i] is the last node BEFORE `node` at level i
 */
 func (sl *skipList) deleteNode(node *skipListNode, update []*skipListNode) {
 	for i := 0; i < sl.level; i++ {
@@ -241,7 +240,8 @@ func (sl *skipList) getRangeByScore(minScore, maxScore float64) []*skipListNode 
 	return result
 }
 
-// Returns nodes within value range [minValue, maxValue]
+// Returns all nodes whose values are lexicographically between [minValue, maxValue] (inclusive).
+// Preconditions (CRITICAL): ALL elements in the skiplist MUST have the SAME score (Redis ZRANGEBYLEX / ZLEXCOUNT semantics)
 func (sl *skipList) getRangeByLex(minValue, maxValue string) []*skipListNode {
 	current := sl.head
 
@@ -426,4 +426,46 @@ func (sl *skipList) countByScore(minScore, maxScore float64) int {
 	}
 
 	return rank - left
+}
+
+// Preconditions (CRITICAL): ALL elements in the skiplist have the SAME score
+func (sl *skipList) rankByLex(value string) int {
+	rank := 0
+	current := sl.head
+
+	for i := sl.level - 1; i >= 0; i-- {
+		for current.levels[i].forward != nil &&
+			current.levels[i].forward.value < value {
+
+			rank += current.levels[i].span
+			current = current.levels[i].forward
+		}
+	}
+
+	return rank
+}
+
+// Preconditions (CRITICAL): ALL elements in the skiplist have the SAME score
+func (sl *skipList) countByLex(minValue, maxValue string) int {
+	if minValue > maxValue || sl.length == 0 {
+		return 0
+	}
+
+	left := sl.rankByLex(minValue)
+	right := sl.rankByLex(maxValue)
+
+	// Check if maxValue itself exists
+	current := sl.head
+	for i := sl.level - 1; i >= 0; i-- {
+		for current.levels[i].forward != nil &&
+			current.levels[i].forward.value <= maxValue {
+			current = current.levels[i].forward
+		}
+	}
+
+	if current != sl.head && current.value == maxValue {
+		right++
+	}
+
+	return right - left
 }
