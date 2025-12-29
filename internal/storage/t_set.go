@@ -7,6 +7,7 @@ import (
 
 	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
+	"github.com/manhhung2111/go-redis/internal/util"
 )
 
 func (s *store) SAdd(key string, members ...string) int64 {
@@ -190,7 +191,7 @@ func (s *store) SPop(key string, count int) []string {
 		return result
 	}
 
-	indices := floydSamplingIndices(setLen, count)
+	indices := util.FloydSamplingIndices(setLen, count)
 	members := set.Members()
 	result := make([]string, 0, count)
 
@@ -232,7 +233,7 @@ func (s *store) SRandMember(key string, count int) []string {
 			return set.Members()
 		}
 
-		indices := floydSamplingIndices(setLen, count)
+		indices := util.FloydSamplingIndices(setLen, count)
 		members := set.Members()
 		result := make([]string, 0, count)
 
@@ -264,21 +265,6 @@ func (s *store) expireIfNeeded(key string) bool {
 		}
 	}
 	return false
-}
-
-func floydSamplingIndices(n, k int) map[int]struct{} {
-	selected := make(map[int]struct{}, k)
-
-	for i := n - k; i < n; i++ {
-		r := rand.Intn(i + 1)
-		if _, exists := selected[r]; exists {
-			selected[i] = struct{}{}
-		} else {
-			selected[r] = struct{}{}
-		}
-	}
-
-	return selected
 }
 
 func canBeConvertedToInt64(members ...string) bool {

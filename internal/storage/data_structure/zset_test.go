@@ -540,24 +540,6 @@ func TestZRandMember_Uniqueness(t *testing.T) {
 	assert.Len(t, res2, 100)
 }
 
-func TestFloydSamplingIndices(t *testing.T) {
-	tests := []struct {
-		n, k int
-	}{
-		{10, 5},
-		{5, 5},
-		{10, 1},
-	}
-
-	for _, tt := range tests {
-		idx := floydSamplingIndices(tt.n, tt.k)
-		assert.Len(t, idx, tt.k)
-		for i := range idx {
-			assert.True(t, i >= 0 && i < tt.n)
-		}
-	}
-}
-
 func assertMemberScorePairs(t *testing.T, z *ZSet, result []string) {
 	require.True(t, len(result)%2 == 0)
 	for i := 0; i < len(result); i += 2 {

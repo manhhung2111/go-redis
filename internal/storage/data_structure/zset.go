@@ -4,6 +4,8 @@ import (
 	"math"
 	"math/rand"
 	"strconv"
+
+	"github.com/manhhung2111/go-redis/internal/util"
 )
 
 type ZSet struct {
@@ -177,7 +179,7 @@ func (zset *ZSet) ZRandMember(count int, withScores bool) []string {
 				}
 			}
 		} else {
-			indices := floydSamplingIndices(len(zset.data), count)
+			indices := util.FloydSamplingIndices(len(zset.data), count)
 			i := 0
 			for member, score := range zset.data {
 				if _, selected := indices[i]; selected {
@@ -214,19 +216,4 @@ func (zset *ZSet) ZRandMember(count int, withScores bool) []string {
 	}
 
 	return result
-}
-
-func floydSamplingIndices(n, k int) map[int]struct{} {
-	selected := make(map[int]struct{}, k)
-
-	for i := n - k; i < n; i++ {
-		r := rand.Intn(i + 1)
-		if _, exists := selected[r]; exists {
-			selected[i] = struct{}{}
-		} else {
-			selected[r] = struct{}{}
-		}
-	}
-
-	return selected
 }
