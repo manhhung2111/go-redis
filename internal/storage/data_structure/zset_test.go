@@ -718,3 +718,149 @@ func TestZSet_ZRevRangeByLex(t *testing.T) {
 	)
 }
 
+func TestZSet_ZRank_Basic(t *testing.T) {
+	z := NewZSet()
+	z.ZAdd(map[float64]string{
+		1: "a",
+		2: "b",
+		3: "c",
+	}, ZAddOptions{})
+
+	res := z.ZRank("a", false)
+	require.NotNil(t, res)
+	assert.Equal(t, []any{0}, res)
+
+	res = z.ZRank("c", false)
+	assert.Equal(t, []any{2}, res)
+}
+
+func TestZSet_ZRank_WithScore(t *testing.T) {
+	z := NewZSet()
+	z.ZAdd(map[float64]string{
+		2: "b",
+		1: "a",
+	}, ZAddOptions{})
+
+	res := z.ZRank("b", true)
+	require.NotNil(t, res)
+
+	assert.Len(t, res, 2)
+	assert.Equal(t, 1, res[0])
+	assert.Equal(t, "2", res[1])
+}
+
+func TestZSet_ZRank_NotFound(t *testing.T) {
+	z := NewZSet()
+	z.ZAdd(map[float64]string{1: "a"}, ZAddOptions{})
+
+	assert.Nil(t, z.ZRank("missing", false))
+}
+
+func TestZSet_ZRevRank_Basic(t *testing.T) {
+	z := NewZSet()
+	z.ZAdd(map[float64]string{
+		1: "a",
+		2: "b",
+		3: "c",
+	}, ZAddOptions{})
+
+	res := z.ZRevRank("c", false)
+	require.NotNil(t, res)
+	assert.Equal(t, []any{0}, res) // highest score
+
+	res = z.ZRevRank("a", false)
+	assert.Equal(t, []any{2}, res) // lowest score
+}
+
+func TestZSet_ZRevRank_WithScore(t *testing.T) {
+	z := NewZSet()
+	z.ZAdd(map[float64]string{
+		1: "a",
+		2: "b",
+		3: "c",
+	}, ZAddOptions{})
+
+	res := z.ZRevRank("b", true)
+	require.NotNil(t, res)
+
+	assert.Len(t, res, 2)
+	assert.Equal(t, 1, res[0])
+	assert.Equal(t, "2", res[1])
+}
+
+func TestZSet_ZRevRank_NotFound(t *testing.T) {
+	z := NewZSet()
+	z.ZAdd(map[float64]string{1: "a"}, ZAddOptions{})
+
+	assert.Nil(t, z.ZRevRank("x", false))
+}
+
+func TestZSet_ZRem_Single(t *testing.T) {
+	z := NewZSet()
+	z.ZAdd(map[float64]string{
+		1: "a",
+		2: "b",
+	}, ZAddOptions{})
+
+	removed := z.ZRem([]string{"a"})
+	assert.Equal(t, 1, removed)
+
+	assert.Nil(t, z.ZRank("a", false))
+	assert.Equal(t, uint32(1), z.ZCard())
+}
+
+func TestZSet_ZRem_Multiple(t *testing.T) {
+	z := NewZSet()
+	z.ZAdd(map[float64]string{
+		1: "a",
+		2: "b",
+		3: "c",
+	}, ZAddOptions{})
+
+	removed := z.ZRem([]string{"a", "c", "x"})
+	assert.Equal(t, 2, removed)
+
+	assert.Nil(t, z.ZRank("a", false))
+	assert.Nil(t, z.ZRank("c", false))
+	assert.NotNil(t, z.ZRank("b", false))
+}
+
+func TestZSet_ZRem_Idempotent(t *testing.T) {
+	z := NewZSet()
+	z.ZAdd(map[float64]string{1: "a"}, ZAddOptions{})
+
+	assert.Equal(t, 1, z.ZRem([]string{"a"}))
+	assert.Equal(t, 0, z.ZRem([]string{"a"}))
+}
+
+func TestZSet_ZScore_Basic(t *testing.T) {
+	z := NewZSet()
+	z.ZAdd(map[float64]string{1.5: "a"}, ZAddOptions{})
+
+	score := z.ZScore("a")
+	require.NotNil(t, score)
+	assert.Equal(t, 1.5, *score)
+}
+
+func TestZSet_ZScore_NotFound(t *testing.T) {
+	z := NewZSet()
+	assert.Nil(t, z.ZScore("missing"))
+}
+
+func TestZSet_ZScore_AfterUpdate(t *testing.T) {
+	z := NewZSet()
+	z.ZAdd(map[float64]string{1: "a"}, ZAddOptions{})
+	z.ZAdd(map[float64]string{5: "a"}, ZAddOptions{})
+
+	score := z.ZScore("a")
+	require.NotNil(t, score)
+	assert.Equal(t, 5.0, *score)
+}
+
+func TestZSet_ZScore_AfterRemove(t *testing.T) {
+	z := NewZSet()
+	z.ZAdd(map[float64]string{1: "a"}, ZAddOptions{})
+	z.ZRem([]string{"a"})
+
+	assert.Nil(t, z.ZScore("a"))
+}

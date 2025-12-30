@@ -248,6 +248,67 @@ func (zset *ZSet) ZRevRangeByScore(start, stop float64, withScores bool) []strin
 	return zset.nodesToStringSlice(nodes, withScores)
 }
 
+func (zset *ZSet) ZRank(member string, withScore bool) []any {
+	score, exists := zset.data[member]
+	if !exists {
+		return nil
+	}
+
+	rank := zset.skipList.getRank(member, score)
+	if rank == -1 {
+		return nil
+	}
+
+	if withScore {
+		return []any{rank, formatFloat(score)}
+	}
+	return []any{rank}
+}
+
+func (zset *ZSet) ZRem(members []string) int {
+	removed := 0
+
+	for _, member := range members {
+		if score, exists := zset.data[member]; exists {
+			// Delete from skipList first - if this fails, data is unchanged
+			if zset.skipList.delete(member, score) {
+				delete(zset.data, member)
+				removed++
+			}
+		}
+	}
+
+	return removed
+}
+
+func (zset *ZSet) ZRevRank(member string, withScore bool) []any {
+	score, exists := zset.data[member]
+	if !exists {
+		return nil
+	}
+
+	forwardRank := zset.skipList.getRank(member, score)
+	if forwardRank == -1 {
+		return nil
+	}
+	
+	rank := zset.skipList.length - 1 - forwardRank
+
+	if withScore {
+		return []any{rank, formatFloat(score)}
+	}
+	return []any{rank}
+}
+
+func (zset *ZSet) ZScore(member string) *float64 {
+	score, exists := zset.data[member]
+	if !exists {
+		return nil
+	}
+
+	return &score
+}
+
 func (zset *ZSet) nodesToStringSlice(nodes []*skipListNode, withScores bool) []string {
 	nodeCount := len(nodes)
 	if nodeCount == 0 {
