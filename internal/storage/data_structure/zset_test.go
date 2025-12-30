@@ -556,3 +556,165 @@ func unique(arr []string) map[string]struct{} {
 	}
 	return m
 }
+
+func TestZSet_ZRangeByRank_Basic(t *testing.T) {
+	z := NewZSet()
+	z.ZAdd(map[float64]string{
+		1: "a",
+		2: "b",
+		3: "c",
+		4: "d",
+	}, ZAddOptions{})
+
+	assert.Equal(t,
+		[]string{"a", "b", "c"},
+		z.ZRangeByRank(0, 2, false),
+	)
+
+	assert.Equal(t,
+		[]string{"b", "2", "c", "3"},
+		z.ZRangeByRank(1, 2, true),
+	)
+}
+
+func TestZSet_ZRangeByRank_NegativeIndices(t *testing.T) {
+	z := NewZSet()
+	for i := 0; i < 5; i++ {
+		z.ZIncrBy(string(rune('a'+i)), float64(i))
+	}
+
+	assert.Equal(t,
+		[]string{"d", "e"},
+		z.ZRangeByRank(-2, -1, false),
+	)
+}
+
+func TestZSet_ZRangeByRank_OutOfBounds(t *testing.T) {
+	z := NewZSet()
+	z.ZIncrBy("a", 1)
+
+	assert.Empty(t, z.ZRangeByRank(10, 20, false))
+	assert.Empty(t, z.ZRangeByRank(2, 1, false))
+	assert.Empty(t, z.ZRangeByRank(-100, -200, false))
+}
+
+func TestZSet_ZRevRangeByRank_Basic(t *testing.T) {
+	z := NewZSet()
+	z.ZAdd(map[float64]string{
+		1: "a",
+		2: "b",
+		3: "c",
+		4: "d",
+	}, ZAddOptions{})
+
+	assert.Equal(t,
+		[]string{"d", "c"},
+		z.ZRevRangeByRank(0, 1, false),
+	)
+
+	assert.Equal(t,
+		[]string{"c", "3", "b", "2"},
+		z.ZRevRangeByRank(1, 2, true),
+	)
+}
+
+func TestZSet_ZRevRangeByRank_Negative(t *testing.T) {
+	z := NewZSet()
+	for i := 0; i < 4; i++ {
+		z.ZIncrBy(string(rune('a'+i)), float64(i))
+	}
+
+	assert.Equal(t,
+		[]string{"c", "b"},
+		z.ZRevRangeByRank(-3, -2, false),
+	)
+}
+
+func TestZSet_ZRangeByScore(t *testing.T) {
+	z := NewZSet()
+	z.ZAdd(map[float64]string{
+		1: "a",
+		2: "b",
+		3: "c",
+		4: "d",
+	}, ZAddOptions{})
+
+	assert.Equal(t,
+		[]string{"b", "c"},
+		z.ZRangeByScore(2, 3, false),
+	)
+
+	assert.Equal(t,
+		[]string{"c", "3"},
+		z.ZRangeByScore(3, 3, true),
+	)
+}
+
+func TestZSet_ZRangeByScore_Empty(t *testing.T) {
+	z := NewZSet()
+	assert.Empty(t, z.ZRangeByScore(0, 100, false))
+}
+
+func TestZSet_ZRevRangeByScore(t *testing.T) {
+	z := NewZSet()
+	z.ZAdd(map[float64]string{
+		1: "a",
+		2: "b",
+		3: "c",
+		4: "d",
+	}, ZAddOptions{})
+
+	assert.Equal(t,
+		[]string{"d", "c"},
+		z.ZRevRangeByScore(4, 3, false),
+	)
+
+	assert.Equal(t,
+		[]string{"b", "2", "a", "1"},
+		z.ZRevRangeByScore(2, 1, true),
+	)
+}
+
+func TestZSet_ZRangeByLex(t *testing.T) {
+	z := NewZSet()
+
+	z.ZIncrBy("apple", 0)
+	z.ZIncrBy("banana", 0)
+	z.ZIncrBy("cherry", 0)
+	z.ZIncrBy("date", 0)
+
+	assert.Equal(t,
+		[]string{"banana", "cherry"},
+		z.ZRangeByLex("banana", "cherry", false),
+	)
+
+	assert.Equal(t,
+		[]string{"apple", "0", "banana", "0"},
+		z.ZRangeByLex("apple", "banana", true),
+	)
+}
+
+func TestZSet_ZRangeByLex_Empty(t *testing.T) {
+	z := NewZSet()
+	assert.Empty(t, z.ZRangeByLex("a", "z", false))
+}
+
+func TestZSet_ZRevRangeByLex(t *testing.T) {
+	z := NewZSet()
+
+	z.ZIncrBy("a", 0)
+	z.ZIncrBy("b", 0)
+	z.ZIncrBy("c", 0)
+	z.ZIncrBy("d", 0)
+
+	assert.Equal(t,
+		[]string{"d", "c"},
+		z.ZRevRangeByLex("d", "c", false),
+	)
+
+	assert.Equal(t,
+		[]string{"b", "0", "a", "0"},
+		z.ZRevRangeByLex("b", "a", true),
+	)
+}
+

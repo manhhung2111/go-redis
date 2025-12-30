@@ -138,7 +138,7 @@ func (zset *ZSet) ZPopMax(count int) []string {
 	result := make([]string, 0, len(poppedNodes)*2)
 	for i := range poppedNodes {
 		result = append(result, poppedNodes[i].value)
-		result = append(result, strconv.FormatFloat(poppedNodes[i].score, 'g', -1, 64))
+		result = append(result, formatFloat(poppedNodes[i].score))
 	}
 
 	return result
@@ -153,7 +153,7 @@ func (zset *ZSet) ZPopMin(count int) []string {
 	result := make([]string, 0, len(poppedNodes)*2)
 	for i := range poppedNodes {
 		result = append(result, poppedNodes[i].value)
-		result = append(result, strconv.FormatFloat(poppedNodes[i].score, 'g', -1, 64))
+		result = append(result, formatFloat(poppedNodes[i].score))
 	}
 
 	return result
@@ -175,7 +175,7 @@ func (zset *ZSet) ZRandMember(count int, withScores bool) []string {
 			for member, score := range zset.data {
 				result = append(result, member)
 				if withScores {
-					result = append(result, strconv.FormatFloat(score, 'g', -1, 64))
+					result = append(result, formatFloat(score))
 				}
 			}
 		} else {
@@ -185,7 +185,7 @@ func (zset *ZSet) ZRandMember(count int, withScores bool) []string {
 				if _, selected := indices[i]; selected {
 					result = append(result, member)
 					if withScores {
-						result = append(result, strconv.FormatFloat(score, 'g', -1, 64))
+						result = append(result, formatFloat(score))
 					}
 				}
 				i++
@@ -211,9 +211,66 @@ func (zset *ZSet) ZRandMember(count int, withScores bool) []string {
 		result = append(result, m)
 
 		if withScores {
-			result = append(result, strconv.FormatFloat(zset.data[m], 'g', -1, 64))
+			result = append(result, formatFloat(zset.data[m]))
 		}
 	}
 
 	return result
+}
+
+func (zset *ZSet) ZRangeByRank(start, stop int, withScores bool) []string {
+	nodes := zset.skipList.getRangeByRank(start, stop)
+	return zset.nodesToStringSlice(nodes, withScores)
+}
+
+func (zset *ZSet) ZRangeByLex(start, stop string, withScores bool) []string {
+	nodes := zset.skipList.getRangeByLex(start, stop)
+	return zset.nodesToStringSlice(nodes, withScores)
+}
+
+func (zset *ZSet) ZRangeByScore(start, stop float64, withScores bool) []string {
+	nodes := zset.skipList.getRangeByScore(start, stop)
+	return zset.nodesToStringSlice(nodes, withScores)
+}
+
+func (zset *ZSet) ZRevRangeByRank(start, stop int, withScores bool) []string {
+	nodes := zset.skipList.getRevRangeByRank(start, stop)
+	return zset.nodesToStringSlice(nodes, withScores)
+}
+
+func (zset *ZSet) ZRevRangeByLex(start, stop string, withScores bool) []string {
+	nodes := zset.skipList.getRevRangeByLex(start, stop)
+	return zset.nodesToStringSlice(nodes, withScores)
+}
+
+func (zset *ZSet) ZRevRangeByScore(start, stop float64, withScores bool) []string {
+	nodes := zset.skipList.getRevRangeByScore(start, stop)
+	return zset.nodesToStringSlice(nodes, withScores)
+}
+
+func (zset *ZSet) nodesToStringSlice(nodes []*skipListNode, withScores bool) []string {
+	nodeCount := len(nodes)
+	if nodeCount == 0 {
+		return []string{}
+	}
+
+	if withScores {
+		result := make([]string, nodeCount*2)
+		for i, node := range nodes {
+			idx := i * 2
+			result[idx] = node.value
+			result[idx+1] = formatFloat(node.score)
+		}
+		return result
+	}
+
+	result := make([]string, nodeCount)
+	for i, node := range nodes {
+		result[i] = node.value
+	}
+	return result
+}
+
+func formatFloat(num float64) string {
+	return strconv.FormatFloat(num, 'g', -1, 64)
 }
