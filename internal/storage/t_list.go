@@ -7,6 +7,8 @@ import (
 )
 
 func (s *store) LPush(key string, elements ...string) uint32 {
+	s.expireIfNeeded(key)
+
 	rObj, exists := s.data[key]
 	if exists {
 		quickList, ok := rObj.Value.(data_structure.QuickList)
@@ -30,6 +32,10 @@ func (s *store) LPush(key string, elements ...string) uint32 {
 }
 
 func (s *store) LPop(key string, count uint32) []string {
+	if isExpired := s.expireIfNeeded(key); isExpired {
+		return nil
+	}
+
 	rObj, exists := s.data[key]
 	if !exists {
 		return nil
@@ -49,6 +55,8 @@ func (s *store) LPop(key string, count uint32) []string {
 }
 
 func (s *store) RPush(key string, elements ...string) uint32 {
+	s.expireIfNeeded(key)
+
 	rObj, exists := s.data[key]
 	if exists {
 		quickList, ok := rObj.Value.(data_structure.QuickList)
@@ -72,6 +80,10 @@ func (s *store) RPush(key string, elements ...string) uint32 {
 }
 
 func (s *store) RPop(key string, count uint32) []string {
+	if isExpired := s.expireIfNeeded(key); isExpired {
+		return nil
+	}
+
 	rObj, exists := s.data[key]
 	if !exists {
 		return nil
@@ -91,9 +103,13 @@ func (s *store) RPop(key string, count uint32) []string {
 }
 
 func (s *store) LRange(key string, start int32, end int32) []string {
+	if isExpired := s.expireIfNeeded(key); isExpired {
+		return []string{}
+	}
+
 	rObj, exists := s.data[key]
 	if !exists {
-		return nil
+		return []string{}
 	}
 
 	quickList, ok := rObj.Value.(data_structure.QuickList)
@@ -105,6 +121,10 @@ func (s *store) LRange(key string, start int32, end int32) []string {
 }
 
 func (s *store) LIndex(key string, index int32) (string, bool) {
+	if isExpired := s.expireIfNeeded(key); isExpired {
+		return "", false
+	}
+	
 	rObj, existing := s.Get(key)
 	if !existing {
 		return "", false
@@ -119,6 +139,10 @@ func (s *store) LIndex(key string, index int32) (string, bool) {
 }
 
 func (s *store) LLen(key string) uint32 {
+	if isExpired := s.expireIfNeeded(key); isExpired {
+		return 0
+	}
+
 	rObj, existing := s.Get(key)
 	if !existing {
 		return 0
@@ -133,6 +157,10 @@ func (s *store) LLen(key string) uint32 {
 }
 
 func (s *store) LRem(key string, count int32, element string) uint32 {
+	if isExpired := s.expireIfNeeded(key); isExpired {
+		return 0
+	}
+
 	rObj, existing := s.Get(key)
 	if !existing {
 		return 0
@@ -152,6 +180,10 @@ func (s *store) LRem(key string, count int32, element string) uint32 {
 }
 
 func (s *store) LSet(key string, index int32, element string) error {
+	if isExpired := s.expireIfNeeded(key); isExpired {
+		return errors.New("no such key")
+	}
+
 	rObj, existing := s.Get(key)
 	if !existing {
 		return errors.New("no such key")
@@ -166,6 +198,10 @@ func (s *store) LSet(key string, index int32, element string) error {
 }
 
 func (s *store) LTrim(key string, start, end int32) {
+	if isExpired := s.expireIfNeeded(key); isExpired {
+		return
+	}
+
 	rObj, existing := s.Get(key)
 	if !existing {
 		return

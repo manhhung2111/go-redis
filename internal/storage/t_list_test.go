@@ -169,7 +169,7 @@ func TestLRange_NonExistentKey(t *testing.T) {
 	s := NewStore()
 
 	result := s.LRange("nonexistent", 0, -1)
-	assert.Nil(t, result)
+	assert.Empty(t, result)
 }
 
 func TestLRange_WrongType(t *testing.T) {

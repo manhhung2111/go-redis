@@ -3,6 +3,10 @@ package storage
 import "github.com/manhhung2111/go-redis/internal/storage/data_structure"
 
 func (s *store) HGet(key string, field string) (string, bool) {
+	if isExpired := s.expireIfNeeded(key); isExpired {
+		return "", false
+	}
+
 	rObj, exists := s.data[key]
 	if !exists {
 		return "", false
@@ -17,6 +21,10 @@ func (s *store) HGet(key string, field string) (string, bool) {
 }
 
 func (s *store) HGetAll(key string) []string {
+	if isExpired := s.expireIfNeeded(key); isExpired {
+		return []string{}
+	}
+
 	rObj, exists := s.data[key]
 	if !exists {
 		return []string{}
@@ -31,6 +39,11 @@ func (s *store) HGetAll(key string) []string {
 }
 
 func (s *store) HMGet(key string, fields []string) []*string {
+	if isExpired := s.expireIfNeeded(key); isExpired {
+		result := make([]*string, len(fields))
+		return result
+	}
+
 	rObj, exists := s.data[key]
 	if !exists {
 		// Return slice with nil pointers for all fields when key doesn't exist
@@ -49,6 +62,8 @@ func (s *store) HMGet(key string, fields []string) []*string {
 }
 
 func (s *store) HIncrBy(key string, field string, increment int64) (int64, error) {
+	s.expireIfNeeded(key)
+
 	rObj, exists := s.data[key]
 	if !exists {
 		hash := data_structure.NewHash()
@@ -74,6 +89,10 @@ func (s *store) HIncrBy(key string, field string, increment int64) (int64, error
 }
 
 func (s *store) HKeys(key string) []string {
+	if isExpired := s.expireIfNeeded(key); isExpired {
+		return []string{}
+	}
+
 	rObj, exists := s.data[key]
 	if !exists {
 		return []string{}
@@ -88,6 +107,10 @@ func (s *store) HKeys(key string) []string {
 }
 
 func (s *store) HVals(key string) []string {
+	if isExpired := s.expireIfNeeded(key); isExpired {
+		return []string{}
+	}
+
 	rObj, exists := s.data[key]
 	if !exists {
 		return []string{}
@@ -102,6 +125,10 @@ func (s *store) HVals(key string) []string {
 }
 
 func (s *store) HLen(key string) uint32 {
+	if isExpired := s.expireIfNeeded(key); isExpired {
+		return 0
+	}
+
 	rObj, exists := s.data[key]
 	if !exists {
 		return 0
@@ -116,6 +143,8 @@ func (s *store) HLen(key string) uint32 {
 }
 
 func (s *store) HSet(key string, fieldValue map[string]string) int64 {
+	s.expireIfNeeded(key)
+
 	rObj, exists := s.data[key]
 	if !exists {
 		hash := data_structure.NewHash()
@@ -138,6 +167,8 @@ func (s *store) HSet(key string, fieldValue map[string]string) int64 {
 }
 
 func (s *store) HSetNx(key string, field string, value string) int64 {
+	s.expireIfNeeded(key)
+
 	rObj, exists := s.data[key]
 	if !exists {
 		// Create new hash if key doesn't exist
@@ -184,6 +215,10 @@ func (s *store) HDel(key string, fields []string) int64 {
 }
 
 func (s *store) HExists(key, field string) int64 {
+	if isExpired := s.expireIfNeeded(key); isExpired {
+		return 0
+	}
+
 	rObj, exists := s.data[key]
 	if !exists {
 		return 0

@@ -68,3 +68,13 @@ func (s *store) Expire(key string, ttlSeconds int64, opt ExpireOptions) bool {
 	s.expires[key] = newExpireAt
 	return true
 }
+
+func (s *store) expireIfNeeded(key string) bool {
+	if exp, ok := s.expires[key]; ok {
+		if exp <= uint64(time.Now().UnixMilli()) {
+			s.Del(key)
+			return true
+		}
+	}
+	return false
+}
