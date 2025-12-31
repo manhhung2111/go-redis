@@ -24,7 +24,7 @@ func TestZSet_ZAdd_BasicInsert(t *testing.T) {
 }
 
 func TestZSet_ZAdd_NX(t *testing.T) {
-	z := NewZSet()
+	z := NewZSet().(*zSet)
 
 	z.ZAdd(map[float64]string{1: "a"}, ZAddOptions{})
 
@@ -40,7 +40,7 @@ func TestZSet_ZAdd_NX(t *testing.T) {
 }
 
 func TestZSet_ZAdd_XX(t *testing.T) {
-	z := NewZSet()
+	z := NewZSet().(*zSet)
 
 	z.ZAdd(map[float64]string{1: "a"}, ZAddOptions{})
 
@@ -65,7 +65,7 @@ func TestZSet_ZAdd_XX(t *testing.T) {
 }
 
 func TestZSet_ZAdd_GT_LT(t *testing.T) {
-	z := NewZSet()
+	z := NewZSet().(*zSet)
 	z.ZAdd(map[float64]string{5: "a"}, ZAddOptions{})
 
 	// GT reject
@@ -467,7 +467,7 @@ func TestZRandMember_PositiveCount(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			z := NewZSet()
+			z := NewZSet().(*zSet)
 			z.ZAdd(tt.data, ZAddOptions{})
 			res := z.ZRandMember(tt.count, tt.withScores)
 
@@ -497,7 +497,7 @@ func TestZRandMember_NegativeCount(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			z := NewZSet()
+			z := NewZSet().(*zSet)
 			z.ZAdd(tt.data, ZAddOptions{})
 			res := z.ZRandMember(tt.count, tt.withScores)
 
@@ -513,14 +513,14 @@ func TestZRandMember_NegativeCount(t *testing.T) {
 }
 
 func TestZRandMember_ScoreFormatting(t *testing.T) {
-	z := NewZSet()
+	z := NewZSet().(*zSet)
 	z.ZAdd(map[float64]string{1.0: "a", -2.5: "b", 3.14159: "c"}, ZAddOptions{})
 
 	res := z.ZRandMember(3, true)
 	assertMemberScorePairs(t, z, res)
 }
 
-func assertMembersExist(t *testing.T, z *ZSet, members []string) {
+func assertMembersExist(t *testing.T, z *zSet, members []string) {
 	for _, m := range members {
 		_, ok := z.data[m]
 		assert.True(t, ok, "member %s should exist", m)
@@ -540,7 +540,7 @@ func TestZRandMember_Uniqueness(t *testing.T) {
 	assert.Len(t, res2, 100)
 }
 
-func assertMemberScorePairs(t *testing.T, z *ZSet, result []string) {
+func assertMemberScorePairs(t *testing.T, z *zSet, result []string) {
 	require.True(t, len(result)%2 == 0)
 	for i := 0; i < len(result); i += 2 {
 		score, err := strconv.ParseFloat(result[i+1], 64)

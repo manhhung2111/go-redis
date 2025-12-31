@@ -8,7 +8,29 @@ import (
 	"github.com/manhhung2111/go-redis/internal/util"
 )
 
-type ZSet struct {
+type ZSet interface {
+	ZAdd(scoreMember map[float64]string, options ZAddOptions) *uint32
+	ZCard() uint32
+	ZCount(minScore, maxScore float64) uint32
+	ZIncrBy(member string, increment float64) (float64, bool)
+	ZLexCount(minValue, maxValue string) uint32
+	ZMScore(members []string) []*float64
+	ZPopMax(count int) []string
+	ZPopMin(count int) []string
+	ZRandMember(count int, withScores bool) []string
+	ZRangeByRank(start, stop int, withScores bool) []string
+	ZRangeByLex(start, stop string, withScores bool) []string
+	ZRangeByScore(start, stop float64, withScores bool) []string
+	ZRevRangeByRank(start, stop int, withScores bool) []string
+	ZRevRangeByLex(start, stop string, withScores bool) []string
+	ZRevRangeByScore(start, stop float64, withScores bool) []string
+	ZRank(member string, withScore bool) []any
+	ZRem(members []string) int
+	ZRevRank(member string, withScore bool) []any
+	ZScore(member string) *float64
+}
+
+type zSet struct {
 	skipList *skipList
 	data     map[string]float64
 }
@@ -21,14 +43,14 @@ type ZAddOptions struct {
 	CH bool
 }
 
-func NewZSet() *ZSet {
-	return &ZSet{
+func NewZSet() ZSet {
+	return &zSet{
 		skipList: newSkipList(),
 		data:     make(map[string]float64),
 	}
 }
 
-func (zset *ZSet) ZAdd(scoreMember map[float64]string, options ZAddOptions) *uint32 {
+func (zset *zSet) ZAdd(scoreMember map[float64]string, options ZAddOptions) *uint32 {
 	if options.NX && options.XX || options.GT && options.LT {
 		return nil
 	}
@@ -85,15 +107,15 @@ func (zset *ZSet) ZAdd(scoreMember map[float64]string, options ZAddOptions) *uin
 	return &result
 }
 
-func (zset *ZSet) ZCard() uint32 {
+func (zset *zSet) ZCard() uint32 {
 	return uint32(len(zset.data))
 }
 
-func (zset *ZSet) ZCount(minScore, maxScore float64) uint32 {
+func (zset *zSet) ZCount(minScore, maxScore float64) uint32 {
 	return uint32(zset.skipList.countByScore(minScore, maxScore))
 }
 
-func (zset *ZSet) ZIncrBy(member string, increment float64) (float64, bool) {
+func (zset *zSet) ZIncrBy(member string, increment float64) (float64, bool) {
 	score, exists := zset.data[member]
 	if !exists {
 		zset.skipList.insert(member, increment)
@@ -112,11 +134,11 @@ func (zset *ZSet) ZIncrBy(member string, increment float64) (float64, bool) {
 	return newScore, true
 }
 
-func (zset *ZSet) ZLexCount(minValue, maxValue string) uint32 {
+func (zset *zSet) ZLexCount(minValue, maxValue string) uint32 {
 	return uint32(zset.skipList.countByLex(minValue, maxValue))
 }
 
-func (zset *ZSet) ZMScore(members []string) []*float64 {
+func (zset *zSet) ZMScore(members []string) []*float64 {
 	result := make([]*float64, len(members))
 	for i := 0; i < len(members); i++ {
 		if score, exists := zset.data[members[i]]; exists {
@@ -129,7 +151,7 @@ func (zset *ZSet) ZMScore(members []string) []*float64 {
 	return result
 }
 
-func (zset *ZSet) ZPopMax(count int) []string {
+func (zset *zSet) ZPopMax(count int) []string {
 	poppedNodes := zset.skipList.popMax(count)
 	if poppedNodes == nil {
 		return []string{}
@@ -144,7 +166,7 @@ func (zset *ZSet) ZPopMax(count int) []string {
 	return result
 }
 
-func (zset *ZSet) ZPopMin(count int) []string {
+func (zset *zSet) ZPopMin(count int) []string {
 	poppedNodes := zset.skipList.popMin(count)
 	if poppedNodes == nil {
 		return []string{}
@@ -159,7 +181,7 @@ func (zset *ZSet) ZPopMin(count int) []string {
 	return result
 }
 
-func (zset *ZSet) ZRandMember(count int, withScores bool) []string {
+func (zset *zSet) ZRandMember(count int, withScores bool) []string {
 	if count == 0 {
 		return []string{}
 	}
@@ -218,37 +240,37 @@ func (zset *ZSet) ZRandMember(count int, withScores bool) []string {
 	return result
 }
 
-func (zset *ZSet) ZRangeByRank(start, stop int, withScores bool) []string {
+func (zset *zSet) ZRangeByRank(start, stop int, withScores bool) []string {
 	nodes := zset.skipList.getRangeByRank(start, stop)
 	return zset.nodesToStringSlice(nodes, withScores)
 }
 
-func (zset *ZSet) ZRangeByLex(start, stop string, withScores bool) []string {
+func (zset *zSet) ZRangeByLex(start, stop string, withScores bool) []string {
 	nodes := zset.skipList.getRangeByLex(start, stop)
 	return zset.nodesToStringSlice(nodes, withScores)
 }
 
-func (zset *ZSet) ZRangeByScore(start, stop float64, withScores bool) []string {
+func (zset *zSet) ZRangeByScore(start, stop float64, withScores bool) []string {
 	nodes := zset.skipList.getRangeByScore(start, stop)
 	return zset.nodesToStringSlice(nodes, withScores)
 }
 
-func (zset *ZSet) ZRevRangeByRank(start, stop int, withScores bool) []string {
+func (zset *zSet) ZRevRangeByRank(start, stop int, withScores bool) []string {
 	nodes := zset.skipList.getRevRangeByRank(start, stop)
 	return zset.nodesToStringSlice(nodes, withScores)
 }
 
-func (zset *ZSet) ZRevRangeByLex(start, stop string, withScores bool) []string {
+func (zset *zSet) ZRevRangeByLex(start, stop string, withScores bool) []string {
 	nodes := zset.skipList.getRevRangeByLex(start, stop)
 	return zset.nodesToStringSlice(nodes, withScores)
 }
 
-func (zset *ZSet) ZRevRangeByScore(start, stop float64, withScores bool) []string {
+func (zset *zSet) ZRevRangeByScore(start, stop float64, withScores bool) []string {
 	nodes := zset.skipList.getRevRangeByScore(start, stop)
 	return zset.nodesToStringSlice(nodes, withScores)
 }
 
-func (zset *ZSet) ZRank(member string, withScore bool) []any {
+func (zset *zSet) ZRank(member string, withScore bool) []any {
 	score, exists := zset.data[member]
 	if !exists {
 		return nil
@@ -265,7 +287,7 @@ func (zset *ZSet) ZRank(member string, withScore bool) []any {
 	return []any{rank}
 }
 
-func (zset *ZSet) ZRem(members []string) int {
+func (zset *zSet) ZRem(members []string) int {
 	removed := 0
 
 	for _, member := range members {
@@ -281,7 +303,7 @@ func (zset *ZSet) ZRem(members []string) int {
 	return removed
 }
 
-func (zset *ZSet) ZRevRank(member string, withScore bool) []any {
+func (zset *zSet) ZRevRank(member string, withScore bool) []any {
 	score, exists := zset.data[member]
 	if !exists {
 		return nil
@@ -291,7 +313,7 @@ func (zset *ZSet) ZRevRank(member string, withScore bool) []any {
 	if forwardRank == -1 {
 		return nil
 	}
-	
+
 	rank := zset.skipList.length - 1 - forwardRank
 
 	if withScore {
@@ -300,7 +322,7 @@ func (zset *ZSet) ZRevRank(member string, withScore bool) []any {
 	return []any{rank}
 }
 
-func (zset *ZSet) ZScore(member string) *float64 {
+func (zset *zSet) ZScore(member string) *float64 {
 	score, exists := zset.data[member]
 	if !exists {
 		return nil
@@ -309,7 +331,7 @@ func (zset *ZSet) ZScore(member string) *float64 {
 	return &score
 }
 
-func (zset *ZSet) nodesToStringSlice(nodes []*skipListNode, withScores bool) []string {
+func (zset *zSet) nodesToStringSlice(nodes []*skipListNode, withScores bool) []string {
 	nodeCount := len(nodes)
 	if nodeCount == 0 {
 		return []string{}
