@@ -9,7 +9,7 @@ import (
 )
 
 type ZSet interface {
-	ZAdd(scoreMember map[float64]string, options ZAddOptions) *uint32
+	ZAdd(scoreMember map[string]float64, options ZAddOptions) *uint32
 	ZCard() uint32
 	ZCount(minScore, maxScore float64) uint32
 	ZIncrBy(member string, increment float64) (float64, bool)
@@ -50,7 +50,7 @@ func NewZSet() ZSet {
 	}
 }
 
-func (zset *zSet) ZAdd(scoreMember map[float64]string, options ZAddOptions) *uint32 {
+func (zset *zSet) ZAdd(scoreMember map[string]float64, options ZAddOptions) *uint32 {
 	if options.NX && options.XX || options.GT && options.LT {
 		return nil
 	}
@@ -71,7 +71,7 @@ func (zset *zSet) ZAdd(scoreMember map[float64]string, options ZAddOptions) *uin
 	}
 
 	result := uint32(0)
-	for newScore, member := range scoreMember {
+	for member, newScore := range scoreMember {
 		oldScore, exists := zset.data[member]
 
 		if options.NX && exists {
@@ -159,6 +159,7 @@ func (zset *zSet) ZPopMax(count int) []string {
 
 	result := make([]string, 0, len(poppedNodes)*2)
 	for i := range poppedNodes {
+		delete(zset.data, poppedNodes[i].value)
 		result = append(result, poppedNodes[i].value)
 		result = append(result, formatFloat(poppedNodes[i].score))
 	}
@@ -174,6 +175,7 @@ func (zset *zSet) ZPopMin(count int) []string {
 
 	result := make([]string, 0, len(poppedNodes)*2)
 	for i := range poppedNodes {
+		delete(zset.data, poppedNodes[i].value)
 		result = append(result, poppedNodes[i].value)
 		result = append(result, formatFloat(poppedNodes[i].score))
 	}
@@ -313,6 +315,7 @@ func (zset *zSet) ZRevRank(member string, withScore bool) []any {
 	if forwardRank == -1 {
 		return nil
 	}
+
 
 	rank := zset.skipList.length - 1 - forwardRank
 

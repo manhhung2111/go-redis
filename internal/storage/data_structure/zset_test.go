@@ -13,9 +13,9 @@ import (
 func TestZSet_ZAdd_BasicInsert(t *testing.T) {
 	z := NewZSet()
 
-	res := z.ZAdd(map[float64]string{
-		1: "one",
-		2: "two",
+	res := z.ZAdd(map[string]float64{
+		"one": 1,
+		"two": 2,
 	}, ZAddOptions{})
 
 	require.NotNil(t, res)
@@ -26,11 +26,11 @@ func TestZSet_ZAdd_BasicInsert(t *testing.T) {
 func TestZSet_ZAdd_NX(t *testing.T) {
 	z := NewZSet().(*zSet)
 
-	z.ZAdd(map[float64]string{1: "a"}, ZAddOptions{})
+	z.ZAdd(map[string]float64{"a": 1}, ZAddOptions{})
 
-	res := z.ZAdd(map[float64]string{
-		2: "a", // should be ignored
-		3: "b",
+	res := z.ZAdd(map[string]float64{
+		"a": 2, // should be ignored
+		"b": 3,
 	}, ZAddOptions{NX: true})
 
 	require.NotNil(t, res)
@@ -42,11 +42,11 @@ func TestZSet_ZAdd_NX(t *testing.T) {
 func TestZSet_ZAdd_XX(t *testing.T) {
 	z := NewZSet().(*zSet)
 
-	z.ZAdd(map[float64]string{1: "a"}, ZAddOptions{})
+	z.ZAdd(map[string]float64{"a": 1}, ZAddOptions{})
 
 	// update without CH → result must be 0
-	res := z.ZAdd(map[float64]string{
-		2: "a",
+	res := z.ZAdd(map[string]float64{
+		"a": 2,
 	}, ZAddOptions{XX: true})
 
 	require.NotNil(t, res)
@@ -55,8 +55,8 @@ func TestZSet_ZAdd_XX(t *testing.T) {
 	assert.Equal(t, float64(2), z.data["a"])
 
 	// update with CH → result increments
-	res = z.ZAdd(map[float64]string{
-		3: "a",
+	res = z.ZAdd(map[string]float64{
+		"a": 3,
 	}, ZAddOptions{XX: true, CH: true})
 
 	require.NotNil(t, res)
@@ -66,33 +66,33 @@ func TestZSet_ZAdd_XX(t *testing.T) {
 
 func TestZSet_ZAdd_GT_LT(t *testing.T) {
 	z := NewZSet().(*zSet)
-	z.ZAdd(map[float64]string{5: "a"}, ZAddOptions{})
+	z.ZAdd(map[string]float64{"a": 5}, ZAddOptions{})
 
 	// GT reject
-	res := z.ZAdd(map[float64]string{3: "a"}, ZAddOptions{GT: true})
+	res := z.ZAdd(map[string]float64{"a": 3}, ZAddOptions{GT: true})
 	require.NotNil(t, res)
 	assert.Equal(t, uint32(0), *res)
 	assert.Equal(t, float64(5), z.data["a"])
 
 	// GT accept, no CH → 0
-	res = z.ZAdd(map[float64]string{7: "a"}, ZAddOptions{GT: true})
+	res = z.ZAdd(map[string]float64{"a": 7}, ZAddOptions{GT: true})
 	require.NotNil(t, res)
 	assert.Equal(t, uint32(0), *res)
 	assert.Equal(t, float64(7), z.data["a"])
 
 	// GT accept with CH → 1
-	res = z.ZAdd(map[float64]string{9: "a"}, ZAddOptions{GT: true, CH: true})
+	res = z.ZAdd(map[string]float64{"a": 9}, ZAddOptions{GT: true, CH: true})
 	require.NotNil(t, res)
 	assert.Equal(t, uint32(1), *res)
 	assert.Equal(t, float64(9), z.data["a"])
 
 	// LT reject
-	res = z.ZAdd(map[float64]string{10: "a"}, ZAddOptions{LT: true})
+	res = z.ZAdd(map[string]float64{"a": 10}, ZAddOptions{LT: true})
 	require.NotNil(t, res)
 	assert.Equal(t, uint32(0), *res)
 
 	// LT accept with CH
-	res = z.ZAdd(map[float64]string{8: "a"}, ZAddOptions{LT: true, CH: true})
+	res = z.ZAdd(map[string]float64{"a": 8}, ZAddOptions{LT: true, CH: true})
 	require.NotNil(t, res)
 	assert.Equal(t, uint32(1), *res)
 	assert.Equal(t, float64(8), z.data["a"])
@@ -101,17 +101,17 @@ func TestZSet_ZAdd_GT_LT(t *testing.T) {
 func TestZSet_ZAdd_CH(t *testing.T) {
 	z := NewZSet()
 
-	res := z.ZAdd(map[float64]string{1: "a"}, ZAddOptions{CH: true})
+	res := z.ZAdd(map[string]float64{"a": 1}, ZAddOptions{CH: true})
 	require.NotNil(t, res)
 	assert.Equal(t, uint32(1), *res)
 
 	// same score → no change
-	res = z.ZAdd(map[float64]string{1: "a"}, ZAddOptions{CH: true})
+	res = z.ZAdd(map[string]float64{"a": 1}, ZAddOptions{CH: true})
 	require.NotNil(t, res)
 	assert.Equal(t, uint32(0), *res)
 
 	// score change
-	res = z.ZAdd(map[float64]string{2: "a"}, ZAddOptions{CH: true})
+	res = z.ZAdd(map[string]float64{"a": 2}, ZAddOptions{CH: true})
 	require.NotNil(t, res)
 	assert.Equal(t, uint32(1), *res)
 }
@@ -120,17 +120,17 @@ func TestZSet_ZAdd_InvalidOptions(t *testing.T) {
 	z := NewZSet()
 
 	assert.Nil(t, z.ZAdd(
-		map[float64]string{1: "a"},
+		map[string]float64{"a": 1},
 		ZAddOptions{NX: true, XX: true},
 	))
 
 	assert.Nil(t, z.ZAdd(
-		map[float64]string{1: "a"},
+		map[string]float64{"a": 1},
 		ZAddOptions{GT: true, LT: true},
 	))
 
 	assert.Nil(t, z.ZAdd(
-		map[float64]string{1: "a"},
+		map[string]float64{"a": 1},
 		ZAddOptions{NX: true, GT: true},
 	))
 }
@@ -138,18 +138,18 @@ func TestZSet_ZAdd_InvalidOptions(t *testing.T) {
 func TestZSet_ZCard_AfterUpdates(t *testing.T) {
 	z := NewZSet()
 
-	z.ZAdd(map[float64]string{
-		1: "a",
-		2: "b",
-		3: "c",
+	z.ZAdd(map[string]float64{
+		"a": 1,
+		"b": 2,
+		"c": 3,
 	}, ZAddOptions{})
 
 	assert.Equal(t, uint32(3), z.ZCard())
 
-	z.ZAdd(map[float64]string{5: "b"}, ZAddOptions{})
+	z.ZAdd(map[string]float64{"b": 5}, ZAddOptions{})
 	assert.Equal(t, uint32(3), z.ZCard())
 
-	z.ZAdd(map[float64]string{4: "d"}, ZAddOptions{})
+	z.ZAdd(map[string]float64{"d": 4}, ZAddOptions{})
 	assert.Equal(t, uint32(4), z.ZCard())
 }
 
@@ -444,7 +444,7 @@ func TestZSet_ZPop_ReducesCountCorrectly(t *testing.T) {
 
 func TestZRandMember_ZeroAndEmpty(t *testing.T) {
 	z := NewZSet()
-	z.ZAdd(map[float64]string{1: "a", 2: "b"}, ZAddOptions{})
+	z.ZAdd(map[string]float64{"a": 1, "b": 2}, ZAddOptions{})
 
 	assert.Empty(t, z.ZRandMember(0, false))
 	assert.Empty(t, NewZSet().ZRandMember(5, false))
@@ -453,16 +453,16 @@ func TestZRandMember_ZeroAndEmpty(t *testing.T) {
 func TestZRandMember_PositiveCount(t *testing.T) {
 	tests := []struct {
 		name       string
-		data       map[float64]string
+		data       map[string]float64
 		count      int
 		withScores bool
 		wantLen    int
 	}{
-		{"lt size no score", map[float64]string{1: "a", 2: "b", 3: "c"}, 2, false, 2},
-		{"eq size no score", map[float64]string{1: "a", 2: "b"}, 2, false, 2},
-		{"gt size no score", map[float64]string{1: "a", 2: "b"}, 10, false, 2},
-		{"lt size with score", map[float64]string{1: "a", 2: "b", 3: "c"}, 2, true, 4},
-		{"gt size with score", map[float64]string{1: "a", 2: "b"}, 10, true, 4},
+		{"lt size no score", map[string]float64{"a": 1, "b": 2, "c": 3}, 2, false, 2},
+		{"eq size no score", map[string]float64{"a": 1, "b": 2}, 2, false, 2},
+		{"gt size no score", map[string]float64{"a": 1, "b": 2}, 10, false, 2},
+		{"lt size with score", map[string]float64{"a": 1, "b": 2, "c": 3}, 2, true, 4},
+		{"gt size with score", map[string]float64{"a": 1, "b": 2}, 10, true, 4},
 	}
 
 	for _, tt := range tests {
@@ -486,13 +486,13 @@ func TestZRandMember_PositiveCount(t *testing.T) {
 func TestZRandMember_NegativeCount(t *testing.T) {
 	tests := []struct {
 		name       string
-		data       map[float64]string
+		data       map[string]float64
 		count      int
 		withScores bool
 		wantLen    int
 	}{
-		{"dup no score", map[float64]string{1: "a", 2: "b"}, -5, false, 5},
-		{"dup with score", map[float64]string{1: "a"}, -3, true, 6},
+		{"dup no score", map[string]float64{"a": 1, "b": 2}, -5, false, 5},
+		{"dup with score", map[string]float64{"a": 1}, -3, true, 6},
 	}
 
 	for _, tt := range tests {
@@ -514,7 +514,7 @@ func TestZRandMember_NegativeCount(t *testing.T) {
 
 func TestZRandMember_ScoreFormatting(t *testing.T) {
 	z := NewZSet().(*zSet)
-	z.ZAdd(map[float64]string{1.0: "a", -2.5: "b", 3.14159: "c"}, ZAddOptions{})
+	z.ZAdd(map[string]float64{"a": 1.0, "b": -2.5, "c": 3.14159}, ZAddOptions{})
 
 	res := z.ZRandMember(3, true)
 	assertMemberScorePairs(t, z, res)
@@ -530,7 +530,7 @@ func assertMembersExist(t *testing.T, z *zSet, members []string) {
 func TestZRandMember_Uniqueness(t *testing.T) {
 	z := NewZSet()
 	for i := 0; i < 100; i++ {
-		z.ZAdd(map[float64]string{float64(i): strconv.Itoa(i)}, ZAddOptions{})
+		z.ZAdd(map[string]float64{strconv.Itoa(i): float64(i)}, ZAddOptions{})
 	}
 
 	res := z.ZRandMember(20, false)
@@ -559,11 +559,11 @@ func unique(arr []string) map[string]struct{} {
 
 func TestZSet_ZRangeByRank_Basic(t *testing.T) {
 	z := NewZSet()
-	z.ZAdd(map[float64]string{
-		1: "a",
-		2: "b",
-		3: "c",
-		4: "d",
+	z.ZAdd(map[string]float64{
+		"a": 1,
+		"b": 2,
+		"c": 3,
+		"d": 4,
 	}, ZAddOptions{})
 
 	assert.Equal(t,
@@ -600,11 +600,11 @@ func TestZSet_ZRangeByRank_OutOfBounds(t *testing.T) {
 
 func TestZSet_ZRevRangeByRank_Basic(t *testing.T) {
 	z := NewZSet()
-	z.ZAdd(map[float64]string{
-		1: "a",
-		2: "b",
-		3: "c",
-		4: "d",
+	z.ZAdd(map[string]float64{
+		"a": 1,
+		"b": 2,
+		"c": 3,
+		"d": 4,
 	}, ZAddOptions{})
 
 	assert.Equal(t,
@@ -632,11 +632,11 @@ func TestZSet_ZRevRangeByRank_Negative(t *testing.T) {
 
 func TestZSet_ZRangeByScore(t *testing.T) {
 	z := NewZSet()
-	z.ZAdd(map[float64]string{
-		1: "a",
-		2: "b",
-		3: "c",
-		4: "d",
+	z.ZAdd(map[string]float64{
+		"a": 1,
+		"b": 2,
+		"c": 3,
+		"d": 4,
 	}, ZAddOptions{})
 
 	assert.Equal(t,
@@ -657,11 +657,11 @@ func TestZSet_ZRangeByScore_Empty(t *testing.T) {
 
 func TestZSet_ZRevRangeByScore(t *testing.T) {
 	z := NewZSet()
-	z.ZAdd(map[float64]string{
-		1: "a",
-		2: "b",
-		3: "c",
-		4: "d",
+	z.ZAdd(map[string]float64{
+		"a": 1,
+		"b": 2,
+		"c": 3,
+		"d": 4,
 	}, ZAddOptions{})
 
 	assert.Equal(t,
@@ -720,10 +720,10 @@ func TestZSet_ZRevRangeByLex(t *testing.T) {
 
 func TestZSet_ZRank_Basic(t *testing.T) {
 	z := NewZSet()
-	z.ZAdd(map[float64]string{
-		1: "a",
-		2: "b",
-		3: "c",
+	z.ZAdd(map[string]float64{
+		"a": 1,
+		"b": 2,
+		"c": 3,
 	}, ZAddOptions{})
 
 	res := z.ZRank("a", false)
@@ -736,9 +736,9 @@ func TestZSet_ZRank_Basic(t *testing.T) {
 
 func TestZSet_ZRank_WithScore(t *testing.T) {
 	z := NewZSet()
-	z.ZAdd(map[float64]string{
-		2: "b",
-		1: "a",
+	z.ZAdd(map[string]float64{
+		"b": 2,
+		"a": 1,
 	}, ZAddOptions{})
 
 	res := z.ZRank("b", true)
@@ -751,17 +751,17 @@ func TestZSet_ZRank_WithScore(t *testing.T) {
 
 func TestZSet_ZRank_NotFound(t *testing.T) {
 	z := NewZSet()
-	z.ZAdd(map[float64]string{1: "a"}, ZAddOptions{})
+	z.ZAdd(map[string]float64{"a": 1}, ZAddOptions{})
 
 	assert.Nil(t, z.ZRank("missing", false))
 }
 
 func TestZSet_ZRevRank_Basic(t *testing.T) {
 	z := NewZSet()
-	z.ZAdd(map[float64]string{
-		1: "a",
-		2: "b",
-		3: "c",
+	z.ZAdd(map[string]float64{
+		"a": 1,
+		"b": 2,
+		"c": 3,
 	}, ZAddOptions{})
 
 	res := z.ZRevRank("c", false)
@@ -774,10 +774,10 @@ func TestZSet_ZRevRank_Basic(t *testing.T) {
 
 func TestZSet_ZRevRank_WithScore(t *testing.T) {
 	z := NewZSet()
-	z.ZAdd(map[float64]string{
-		1: "a",
-		2: "b",
-		3: "c",
+	z.ZAdd(map[string]float64{
+		"a": 1,
+		"b": 2,
+		"c": 3,
 	}, ZAddOptions{})
 
 	res := z.ZRevRank("b", true)
@@ -790,16 +790,16 @@ func TestZSet_ZRevRank_WithScore(t *testing.T) {
 
 func TestZSet_ZRevRank_NotFound(t *testing.T) {
 	z := NewZSet()
-	z.ZAdd(map[float64]string{1: "a"}, ZAddOptions{})
+	z.ZAdd(map[string]float64{"a": 1}, ZAddOptions{})
 
 	assert.Nil(t, z.ZRevRank("x", false))
 }
 
 func TestZSet_ZRem_Single(t *testing.T) {
 	z := NewZSet()
-	z.ZAdd(map[float64]string{
-		1: "a",
-		2: "b",
+	z.ZAdd(map[string]float64{
+		"a": 1,
+		"b": 2,
 	}, ZAddOptions{})
 
 	removed := z.ZRem([]string{"a"})
@@ -811,10 +811,10 @@ func TestZSet_ZRem_Single(t *testing.T) {
 
 func TestZSet_ZRem_Multiple(t *testing.T) {
 	z := NewZSet()
-	z.ZAdd(map[float64]string{
-		1: "a",
-		2: "b",
-		3: "c",
+	z.ZAdd(map[string]float64{
+		"a": 1,
+		"b": 2,
+		"c": 3,
 	}, ZAddOptions{})
 
 	removed := z.ZRem([]string{"a", "c", "x"})
@@ -827,7 +827,7 @@ func TestZSet_ZRem_Multiple(t *testing.T) {
 
 func TestZSet_ZRem_Idempotent(t *testing.T) {
 	z := NewZSet()
-	z.ZAdd(map[float64]string{1: "a"}, ZAddOptions{})
+	z.ZAdd(map[string]float64{"a": 1}, ZAddOptions{})
 
 	assert.Equal(t, 1, z.ZRem([]string{"a"}))
 	assert.Equal(t, 0, z.ZRem([]string{"a"}))
@@ -835,7 +835,7 @@ func TestZSet_ZRem_Idempotent(t *testing.T) {
 
 func TestZSet_ZScore_Basic(t *testing.T) {
 	z := NewZSet()
-	z.ZAdd(map[float64]string{1.5: "a"}, ZAddOptions{})
+	z.ZAdd(map[string]float64{"a": 1.5}, ZAddOptions{})
 
 	score := z.ZScore("a")
 	require.NotNil(t, score)
@@ -849,8 +849,8 @@ func TestZSet_ZScore_NotFound(t *testing.T) {
 
 func TestZSet_ZScore_AfterUpdate(t *testing.T) {
 	z := NewZSet()
-	z.ZAdd(map[float64]string{1: "a"}, ZAddOptions{})
-	z.ZAdd(map[float64]string{5: "a"}, ZAddOptions{})
+	z.ZAdd(map[string]float64{"a": 1}, ZAddOptions{})
+	z.ZAdd(map[string]float64{"a": 5}, ZAddOptions{})
 
 	score := z.ZScore("a")
 	require.NotNil(t, score)
@@ -859,7 +859,7 @@ func TestZSet_ZScore_AfterUpdate(t *testing.T) {
 
 func TestZSet_ZScore_AfterRemove(t *testing.T) {
 	z := NewZSet()
-	z.ZAdd(map[float64]string{1: "a"}, ZAddOptions{})
+	z.ZAdd(map[string]float64{"a": 1}, ZAddOptions{})
 	z.ZRem([]string{"a"})
 
 	assert.Nil(t, z.ZScore("a"))
