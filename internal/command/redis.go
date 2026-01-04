@@ -57,6 +57,21 @@ type Redis interface {
 	HSetNx(cmd core.RedisCmd) []byte
 	HDel(cmd core.RedisCmd) []byte
 	HExists(cmd core.RedisCmd) []byte
+
+	ZAdd(cmd core.RedisCmd) []byte
+	ZCard(cmd core.RedisCmd) []byte
+	ZCount(cmd core.RedisCmd) []byte
+	ZIncrBy(cmd core.RedisCmd) []byte
+	ZLexCount(cmd core.RedisCmd) []byte
+	ZMScore(cmd core.RedisCmd) []byte
+	ZPopMax(cmd core.RedisCmd) []byte
+	ZPopMin(cmd core.RedisCmd) []byte
+	ZRandMember(cmd core.RedisCmd) []byte
+	ZRange(cmd core.RedisCmd) []byte
+	ZRank(cmd core.RedisCmd) []byte
+	ZRem(cmd core.RedisCmd) []byte
+	ZRevRank(cmd core.RedisCmd) []byte
+	ZScore(cmd core.RedisCmd) []byte
 }
 
 type CommandHandler func(cmd core.RedisCmd) []byte
@@ -118,6 +133,21 @@ func NewRedis(
 		"HSETNX":  redis.HSetNx,
 		"HDEL":    redis.HDel,
 		"HEXISTS": redis.HExists,
+
+		"ZADD":        redis.ZAdd,
+		"ZCARD":       redis.ZCard,
+		"ZCOUNT":      redis.ZCount,
+		"ZINCRBY":     redis.ZIncrBy,
+		"ZLEXCOUNT":   redis.ZLexCount,
+		"ZMSCORE":     redis.ZMScore,
+		"ZPOPMAX":     redis.ZPopMax,
+		"ZPOPMIN":     redis.ZPopMin,
+		"ZRANDMEMBER": redis.ZRandMember,
+		"ZRANGE":      redis.ZRange,
+		"ZRANK":       redis.ZRank,
+		"ZREM":        redis.ZRem,
+		"ZREVRANK":    redis.ZRevRank,
+		"ZSCORE":      redis.ZScore,
 	}
 
 	return redis

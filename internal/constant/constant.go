@@ -14,6 +14,13 @@ var RESP_EXPIRE_TIMEOUT_SET []byte = []byte(":1\r\n")
 var RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE []byte = []byte("-value is not an integer or out of range\r\n")
 var RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE []byte = []byte("-value is out of range, must be positive\r\n")
 
+var RESP_SYNTAX_ERROR []byte = []byte("-syntax error")
+var RESP_XX_NX_NOT_COMPATIBLE []byte = []byte("-XX and NX options at the same time are not compatible")
+var RESP_GT_LT_NX_NOT_COMPATIBLE []byte = []byte("-GT, LT, and/or NX options at the same time are not compatible")
+var RESP_VALUE_IS_NOT_VALID_FLOAT []byte = []byte("-value is not a valid float")
+var RESP_MIN_OR_MAX_IS_NOT_FLOAT []byte = []byte("-min or max is not a float")
+var RESP_WITHSCORES_NOT_SUPPORTED_WITH_BYLEX []byte = []byte("-syntax error, WITHSCORES not supported in combination with BYLEX")
+
 const NO_EXPIRE int64 = -1
 const KEY_NOT_EXISTS int64 = -2
 
