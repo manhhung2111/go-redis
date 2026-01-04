@@ -4,9 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
-
-	"github.com/manhhung2111/go-redis/internal/constant"
 )
 
 type RespType byte
@@ -160,56 +159,96 @@ func DecodeResp(data []byte) (interface{}, int, error) {
 	}
 }
 
+// EncodeResp encodes a value into RESP (REdis Serialization Protocol) format
 func EncodeResp(value interface{}, isSimpleString bool) []byte {
 	switch v := value.(type) {
 	case string:
-		if isSimpleString {
-			return []byte(fmt.Sprintf("+%s%s", v, CRLF))
-		}
-		return []byte(fmt.Sprintf("$%d%s%s%s", len(v), CRLF, v, CRLF))
+		return encodeString(v, isSimpleString)
+	case int:
+		return encodeInteger(int64(v))
 	case int64:
-		return []byte(fmt.Sprintf(":%d%s", v, CRLF))
+		return encodeInteger(v)
 	case uint32:
-		return []byte(fmt.Sprintf(":%d%s", v, CRLF))
+		return encodeInteger(int64(v))
+	case float64:
+		return encodeFloat(v)
 	case error:
-		return []byte(fmt.Sprintf("-%s%s", v.Error(), CRLF))
+		return encodeError(v)
 	case nil:
-		return constant.RESP_NIL_BULK_STRING
-	case []string:
-		var buf []byte
-		buf = append(buf, []byte(fmt.Sprintf("*%d%s", len(v), CRLF))...)
-
-		for _, elem := range v {
-			buf = append(buf, EncodeResp(elem, false)...)
-		}
-
-		return buf
-	case []int64:
-		var buf []byte
-		buf = append(buf, []byte(fmt.Sprintf("*%d%s", len(v), CRLF))...)
-
-		for _, elem := range v {
-			buf = append(buf, EncodeResp(elem, false)...)
-		}
-
-		return buf
+		return encodeNil()
 	case *string:
-    if v == nil {
-        return constant.RESP_NIL_BULK_STRING
-    }
-    return []byte(fmt.Sprintf("$%d%s%s%s", len(*v), CRLF, *v, CRLF))
+		return encodeStringPointer(v)
+	case *float64:
+		return encodeFloatPointer(v)
+	case []string:
+		return encodeArray(v)
+	case []int64:
+		return encodeArray(v)
 	case []*string:
-		var buf []byte
-		buf = append(buf, []byte(fmt.Sprintf("*%d%s", len(v), CRLF))...)
-
-		for _, elem := range v {
-			buf = append(buf, EncodeResp(elem, false)...)
-		}
-
-		return buf
+		return encodeArray(v)
+	case []*float64:
+		return encodeArray(v)
+	case []any:
+		return encodeArray(v)
 	default:
-		return constant.RESP_NIL_BULK_STRING
+		return encodeNil()
 	}
+}
+
+func encodeString(s string, isSimpleString bool) []byte {
+	if isSimpleString {
+		return []byte(fmt.Sprintf("+%s%s", s, CRLF))
+	}
+	return encodeBulkString(s)
+}
+
+func encodeBulkString(s string) []byte {
+	return []byte(fmt.Sprintf("$%d%s%s%s", len(s), CRLF, s, CRLF))
+}
+
+func encodeInteger(n int64) []byte {
+	return []byte(fmt.Sprintf(":%d%s", n, CRLF))
+}
+
+func encodeFloat(f float64) []byte {
+	s := strconv.FormatFloat(f, 'f', -1, 64)
+	return encodeBulkString(s)
+}
+
+func encodeError(err error) []byte {
+	return []byte(fmt.Sprintf("-%s%s", err.Error(), CRLF))
+}
+
+func encodeNil() []byte {
+	return []byte(fmt.Sprintf("$-1%s", CRLF))
+}
+
+func encodeStringPointer(s *string) []byte {
+	if s == nil {
+		return encodeNil()
+	}
+	return encodeBulkString(*s)
+}
+
+func encodeFloatPointer(f *float64) []byte {
+	if f == nil {
+		return encodeNil()
+	}
+	return encodeFloat(*f)
+}
+
+func encodeArray[T any](arr []T) []byte {
+	var buf strings.Builder
+	
+	// Write array header
+	buf.WriteString(fmt.Sprintf("*%d%s", len(arr), CRLF))
+	
+	// Write each element
+	for _, elem := range arr {
+		buf.Write(EncodeResp(elem, false))
+	}
+	
+	return []byte(buf.String())
 }
 
 func ParseCmd(data []byte) (*RedisCmd, error) {

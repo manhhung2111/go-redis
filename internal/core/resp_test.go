@@ -237,6 +237,100 @@ func TestEncodeResp_UnsupportedType(t *testing.T) {
 	assert.Equal(t, constant.RESP_NIL_BULK_STRING, out)
 }
 
+func TestEncodeResp_Float64(t *testing.T) {
+	out := EncodeResp(float64(1.5), false)
+	assert.Equal(t, []byte("$3\r\n1.5\r\n"), out)
+}
+
+func TestEncodeResp_PtrFloat64(t *testing.T) {
+	v := 2.25
+	out := EncodeResp(&v, false)
+	assert.Equal(t, []byte("$4\r\n2.25\r\n"), out)
+}
+
+func TestEncodeResp_PtrFloat64_Nil(t *testing.T) {
+	var v *float64
+	out := EncodeResp(v, false)
+	assert.Equal(t, constant.RESP_NIL_BULK_STRING, out)
+}
+
+func TestEncodeResp_Float64PtrArray(t *testing.T) {
+	a := 1.0
+	b := 2.5
+
+	out := EncodeResp([]*float64{&a, nil, &b}, false)
+
+	expected := []byte(
+		"*3\r\n" +
+			"$1\r\n1\r\n" +
+			"$-1\r\n" +
+			"$3\r\n2.5\r\n",
+	)
+
+	assert.Equal(t, expected, out)
+}
+
+func TestEncodeResp_AnyArray(t *testing.T) {
+	out := EncodeResp([]any{1, "a", int64(2)}, false)
+
+	expected := []byte(
+		"*3\r\n" +
+			":1\r\n" +
+			"$1\r\na\r\n" +
+			":2\r\n",
+	)
+
+	assert.Equal(t, expected, out)
+}
+
+func TestEncodeResp_NestedAnyArray(t *testing.T) {
+	out := EncodeResp([]any{
+		[]any{1, 2},
+		[]string{"a"},
+	}, false)
+
+	expected := []byte(
+		"*2\r\n" +
+			"*2\r\n:1\r\n:2\r\n" +
+			"*1\r\n$1\r\na\r\n",
+	)
+
+	assert.Equal(t, expected, out)
+}
+
+func TestEncodeResp_FloatNormalization(t *testing.T) {
+	out := EncodeResp(float64(2.000), false)
+	assert.Equal(t, []byte("$1\r\n2\r\n"), out)
+}
+
+func TestEncodeResp_StringPointer(t *testing.T) {
+	s := "hello"
+	out := EncodeResp(&s, false)
+	assert.Equal(t, []byte("$5\r\nhello\r\n"), out)
+}
+
+func TestEncodeResp_StringPointerArray(t *testing.T) {
+	a := "foo"
+	b := "bar"
+
+	out := EncodeResp([]*string{&a, nil, &b}, false)
+
+	expected := []byte(
+		"*3\r\n" +
+			"$3\r\nfoo\r\n" +
+			"$-1\r\n" +
+			"$3\r\nbar\r\n",
+	)
+
+	assert.Equal(t, expected, out)
+}
+
+func TestEncodeResp_StringPointer_Nil(t *testing.T) {
+	var s *string
+	out := EncodeResp(s, false)
+	assert.Equal(t, constant.RESP_NIL_BULK_STRING, out)
+}
+
 func TestParseCmd_InvalidRoot(t *testing.T) {
 	_, err := ParseCmd([]byte("+OK\r\n"))
 	assert.Error(t, err)
