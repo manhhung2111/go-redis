@@ -1,5 +1,7 @@
 package storage
 
+import "github.com/manhhung2111/go-redis/internal/storage/data_structure"
+
 type ObjectType uint8
 type ObjectEncoding uint8
 
@@ -8,6 +10,7 @@ const (
 	ObjSet
 	ObjList
 	ObjHash
+	ObjZSet
 )
 
 const (
@@ -16,6 +19,7 @@ const (
 	EncIntSet
 	EncHashTable
 	EncQuickList
+	EncSortedSet
 )
 
 type RObj struct {
@@ -64,6 +68,26 @@ type Store interface {
 	HSetNx(key, field, value string) int64
 	HDel(key string, fields []string) int64
 	HExists(key, field string) int64
+
+	ZAdd(key string, scoreMember map[string]float64, options data_structure.ZAddOptions) *uint32
+	ZCard(key string) uint32
+	ZCount(key string, minScore, maxScore float64) uint32
+	ZIncrBy(key string, member string, increment float64) (float64, bool)
+	ZLexCount(key, minValue, maxValue string) uint32
+	ZMScore(key string, members []string) []*float64
+	ZPopMax(key string, count int) []string
+	ZPopMin(key string, count int) []string
+	ZRandMember(key string, count int, withScores bool) []string
+	ZRangeByRank(key string, start, stop int, withScores bool) []string
+	ZRangeByLex(key string, start, stop string) []string
+	ZRangeByScore(key string, start, stop float64, withScores bool) []string
+	ZRevRangeByRank(key string, start, stop int, withScores bool) []string
+	ZRevRangeByLex(key string, start, stop string) []string
+	ZRevRangeByScore(key string, start, stop float64, withScores bool) []string
+	ZRank(key string, member string, withScore bool) []any
+	ZRem(key string, members []string) uint32
+	ZRevRank(key, member string, withScore bool) []any
+	ZScore(key, member string) *float64
 }
 
 type store struct {
