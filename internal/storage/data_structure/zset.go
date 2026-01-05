@@ -28,6 +28,13 @@ type ZSet interface {
 	ZRem(members []string) int
 	ZRevRank(member string, withScore bool) []any
 	ZScore(member string) *float64
+
+	// Geo commands (stored as ZSet with geohash as score)
+	GeoAdd(items []GeoPoint, options ZAddOptions) *uint32
+	GeoDist(member1, member2 string, unit string) *float64
+	GeoHash(members []string) []*string
+	GeoPos(members []string) []*GeoPoint
+	GeoSearch(options GeoSearchOptions) []GeoResult
 }
 
 type zSet struct {
@@ -315,7 +322,6 @@ func (zset *zSet) ZRevRank(member string, withScore bool) []any {
 	if forwardRank == -1 {
 		return nil
 	}
-
 
 	rank := zset.skipList.length - 1 - forwardRank
 
