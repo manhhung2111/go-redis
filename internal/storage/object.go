@@ -88,6 +88,12 @@ type Store interface {
 	ZRem(key string, members []string) uint32
 	ZRevRank(key, member string, withScore bool) []any
 	ZScore(key, member string) *float64
+
+	GeoAdd(key string, items []data_structure.GeoPoint, options data_structure.ZAddOptions) *uint32
+	GeoDist(key, member1, member2, unit string) *float64
+	GeoHash(key string, members []string) []*string
+	GeoPos(key string, members []string) []*data_structure.GeoPoint
+	GeoSearch(key string, options data_structure.GeoSearchOptions) []data_structure.GeoResult
 }
 
 type store struct {
