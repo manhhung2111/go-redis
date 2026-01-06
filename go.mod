@@ -5,6 +5,7 @@ go 1.25.1
 require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/google/wire v0.7.0
+	github.com/spaolacci/murmur3 v1.1.0
 	github.com/stretchr/testify v1.11.1
 )
 
