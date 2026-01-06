@@ -21,6 +21,10 @@ var RESP_VALUE_IS_NOT_VALID_FLOAT []byte = []byte("-value is not a valid float")
 var RESP_MIN_OR_MAX_IS_NOT_FLOAT []byte = []byte("-min or max is not a float")
 var RESP_WITHSCORES_NOT_SUPPORTED_WITH_BYLEX []byte = []byte("-syntax error, WITHSCORES not supported in combination with BYLEX")
 
+var RESP_INVALID_LONGITUDE_LATITUDE []byte = []byte("-ERR invalid longitude,latitude pair\r\n")
+var RESP_GEO_FROMMEMBER_OR_FROMLONLAT_REQUIRED []byte = []byte("-ERR exactly one of FROMMEMBER or FROMLONLAT is required\r\n")
+var RESP_GEO_BYRADIUS_OR_BYBOX_REQUIRED []byte = []byte("-ERR exactly one of BYRADIUS or BYBOX is required\r\n")
+
 const NO_EXPIRE int64 = -1
 const KEY_NOT_EXISTS int64 = -2
 

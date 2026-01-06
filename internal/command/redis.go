@@ -72,6 +72,12 @@ type Redis interface {
 	ZRem(cmd core.RedisCmd) []byte
 	ZRevRank(cmd core.RedisCmd) []byte
 	ZScore(cmd core.RedisCmd) []byte
+
+	GeoAdd(cmd core.RedisCmd) []byte
+	GeoDist(cmd core.RedisCmd) []byte
+	GeoHash(cmd core.RedisCmd) []byte
+	GeoPos(cmd core.RedisCmd) []byte
+	GeoSearch(cmd core.RedisCmd) []byte
 }
 
 type CommandHandler func(cmd core.RedisCmd) []byte
@@ -148,6 +154,12 @@ func NewRedis(
 		"ZREM":        redis.ZRem,
 		"ZREVRANK":    redis.ZRevRank,
 		"ZSCORE":      redis.ZScore,
+
+		"GEOADD":    redis.GeoAdd,
+		"GEODIST":   redis.GeoDist,
+		"GEOHASH":   redis.GeoHash,
+		"GEOPOS":    redis.GeoPos,
+		"GEOSEARCH": redis.GeoSearch,
 	}
 
 	return redis
