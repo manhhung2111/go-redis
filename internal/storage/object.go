@@ -11,6 +11,7 @@ const (
 	ObjList
 	ObjHash
 	ObjZSet
+	ObjBloomFilter
 )
 
 const (
@@ -20,6 +21,7 @@ const (
 	EncHashTable
 	EncQuickList
 	EncSortedSet
+	EncBloomFilter
 )
 
 type RObj struct {
@@ -94,6 +96,14 @@ type Store interface {
 	GeoHash(key string, members []string) []*string
 	GeoPos(key string, members []string) []*data_structure.GeoPoint
 	GeoSearch(key string, options data_structure.GeoSearchOptions) []data_structure.GeoResult
+
+	BFAdd(key string, item string) int
+	BFCard(key string) int
+	BFExists(key string, item string) int
+	BFInfo(key string, option int) []any
+	BFMAdd(key string, items []string) []int
+	BFMExists(key string, items []string) []int
+	BFReserve(key string, errorRate float64, capacity uint32, expansion uint32) error
 }
 
 type store struct {
