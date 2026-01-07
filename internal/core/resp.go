@@ -168,6 +168,8 @@ func EncodeResp(value interface{}, isSimpleString bool) []byte {
 		return encodeInteger(int64(v))
 	case int64:
 		return encodeInteger(v)
+	case uint64:
+		return encodeUnsignedInteger(v)
 	case uint32:
 		return encodeInteger(int64(v))
 	case float64:
@@ -183,6 +185,8 @@ func EncodeResp(value interface{}, isSimpleString bool) []byte {
 	case []string:
 		return encodeArray(v)
 	case []int64:
+		return encodeArray(v)
+	case []int:
 		return encodeArray(v)
 	case []*string:
 		return encodeArray(v)
@@ -204,6 +208,10 @@ func encodeString(s string, isSimpleString bool) []byte {
 
 func encodeBulkString(s string) []byte {
 	return []byte(fmt.Sprintf("$%d%s%s%s", len(s), CRLF, s, CRLF))
+}
+
+func encodeUnsignedInteger(n uint64) []byte {
+	return []byte(fmt.Sprintf(":%d%s", n, CRLF))
 }
 
 func encodeInteger(n int64) []byte {
@@ -239,15 +247,15 @@ func encodeFloatPointer(f *float64) []byte {
 
 func encodeArray[T any](arr []T) []byte {
 	var buf strings.Builder
-	
+
 	// Write array header
 	buf.WriteString(fmt.Sprintf("*%d%s", len(arr), CRLF))
-	
+
 	// Write each element
 	for _, elem := range arr {
 		buf.Write(EncodeResp(elem, false))
 	}
-	
+
 	return []byte(buf.String())
 }
 

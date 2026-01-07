@@ -78,6 +78,14 @@ type Redis interface {
 	GeoHash(cmd core.RedisCmd) []byte
 	GeoPos(cmd core.RedisCmd) []byte
 	GeoSearch(cmd core.RedisCmd) []byte
+
+	BFAdd(cmd core.RedisCmd) []byte
+	BFCard(cmd core.RedisCmd) []byte
+	BFExists(cmd core.RedisCmd) []byte
+	BFInfo(cmd core.RedisCmd) []byte
+	BFMAdd(cmd core.RedisCmd) []byte
+	BFMExists(cmd core.RedisCmd) []byte
+	BFReserve(cmd core.RedisCmd) []byte
 }
 
 type CommandHandler func(cmd core.RedisCmd) []byte
@@ -160,6 +168,14 @@ func NewRedis(
 		"GEOHASH":   redis.GeoHash,
 		"GEOPOS":    redis.GeoPos,
 		"GEOSEARCH": redis.GeoSearch,
+
+		"BF.ADD":     redis.BFAdd,
+		"BF.CARD":    redis.BFCard,
+		"BF.EXISTS":  redis.BFExists,
+		"BF.INFO":    redis.BFInfo,
+		"BF.MADD":    redis.BFMAdd,
+		"BF.MEXISTS": redis.BFMExists,
+		"BF.RESERVE": redis.BFReserve,
 	}
 
 	return redis
