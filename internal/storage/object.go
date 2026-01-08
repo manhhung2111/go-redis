@@ -13,6 +13,7 @@ const (
 	ObjZSet
 	ObjBloomFilter
 	ObjCuckooFilter
+	ObjHyperLogLog
 )
 
 const (
@@ -24,6 +25,7 @@ const (
 	EncSortedSet
 	EncBloomFilter
 	EncCuckooFilter
+	EncHyperLogLog
 )
 
 type RObj struct {
@@ -115,6 +117,10 @@ type Store interface {
 	CFInfo(key string) []any
 	CFMExists(key string, items []string) []int
 	CFReserve(key string, capacity, bucketSize, maxIterations uint64, expansionRate int) error
+
+	PFAdd(key string, items []string) int
+	PFCount(keys []string) (int, error)
+	PFMerge(destKey string, sourceKeys []string) error
 }
 
 type store struct {
