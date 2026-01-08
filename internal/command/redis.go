@@ -95,6 +95,10 @@ type Redis interface {
 	CFInfo(cmd core.RedisCmd) []byte
 	CFMExists(cmd core.RedisCmd) []byte
 	CFReserve(cmd core.RedisCmd) []byte
+
+	PFAdd(cmd core.RedisCmd) []byte
+	PFCount(cmd core.RedisCmd) []byte
+	PFMerge(cmd core.RedisCmd) []byte
 }
 
 type CommandHandler func(cmd core.RedisCmd) []byte
@@ -194,6 +198,10 @@ func NewRedis(
 		"CF.INFO":    redis.CFInfo,
 		"CF.MEXISTS": redis.CFMExists,
 		"CF.RESERVE": redis.CFReserve,
+
+		"PFADD":   redis.PFAdd,
+		"PFCOUNT": redis.PFCount,
+		"PFMERGE": redis.PFMerge,
 	}
 
 	return redis

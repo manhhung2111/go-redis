@@ -109,7 +109,7 @@ func (s *store) getHyperLogLog(key string) (data_structure.HyperLogLog, error) {
 
 	hll, ok := rObj.Value.(data_structure.HyperLogLog)
 	if !ok {
-		return nil, errors.New("WRONGTYPE Key is not a valid HyperLogLog string value")
+		return nil, errors.New("WRONGTYPE Operation against a key holding the wrong kind of value")
 	}
 
 	return hll, nil
