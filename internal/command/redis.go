@@ -86,6 +86,15 @@ type Redis interface {
 	BFMAdd(cmd core.RedisCmd) []byte
 	BFMExists(cmd core.RedisCmd) []byte
 	BFReserve(cmd core.RedisCmd) []byte
+
+	CFAdd(cmd core.RedisCmd) []byte
+	CFAddNx(cmd core.RedisCmd) []byte
+	CFCount(cmd core.RedisCmd) []byte
+	CFDel(cmd core.RedisCmd) []byte
+	CFExists(cmd core.RedisCmd) []byte
+	CFInfo(cmd core.RedisCmd) []byte
+	CFMExists(cmd core.RedisCmd) []byte
+	CFReserve(cmd core.RedisCmd) []byte
 }
 
 type CommandHandler func(cmd core.RedisCmd) []byte
@@ -176,6 +185,15 @@ func NewRedis(
 		"BF.MADD":    redis.BFMAdd,
 		"BF.MEXISTS": redis.BFMExists,
 		"BF.RESERVE": redis.BFReserve,
+
+		"CF.ADD":     redis.CFAdd,
+		"CF.ADDNX":   redis.CFAddNx,
+		"CF.COUNT":   redis.CFCount,
+		"CF.DEL":     redis.CFDel,
+		"CF.EXISTS":  redis.CFExists,
+		"CF.INFO":    redis.CFInfo,
+		"CF.MEXISTS": redis.CFMExists,
+		"CF.RESERVE": redis.CFReserve,
 	}
 
 	return redis

@@ -34,6 +34,10 @@ var RESP_EXPANSION_INVALID_RANGE []byte = []byte("-expansion must be in the rang
 var RESP_ITEM_EXISTS []byte = []byte("-item exists\r\n")
 var RESP_NOT_FOUND []byte = []byte("-not found\r\n")
 
+var RESP_BAD_BUCKET_SIZE []byte = []byte("-bad bucket size\r\n")
+var RESP_BUCKET_SIZE_INVALID_RANGE []byte = []byte("-bucket size must be in the range [1, 255]\r\n")
+var RESP_BAD_MAX_ITERATIONS []byte = []byte("-bad max iterations\r\n")
+var RESP_MAX_ITERATIONS_INVALID_RANGE []byte = []byte("-max iterations must be in the range [1, 65535]\r\n")
 
 const NO_EXPIRE int64 = -1
 const KEY_NOT_EXISTS int64 = -2
