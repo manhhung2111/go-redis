@@ -1,6 +1,7 @@
 package data_structure
 
 import (
+	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/spaolacci/murmur3"
 )
 
@@ -91,8 +92,13 @@ func NewCuckooFilter(capacity, bucketSize, maxIterations uint64, expansionRate i
 	return scf
 }
 
-func (scf *scalableCuckooFilter) addNewFilter() {
+func (scf *scalableCuckooFilter) addNewFilter() bool {
 	filterIndex := len(scf.filters)
+
+	// Default max expansions reached, should not expand any more
+	if filterIndex >= config.CF_DEFAULT_MAX_EXPANSIONS {
+		return false
+	}
 
 	// Calculate capacity: initialCapacity * expansionRate^filterIndex
 	capacity := scf.initialCapacity
@@ -128,6 +134,7 @@ func (scf *scalableCuckooFilter) addNewFilter() {
 	}
 
 	scf.filters = append(scf.filters, filter)
+	return true
 }
 
 func getFingerprint(item string) uint16 {
@@ -326,7 +333,11 @@ func (scf *scalableCuckooFilter) Add(item string) int {
 	}
 
 	// Current filter is full - add a new one
-	scf.addNewFilter()
+	if !scf.addNewFilter() {
+		// Max expansions reached, filter is completely full
+		return 0
+	}
+
 	currentFilter = scf.filters[len(scf.filters)-1]
 	bucketIdx = currentFilter.getBucketIndex(item)
 

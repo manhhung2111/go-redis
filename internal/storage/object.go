@@ -12,6 +12,7 @@ const (
 	ObjHash
 	ObjZSet
 	ObjBloomFilter
+	ObjCuckooFilter
 )
 
 const (
@@ -22,6 +23,7 @@ const (
 	EncQuickList
 	EncSortedSet
 	EncBloomFilter
+	EncCuckooFilter
 )
 
 type RObj struct {
@@ -104,6 +106,15 @@ type Store interface {
 	BFMAdd(key string, items []string) []int
 	BFMExists(key string, items []string) []int
 	BFReserve(key string, errorRate float64, capacity uint32, expansion uint32) error
+
+	CFAdd(key string, item string) int
+	CFAddNx(key string, item string) int
+	CFCount(key string, item string) int
+	CFDel(key string, item string) int
+	CFExists(key string, item string) int
+	CFInfo(key string) []any
+	CFMExists(key string, items []string) []int
+	CFReserve(key string, capacity, bucketSize, maxIterations uint64, expansionRate int) error
 }
 
 type store struct {
