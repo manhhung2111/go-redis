@@ -14,6 +14,7 @@ const (
 	ObjBloomFilter
 	ObjCuckooFilter
 	ObjHyperLogLog
+	ObjCountMinSketch
 )
 
 const (
@@ -26,6 +27,7 @@ const (
 	EncBloomFilter
 	EncCuckooFilter
 	EncHyperLogLog
+	EncCountMinSketch
 )
 
 type RObj struct {
@@ -121,6 +123,12 @@ type Store interface {
 	PFAdd(key string, items []string) int
 	PFCount(keys []string) (int, error)
 	PFMerge(destKey string, sourceKeys []string) error
+
+	CMSIncrBy(key string, itemIncrement map[string]uint64) []uint64
+	CMSInfo(key string) []any
+	CMSInitByDim(key string, width, depth uint64) error
+	CMSInitByProb(key string, errorRate, probability float64) error
+	CMSQuery(key string, items []string) []uint64
 }
 
 type store struct {
