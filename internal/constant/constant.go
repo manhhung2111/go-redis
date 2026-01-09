@@ -39,6 +39,14 @@ var RESP_BUCKET_SIZE_INVALID_RANGE []byte = []byte("-bucket size must be in the 
 var RESP_BAD_MAX_ITERATIONS []byte = []byte("-bad max iterations\r\n")
 var RESP_MAX_ITERATIONS_INVALID_RANGE []byte = []byte("-max iterations must be in the range [1, 65535]\r\n")
 
+var RESP_CMS_KEY_DOES_NOT_EXIST []byte = []byte("-CMS: key does not exist\r\n")
+var RESP_CMS_KEY_ALREADY_EXISTS []byte = []byte("-CMS: key already exists\r\n")
+var RESP_CMS_BAD_INCREMENT []byte = []byte("-invalid increment value\r\n")
+var RESP_CMS_BAD_WIDTH []byte = []byte("-invalid width value\r\n")
+var RESP_CMS_BAD_DEPTH []byte = []byte("-invalid depth value\r\n")
+var RESP_CMS_BAD_PROBABILITY []byte = []byte("-invalid probability value\r\n")
+var RESP_CMS_PROBABILITY_INVALID_RANGE []byte = []byte("-probability must be in the range (0, 1)\r\n")
+
 const NO_EXPIRE int64 = -1
 const KEY_NOT_EXISTS int64 = -2
 

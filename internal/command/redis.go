@@ -99,6 +99,12 @@ type Redis interface {
 	PFAdd(cmd core.RedisCmd) []byte
 	PFCount(cmd core.RedisCmd) []byte
 	PFMerge(cmd core.RedisCmd) []byte
+
+	CMSIncrBy(cmd core.RedisCmd) []byte
+	CMSInfo(cmd core.RedisCmd) []byte
+	CMSInitByDim(cmd core.RedisCmd) []byte
+	CMSInitByProb(cmd core.RedisCmd) []byte
+	CMSQuery(cmd core.RedisCmd) []byte
 }
 
 type CommandHandler func(cmd core.RedisCmd) []byte
@@ -202,6 +208,12 @@ func NewRedis(
 		"PFADD":   redis.PFAdd,
 		"PFCOUNT": redis.PFCount,
 		"PFMERGE": redis.PFMerge,
+
+		"CMS.INCRBY":     redis.CMSIncrBy,
+		"CMS.INFO":       redis.CMSInfo,
+		"CMS.INITBYDIM":  redis.CMSInitByDim,
+		"CMS.INITBYPROB": redis.CMSInitByProb,
+		"CMS.QUERY":      redis.CMSQuery,
 	}
 
 	return redis

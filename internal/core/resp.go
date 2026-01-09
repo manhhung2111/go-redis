@@ -186,6 +186,8 @@ func EncodeResp(value interface{}, isSimpleString bool) []byte {
 		return encodeArray(v)
 	case []int64:
 		return encodeArray(v)
+	case []uint64:
+		return encodeArray(v)
 	case []int:
 		return encodeArray(v)
 	case []*string:
