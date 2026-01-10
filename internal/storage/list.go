@@ -1,22 +1,18 @@
 package storage
 
 import (
-	"errors"
-
 	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
 )
 
-func (s *store) LPush(key string, elements ...string) uint32 {
-	s.expireIfNeeded(key)
+func (s *store) LPush(key string, elements ...string) (uint32, error) {
+	result := s.access(key, ObjList)
+	if result.typeErr != nil {
+		return 0, result.typeErr
+	}
 
-	rObj, exists := s.data[key]
-	if exists {
-		quickList, ok := rObj.Value.(data_structure.QuickList)
-		if !ok {
-			return 0
-		}
-
-		return quickList.LPush(elements)
+	if result.exists {
+		quickList := result.object.Value.(data_structure.QuickList)
+		return quickList.LPush(elements), nil
 	}
 
 	quicklist := data_structure.NewQuickList()
@@ -28,43 +24,37 @@ func (s *store) LPush(key string, elements ...string) uint32 {
 		Value:    quicklist,
 	}
 
-	return res
+	return res, nil
 }
 
-func (s *store) LPop(key string, count uint32) []string {
-	if isExpired := s.expireIfNeeded(key); isExpired {
-		return nil
+func (s *store) LPop(key string, count uint32) ([]string, error) {
+	result := s.access(key, ObjList)
+	if result.typeErr != nil {
+		return nil, result.typeErr
 	}
 
-	rObj, exists := s.data[key]
-	if !exists {
-		return nil
+	if result.expired || !result.exists {
+		return nil, nil
 	}
 
-	quickList, ok := rObj.Value.(data_structure.QuickList)
-	if !ok {
-		return nil
-	}
-
+	quickList := result.object.Value.(data_structure.QuickList)
 	poppedElements := quickList.LPop(count)
 	if quickList.Size() == 0 {
-		s.Del(key)
+		s.delete(key)
 	}
 
-	return poppedElements
+	return poppedElements, nil
 }
 
-func (s *store) RPush(key string, elements ...string) uint32 {
-	s.expireIfNeeded(key)
+func (s *store) RPush(key string, elements ...string) (uint32, error) {
+	result := s.access(key, ObjList)
+	if result.typeErr != nil {
+		return 0, result.typeErr
+	}
 
-	rObj, exists := s.data[key]
-	if exists {
-		quickList, ok := rObj.Value.(data_structure.QuickList)
-		if !ok {
-			return 0
-		}
-
-		return quickList.RPush(elements)
+	if result.exists {
+		quickList := result.object.Value.(data_structure.QuickList)
+		return quickList.RPush(elements), nil
 	}
 
 	quicklist := data_structure.NewQuickList()
@@ -76,144 +66,123 @@ func (s *store) RPush(key string, elements ...string) uint32 {
 		Value:    quicklist,
 	}
 
-	return res
+	return res, nil
 }
 
-func (s *store) RPop(key string, count uint32) []string {
-	if isExpired := s.expireIfNeeded(key); isExpired {
-		return nil
+func (s *store) RPop(key string, count uint32) ([]string, error) {
+	result := s.access(key, ObjList)
+	if result.typeErr != nil {
+		return nil, result.typeErr
 	}
 
-	rObj, exists := s.data[key]
-	if !exists {
-		return nil
+	if result.expired || !result.exists {
+		return nil, nil
 	}
 
-	quickList, ok := rObj.Value.(data_structure.QuickList)
-	if !ok {
-		return nil
-	}
-
+	quickList := result.object.Value.(data_structure.QuickList)
 	poppedElements := quickList.RPop(count)
 	if quickList.Size() == 0 {
-		s.Del(key)
+		s.delete(key)
 	}
 
-	return poppedElements
+	return poppedElements, nil
 }
 
-func (s *store) LRange(key string, start int32, end int32) []string {
-	if isExpired := s.expireIfNeeded(key); isExpired {
-		return []string{}
+func (s *store) LRange(key string, start int32, end int32) ([]string, error) {
+	result := s.access(key, ObjList)
+	if result.typeErr != nil {
+		return nil, result.typeErr
 	}
 
-	rObj, exists := s.data[key]
-	if !exists {
-		return []string{}
+	if result.expired || !result.exists {
+		return []string{}, nil
 	}
 
-	quickList, ok := rObj.Value.(data_structure.QuickList)
-	if !ok {
-		return nil
-	}
-
-	return quickList.LRange(start, end)
+	quickList := result.object.Value.(data_structure.QuickList)
+	return quickList.LRange(start, end), nil
 }
 
-func (s *store) LIndex(key string, index int32) (string, bool) {
-	if isExpired := s.expireIfNeeded(key); isExpired {
-		return "", false
-	}
-	
-	rObj, existing := s.Get(key)
-	if !existing {
-		return "", false
+func (s *store) LIndex(key string, index int32) (*string, error) {
+	result := s.access(key, ObjList)
+	if result.typeErr != nil {
+		return nil, result.typeErr
 	}
 
-	quickList, ok := rObj.Value.(data_structure.QuickList)
-	if !ok {
-		return "", false
+	if result.expired || !result.exists {
+		return nil, nil
 	}
 
-	return quickList.LIndex(index)
+	quickList := result.object.Value.(data_structure.QuickList)
+	val, succeeded := quickList.LIndex(index)
+	if !succeeded {
+		return nil, nil
+	}
+
+	return &val, nil
 }
 
-func (s *store) LLen(key string) uint32 {
-	if isExpired := s.expireIfNeeded(key); isExpired {
-		return 0
+func (s *store) LLen(key string) (uint32, error) {
+	result := s.access(key, ObjList)
+	if result.typeErr != nil {
+		return 0, result.typeErr
 	}
 
-	rObj, existing := s.Get(key)
-	if !existing {
-		return 0
+	if result.expired || !result.exists {
+		return 0, nil
 	}
 
-	quickList, ok := rObj.Value.(data_structure.QuickList)
-	if !ok {
-		return 0
-	}
-
-	return quickList.Size()
+	quickList := result.object.Value.(data_structure.QuickList)
+	return quickList.Size(), nil
 }
 
-func (s *store) LRem(key string, count int32, element string) uint32 {
-	if isExpired := s.expireIfNeeded(key); isExpired {
-		return 0
+func (s *store) LRem(key string, count int32, element string) (uint32, error) {
+	result := s.access(key, ObjList)
+	if result.typeErr != nil {
+		return 0, result.typeErr
 	}
 
-	rObj, existing := s.Get(key)
-	if !existing {
-		return 0
+	if result.expired || !result.exists {
+		return 0, nil
 	}
 
-	quickList, ok := rObj.Value.(data_structure.QuickList)
-	if !ok {
-		return 0
-	}
-
+	quickList := result.object.Value.(data_structure.QuickList)
 	removedElements := quickList.LRem(count, element)
 	if quickList.Size() == 0 {
-		s.Del(key)
+		s.delete(key)
 	}
 
-	return removedElements
+	return removedElements, nil
 }
 
 func (s *store) LSet(key string, index int32, element string) error {
-	if isExpired := s.expireIfNeeded(key); isExpired {
-		return errors.New("no such key")
+	result := s.access(key, ObjList)
+	if result.typeErr != nil {
+		return result.typeErr
 	}
 
-	rObj, existing := s.Get(key)
-	if !existing {
-		return errors.New("no such key")
+	if result.expired || !result.exists {
+		return ErrKeyNotFoundError
 	}
 
-	quickList, ok := rObj.Value.(data_structure.QuickList)
-	if !ok {
-		return errors.New("invalid rObj, can not cast to quicklist")
-	}
-
+	quickList := result.object.Value.(data_structure.QuickList)
 	return quickList.LSet(index, element)
 }
 
-func (s *store) LTrim(key string, start, end int32) {
-	if isExpired := s.expireIfNeeded(key); isExpired {
-		return
+func (s *store) LTrim(key string, start, end int32) error {
+	result := s.access(key, ObjList)
+	if result.typeErr != nil {
+		return result.typeErr
 	}
 
-	rObj, existing := s.Get(key)
-	if !existing {
-		return
+	if result.expired || !result.exists {
+		return nil
 	}
 
-	quickList, ok := rObj.Value.(data_structure.QuickList)
-	if !ok {
-		return
-	}
-
+	quickList := result.object.Value.(data_structure.QuickList)
 	quickList.LTrim(start, end)
 	if quickList.Size() == 0 {
-		s.Del(key)
+		s.delete(key)
 	}
+
+	return nil
 }

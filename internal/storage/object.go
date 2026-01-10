@@ -59,16 +59,16 @@ type Store interface {
 	SPop(key string, count int) ([]string, error)
 	SRandMember(key string, count int) ([]string, error)
 
-	LPush(key string, elements ...string) uint32
-	LPop(key string, count uint32) []string
-	RPush(key string, elements ...string) uint32
-	RPop(key string, count uint32) []string
-	LRange(key string, start, end int32) []string
-	LIndex(key string, index int32) (string, bool)
-	LLen(key string) uint32
-	LRem(key string, count int32, element string) uint32
+	LPush(key string, elements ...string) (uint32, error)
+	LPop(key string, count uint32) ([]string, error)
+	RPush(key string, elements ...string) (uint32, error)
+	RPop(key string, count uint32) ([]string, error)
+	LRange(key string, start, end int32) ([]string, error)
+	LIndex(key string, index int32) (*string, error)
+	LLen(key string) (uint32, error)
+	LRem(key string, count int32, element string) (uint32, error)
 	LSet(key string, index int32, element string) error
-	LTrim(key string, start, end int32)
+	LTrim(key string, start, end int32) error
 
 	HGet(key, field string) (string, bool)
 	HGetAll(key string) []string

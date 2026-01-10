@@ -231,6 +231,6 @@ func TestExpireIntegration_DifferentDataTypes(t *testing.T) {
 	s.Expire("list_key", 10, ExpireOptions{})
 	assert.GreaterOrEqual(t, s.TTL("list_key"), int64(9))
 
-	result := s.LRange("list_key", 0, -1)
+	result, _ := s.LRange("list_key", 0, -1)
 	assert.Len(t, result, 3)
 }
