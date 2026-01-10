@@ -3,7 +3,6 @@ package command
 import (
 	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
-	"github.com/manhhung2111/go-redis/internal/storage"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
 
@@ -14,18 +13,18 @@ func (redis *redis) PFAdd(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjHyperLogLog {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
 	// Elements are optional - if not provided, just create the HLL
 	elements := []string{}
 	if len(args) > 1 {
 		elements = args[1:]
 	}
 
-	return core.EncodeResp(redis.Store.PFAdd(args[0], elements), false)
+	result, err := redis.Store.PFAdd(args[0], elements)
+	if err != nil {
+		return core.EncodeResp(err, false)
+	}
+
+	return core.EncodeResp(result, false)
 }
 
 /* Support PFCOUNT key [key ...] */

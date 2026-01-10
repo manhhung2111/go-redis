@@ -11,8 +11,9 @@ import (
 func TestPFAdd_NewKey(t *testing.T) {
 	s := NewStore().(*store)
 
-	result := s.PFAdd("hll", []string{"item1"})
+	result, err := s.PFAdd("hll", []string{"item1"})
 	assert.Equal(t, 1, result, "should return 1 for new key")
+	assert.NoError(t, err)
 
 	// Verify HyperLogLog was created
 	rObj, exists := s.data["hll"]
@@ -25,8 +26,9 @@ func TestPFAdd_NewKeyNoItems(t *testing.T) {
 	s := NewStore().(*store)
 
 	// Creating empty HLL should return 1 (key was created)
-	result := s.PFAdd("hll", []string{})
+	result, err := s.PFAdd("hll", []string{})
 	assert.Equal(t, 1, result, "should return 1 when creating new key even with no items")
+	assert.NoError(t, err)
 
 	// Verify HyperLogLog was created
 	rObj, exists := s.data["hll"]
@@ -41,8 +43,9 @@ func TestPFAdd_ExistingKeyNoItems(t *testing.T) {
 	s.PFAdd("hll", []string{"item1"})
 
 	// Adding no items to existing key should return 0
-	result := s.PFAdd("hll", []string{})
+	result, err := s.PFAdd("hll", []string{})
 	assert.Equal(t, 0, result, "should return 0 when adding no items to existing key")
+	assert.NoError(t, err)
 }
 
 func TestPFAdd_ExistingKeyNewItem(t *testing.T) {
@@ -51,8 +54,9 @@ func TestPFAdd_ExistingKeyNewItem(t *testing.T) {
 	s.PFAdd("hll", []string{"item1"})
 
 	// Adding new item should return 1 (register updated)
-	result := s.PFAdd("hll", []string{"item2"})
+	result, err := s.PFAdd("hll", []string{"item2"})
 	assert.Equal(t, 1, result, "should return 1 for new item")
+	assert.NoError(t, err)
 }
 
 func TestPFAdd_ExistingKeyDuplicateItem(t *testing.T) {
@@ -61,16 +65,18 @@ func TestPFAdd_ExistingKeyDuplicateItem(t *testing.T) {
 	s.PFAdd("hll", []string{"item1"})
 
 	// Adding same item again should return 0 (no register updated)
-	result := s.PFAdd("hll", []string{"item1"})
+	result, err := s.PFAdd("hll", []string{"item1"})
 	assert.Equal(t, 0, result, "should return 0 for duplicate item")
+	assert.NoError(t, err)
 }
 
 func TestPFAdd_MultipleItems(t *testing.T) {
 	s := NewStore().(*store)
 
 	items := []string{"apple", "banana", "cherry", "date", "elderberry"}
-	result := s.PFAdd("hll", items)
+	result, err := s.PFAdd("hll", items)
 	assert.Equal(t, 1, result, "should return 1 when registers updated")
+	assert.NoError(t, err)
 
 	// Verify count is approximately correct
 	count, err := s.PFCount([]string{"hll"})
@@ -84,10 +90,8 @@ func TestPFAdd_WrongType(t *testing.T) {
 	// Create a string key
 	s.Set("mykey", "value")
 
-	// Should panic when trying to add to wrong type
-	assert.Panics(t, func() {
-		s.PFAdd("mykey", []string{"item"})
-	})
+	_, err := s.PFAdd("mykey", []string{"item"})
+	assert.Error(t, err)
 }
 
 func TestPFAdd_ExpiredKey(t *testing.T) {
@@ -98,8 +102,9 @@ func TestPFAdd_ExpiredKey(t *testing.T) {
 	s.expires["hll"] = 1 // expired timestamp
 
 	// Add new item - should create new HLL since old one expired
-	result := s.PFAdd("hll", []string{"new_item"})
+	result, err := s.PFAdd("hll", []string{"new_item"})
 	assert.Equal(t, 1, result)
+	assert.NoError(t, err)
 
 	// Verify new HLL only has new item
 	count, err := s.PFCount([]string{"hll"})

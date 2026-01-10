@@ -250,7 +250,7 @@ func TestSRandMemberNonExisting(t *testing.T) {
 
 	resp := r.SRandMember(cmd("SRANDMEMBER", "k"))
 	require.NotEmpty(t, resp)
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, resp)
+	assert.Equal(t, []byte("*0"), resp[:2])
 }
 
 func TestSRandMemberWrongType(t *testing.T) {

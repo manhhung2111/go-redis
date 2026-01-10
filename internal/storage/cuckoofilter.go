@@ -7,66 +7,94 @@ import (
 	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
 )
 
-func (s *store) CFAdd(key string, item string) int {
-	scf := s.getOrCreateCuckooFilter(key)
-	return scf.Add(item)
-}
-
-func (s *store) CFAddNx(key string, item string) int {
-	scf := s.getOrCreateCuckooFilter(key)
-	return scf.AddNx(item)
-}
-
-func (s *store) CFCount(key string, item string) int {
-	scf, exists := s.getCuckooFilter(key)
-	if !exists {
-		return 0
+func (s *store) CFAdd(key string, item string) (int, error) {
+	scf, err := s.getOrCreateCuckooFilter(key)
+	if err != nil {
+		return 0, err
 	}
 
-	return scf.Count(item)
+	return scf.Add(item), nil
 }
 
-func (s *store) CFDel(key string, item string) int {
-	scf, exists := s.getCuckooFilter(key)
-	if !exists {
-		return 0
+func (s *store) CFAddNx(key string, item string) (int, error) {
+	scf, err := s.getOrCreateCuckooFilter(key)
+	if err != nil {
+		return 0, err
 	}
 
-	return scf.Del(item)
+	return scf.AddNx(item), nil
 }
 
-func (s *store) CFExists(key string, item string) int {
-	scf, exists := s.getCuckooFilter(key)
-	if !exists {
-		return 0
+func (s *store) CFCount(key string, item string) (int, error) {
+	scf, err := s.getCuckooFilter(key)
+	if err != nil {
+		return 0, err
 	}
 
-	return scf.Exists(item)
+	if scf == nil {
+		return 0, nil
+	}
+
+	return scf.Count(item), nil
 }
 
-func (s *store) CFInfo(key string) []any {
-	scf, exists := s.getCuckooFilter(key)
-	if !exists {
-		return nil
+func (s *store) CFDel(key string, item string) (int, error) {
+	scf, err := s.getCuckooFilter(key)
+	if err != nil {
+		return 0, err
 	}
 
-	return scf.Info()
+	if scf == nil {
+		return 0, ErrKeyNotFoundError
+	}
+
+	return scf.Del(item), nil
 }
 
-func (s *store) CFMExists(key string, items []string) []int {
-	scf, exists := s.getCuckooFilter(key)
-	if !exists {
-		return make([]int, len(items))
+func (s *store) CFExists(key string, item string) (int, error) {
+	scf, err := s.getCuckooFilter(key)
+	if err != nil {
+		return 0, err
 	}
 
-	return scf.MExists(items)
+	if scf == nil {
+		return 0, nil
+	}
+
+	return scf.Exists(item), nil
+}
+
+func (s *store) CFInfo(key string) ([]any, error) {
+	scf, err := s.getCuckooFilter(key)
+	if err != nil {
+		return nil, err
+	}
+
+	if scf == nil {
+		return nil, ErrKeyNotFoundError
+	}
+
+	return scf.Info(), nil
+}
+
+func (s *store) CFMExists(key string, items []string) ([]int, error) {
+	scf, err := s.getCuckooFilter(key)
+	if err != nil {
+		return nil, err
+	}
+
+	if scf == nil {
+		return make([]int, len(items)), nil
+	}
+
+	return scf.MExists(items), nil
 }
 
 func (s *store) CFReserve(key string, capacity uint64, bucketSize uint64, maxIterations uint64, expansionRate int) error {
-	s.expireIfNeeded(key)
+	result := s.access(key, ObjAny)
 
 	// Check if key exists (any type) - CF.RESERVE should fail if key already exists
-	if _, exists := s.data[key]; exists {
+	if result.exists {
 		return errors.New("item exists")
 	}
 
@@ -81,32 +109,28 @@ func (s *store) CFReserve(key string, capacity uint64, bucketSize uint64, maxIte
 	return nil
 }
 
-func (s *store) getCuckooFilter(key string) (data_structure.CuckooFilter, bool) {
-	s.expireIfNeeded(key)
-
-	rObj, exists := s.data[key]
-	if !exists {
-		return nil, false
+func (s *store) getCuckooFilter(key string) (data_structure.CuckooFilter, error) {
+	result := s.access(key, ObjCuckooFilter)
+	if result.typeErr != nil {
+		return nil, result.typeErr
 	}
 
-	scf, ok := rObj.Value.(data_structure.CuckooFilter)
-	if !ok {
-		panic("Operation called on object not type CuckooFilter")
+	if result.expired || !result.exists {
+		return nil, nil
 	}
 
-	return scf, true
+	scf := result.object.Value.(data_structure.CuckooFilter)
+	return scf, nil
 }
 
-func (s *store) getOrCreateCuckooFilter(key string) data_structure.CuckooFilter {
-	s.expireIfNeeded(key)
+func (s *store) getOrCreateCuckooFilter(key string) (data_structure.CuckooFilter, error) {
+	result := s.access(key, ObjCuckooFilter)
+	if result.typeErr != nil {
+		return nil, result.typeErr
+	}
 
-	rObj, exists := s.data[key]
-	if exists {
-		scf, ok := rObj.Value.(data_structure.CuckooFilter)
-		if !ok {
-			panic("Operation called on object not type CuckooFilter")
-		}
-		return scf
+	if result.exists {
+		return result.object.Value.(data_structure.CuckooFilter), nil
 	}
 
 	// Create new cuckoo filter with default settings
@@ -123,5 +147,5 @@ func (s *store) getOrCreateCuckooFilter(key string) data_structure.CuckooFilter 
 		Value:    scf,
 	}
 
-	return scf
+	return scf, nil
 }

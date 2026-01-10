@@ -154,7 +154,7 @@ func TestCFDelNonExistingKey(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CFDel(cmd("CF.DEL", "cf", "item1"))
-	assert.Equal(t, constant.RESP_NOT_FOUND, resp)
+	assert.Equal(t, constant.RESP_ERR_NO_SUCH_KEY, resp)
 }
 
 func TestCFDelWrongArgs(t *testing.T) {
@@ -230,7 +230,7 @@ func TestCFInfoNonExistingKey(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CFInfo(cmd("CF.INFO", "cf"))
-	assert.Equal(t, constant.RESP_NOT_FOUND, resp)
+	assert.Equal(t, constant.RESP_ERR_NO_SUCH_KEY, resp)
 }
 
 func TestCFInfoWrongArgs(t *testing.T) {
@@ -348,7 +348,7 @@ func TestCFReserveWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.CFReserve(cmd("CF.RESERVE", "k", "1000"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, constant.RESP_ITEM_EXISTS, resp)
 }
 
 func TestCFReserveItemExists(t *testing.T) {

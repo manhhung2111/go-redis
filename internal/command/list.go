@@ -162,7 +162,7 @@ func (redis *redis) LLen(cmd core.RedisCmd) []byte {
 
 	result, err := redis.Store.LLen(args[0])
 	if err != nil {
-		return constant.RESP_NIL_BULK_STRING
+		return core.EncodeResp(err, false)
 	}
 
 	return core.EncodeResp(result, false)
@@ -175,9 +175,14 @@ func (redis *redis) LPushX(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
+	exists := redis.Store.Exists(args[0])
+	if !exists {
+		return core.EncodeResp(0, false)
+	}
+
 	result, err := redis.Store.LPush(args[0], args[1:]...)
 	if err != nil {
-		return constant.RESP_NIL_BULK_STRING
+		return core.EncodeResp(err, false)
 	}
 
 	return core.EncodeResp(result, false)
@@ -197,7 +202,7 @@ func (redis *redis) LRem(cmd core.RedisCmd) []byte {
 
 	result, err := redis.Store.LRem(args[0], int32(count), args[2])
 	if err != nil {
-		return constant.RESP_NIL_BULK_STRING
+		return core.EncodeResp(err, false)
 	}
 
 	return core.EncodeResp(result, false)
@@ -252,6 +257,11 @@ func (redis *redis) RPushX(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 2 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+	}
+
+	exists := redis.Store.Exists(args[0])
+	if !exists {
+		return core.EncodeResp(0, false)
 	}
 
 	result, err := redis.Store.RPush(args[0], args[1:]...)

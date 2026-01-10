@@ -1,26 +1,23 @@
 package storage
 
 import (
-	"errors"
-
 	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
 )
 
-func (s *store) PFAdd(key string, items []string) int {
-	s.expireIfNeeded(key)
+func (s *store) PFAdd(key string, items []string) (int, error) {
+	result := s.access(key, ObjHyperLogLog)
+	if result.typeErr != nil {
+		return 0, result.typeErr
+	}
 
-	rObj, exists := s.data[key]
-	if exists {
-		hll, ok := rObj.Value.(data_structure.HyperLogLog)
-		if !ok {
-			panic("PFAdd operation called on object not type HyperLogLog")
-		}
+	if result.exists {
+		hll := result.object.Value.(data_structure.HyperLogLog)
 
 		if len(items) == 0 {
-			return 0
+			return 0, nil
 		}
 
-		return hll.PFAdd(items)
+		return hll.PFAdd(items), nil
 	}
 
 	// Key doesn't exist - create new HyperLogLog
@@ -35,7 +32,7 @@ func (s *store) PFAdd(key string, items []string) int {
 		Value:    hll,
 	}
 
-	return 1
+	return 1, nil
 }
 
 func (s *store) PFCount(keys []string) (int, error) {
@@ -59,8 +56,6 @@ func (s *store) PFCount(keys []string) (int, error) {
 }
 
 func (s *store) PFMerge(destKey string, sourceKeys []string) error {
-	s.expireIfNeeded(destKey)
-
 	destHll, err := s.getHyperLogLog(destKey)
 	if err != nil {
 		return err
@@ -98,19 +93,15 @@ func (s *store) PFMerge(destKey string, sourceKeys []string) error {
 }
 
 func (s *store) getHyperLogLog(key string) (data_structure.HyperLogLog, error) {
-	if expired := s.expireIfNeeded(key); expired {
+	result := s.access(key, ObjHyperLogLog)
+	if result.typeErr != nil {
+		return nil, result.typeErr
+	}
+
+	if result.expired || !result.exists {
 		return nil, nil
 	}
 
-	rObj, exists := s.data[key]
-	if !exists {
-		return nil, nil
-	}
-
-	hll, ok := rObj.Value.(data_structure.HyperLogLog)
-	if !ok {
-		return nil, errors.New("WRONGTYPE Operation against a key holding the wrong kind of value")
-	}
-
+	hll := result.object.Value.(data_structure.HyperLogLog)
 	return hll, nil
 }

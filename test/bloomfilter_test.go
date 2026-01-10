@@ -334,7 +334,7 @@ func TestBFReserveWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.BFReserve(cmd("BF.RESERVE", "k", "0.01", "1000"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, constant.RESP_ITEM_EXISTS, resp)
 }
 
 func TestBFReserveItemExists(t *testing.T) {

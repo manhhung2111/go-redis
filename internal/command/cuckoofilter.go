@@ -7,7 +7,6 @@ import (
 	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
-	"github.com/manhhung2111/go-redis/internal/storage"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
 
@@ -18,12 +17,12 @@ func (redis *redis) CFAdd(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjCuckooFilter {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	result, err := redis.Store.CFAdd(args[0], args[1])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	return core.EncodeResp(redis.Store.CFAdd(args[0], args[1]), false)
+	return core.EncodeResp(result, false)
 }
 
 /* Support CF.ADDNX key item */
@@ -33,12 +32,12 @@ func (redis *redis) CFAddNx(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjCuckooFilter {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	result, err := redis.Store.CFAddNx(args[0], args[1])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	return core.EncodeResp(redis.Store.CFAddNx(args[0], args[1]), false)
+	return core.EncodeResp(result, false)
 }
 
 /* Support CF.COUNT key item */
@@ -48,12 +47,12 @@ func (redis *redis) CFCount(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjCuckooFilter {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	result, err := redis.Store.CFCount(args[0], args[1])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	return core.EncodeResp(redis.Store.CFCount(args[0], args[1]), false)
+	return core.EncodeResp(result, false)
 }
 
 /* Support CF.DEL key item */
@@ -63,16 +62,12 @@ func (redis *redis) CFDel(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjCuckooFilter {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	result, err := redis.Store.CFDel(args[0], args[1])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	if !exists {
-		return constant.RESP_NOT_FOUND
-	}
-
-	return core.EncodeResp(redis.Store.CFDel(args[0], args[1]), false)
+	return core.EncodeResp(result, false)
 }
 
 /* Support CF.EXISTS key item */
@@ -82,12 +77,12 @@ func (redis *redis) CFExists(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjCuckooFilter {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	result, err := redis.Store.CFExists(args[0], args[1])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	return core.EncodeResp(redis.Store.CFExists(args[0], args[1]), false)
+	return core.EncodeResp(result, false)
 }
 
 /* Support CF.INFO key */
@@ -97,17 +92,12 @@ func (redis *redis) CFInfo(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-
-	if !exists {
-		return constant.RESP_NOT_FOUND
+	result, err := redis.Store.CFInfo(args[0])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	if exists && rObj.Type != storage.ObjCuckooFilter {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
-	return core.EncodeResp(redis.Store.CFInfo(args[0]), false)
+	return core.EncodeResp(result, false)
 }
 
 /* Support CF.MEXISTS key item [item ...] */
@@ -117,12 +107,12 @@ func (redis *redis) CFMExists(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjCuckooFilter {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	result, err := redis.Store.CFMExists(args[0], args[1:])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	return core.EncodeResp(redis.Store.CFMExists(args[0], args[1:]), false)
+	return core.EncodeResp(result, false)
 }
 
 /* Support CF.RESERVE key capacity [BUCKETSIZE bucketsize] [MAXITERATIONS maxiterations] [EXPANSION expansion] */
@@ -130,15 +120,6 @@ func (redis *redis) CFReserve(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 2 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
-	}
-
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjCuckooFilter {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
-	if exists {
-		return constant.RESP_ITEM_EXISTS
 	}
 
 	capacity, err := strconv.ParseInt(args[1], 10, 64)

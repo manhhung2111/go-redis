@@ -9,6 +9,8 @@ const (
 	ErrKeyNotFound
 	ErrValueIsNotIntegerOrOutOfRange
 	ErrValueIsNotValidFloat
+	ErrCmSKeyAlreadyExists
+	ErrCmSKeyDoesNotExist
 )
 
 // StorageError represents a typed error from the storage layer
@@ -26,4 +28,6 @@ var (
 	ErrKeyNotFoundError                   = &StorageError{Code: ErrKeyNotFound, Message: "ERR no such key"}
 	ErrValueIsNotIntegerOrOutOfRangeError = &StorageError{Code: ErrValueIsNotIntegerOrOutOfRange, Message: "value is not an integer or out of range"}
 	ErrValueIsNotValidFloatError          = &StorageError{Code: ErrValueIsNotValidFloat, Message: "value is not a valid float"}
+	ErrCmSKeyAlreadyExistsError           = &StorageError{Code: ErrCmSKeyAlreadyExists, Message: "CMS: key already exists"}
+	ErrCmSKeyDoesNotExistError            = &StorageError{Code: ErrCmSKeyDoesNotExist, Message: "CMS: key does not exist"}
 )

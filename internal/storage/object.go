@@ -116,24 +116,24 @@ type Store interface {
 	BFMExists(key string, items []string) ([]int, error)
 	BFReserve(key string, errorRate float64, capacity uint32, expansion uint32) error
 
-	CFAdd(key string, item string) int
-	CFAddNx(key string, item string) int
-	CFCount(key string, item string) int
-	CFDel(key string, item string) int
-	CFExists(key string, item string) int
-	CFInfo(key string) []any
-	CFMExists(key string, items []string) []int
+	CFAdd(key string, item string) (int, error)
+	CFAddNx(key string, item string) (int, error)
+	CFCount(key string, item string) (int, error)
+	CFDel(key string, item string) (int, error)
+	CFExists(key string, item string) (int, error)
+	CFInfo(key string) ([]any, error)
+	CFMExists(key string, items []string) ([]int, error)
 	CFReserve(key string, capacity, bucketSize, maxIterations uint64, expansionRate int) error
 
-	PFAdd(key string, items []string) int
+	PFAdd(key string, items []string) (int, error)
 	PFCount(keys []string) (int, error)
 	PFMerge(destKey string, sourceKeys []string) error
 
-	CMSIncrBy(key string, itemIncrement map[string]uint64) []uint64
-	CMSInfo(key string) []any
+	CMSIncrBy(key string, itemIncrement map[string]uint64) ([]uint64, error)
+	CMSInfo(key string) ([]any, error)
 	CMSInitByDim(key string, width, depth uint64) error
 	CMSInitByProb(key string, errorRate, probability float64) error
-	CMSQuery(key string, items []string) []uint64
+	CMSQuery(key string, items []string) ([]uint64, error)
 }
 
 type store struct {

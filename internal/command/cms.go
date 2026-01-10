@@ -5,7 +5,6 @@ import (
 
 	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
-	"github.com/manhhung2111/go-redis/internal/storage"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
 
@@ -14,15 +13,6 @@ func (redis *redis) CMSIncrBy(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 3 || len(args)%2 != 1 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
-	}
-
-	rObj, exists := redis.Store.Get(args[0])
-	if !exists {
-		return constant.RESP_CMS_KEY_DOES_NOT_EXIST
-	}
-
-	if rObj.Type != storage.ObjCountMinSketch {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
 	}
 
 	// Parse item-increment pairs
@@ -36,7 +26,11 @@ func (redis *redis) CMSIncrBy(cmd core.RedisCmd) []byte {
 		itemIncrement[item] += uint64(increment)
 	}
 
-	result := redis.Store.CMSIncrBy(args[0], itemIncrement)
+	result, err := redis.Store.CMSIncrBy(args[0], itemIncrement)
+	if err != nil {
+		return core.EncodeResp(err, false)
+	}
+
 	return core.EncodeResp(result, false)
 }
 
@@ -47,16 +41,12 @@ func (redis *redis) CMSInfo(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if !exists {
-		return constant.RESP_CMS_KEY_DOES_NOT_EXIST
+	result, err := redis.Store.CMSInfo(args[0])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	if rObj.Type != storage.ObjCountMinSketch {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
-	return core.EncodeResp(redis.Store.CMSInfo(args[0]), false)
+	return core.EncodeResp(result, false)
 }
 
 /* Support CMS.INITBYDIM key width depth */
@@ -64,11 +54,6 @@ func (redis *redis) CMSInitByDim(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 3 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
-	}
-
-	_, exists := redis.Store.Get(args[0])
-	if exists {
-		return constant.RESP_CMS_KEY_ALREADY_EXISTS
 	}
 
 	width, err := strconv.ParseInt(args[1], 10, 64)
@@ -94,11 +79,6 @@ func (redis *redis) CMSInitByProb(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 3 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
-	}
-
-	_, exists := redis.Store.Get(args[0])
-	if exists {
-		return constant.RESP_CMS_KEY_ALREADY_EXISTS
 	}
 
 	errorRate, err := strconv.ParseFloat(args[1], 64)
@@ -134,15 +114,10 @@ func (redis *redis) CMSQuery(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if !exists {
-		return constant.RESP_CMS_KEY_DOES_NOT_EXIST
+	result, err := redis.Store.CMSQuery(args[0], args[1:])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	if rObj.Type != storage.ObjCountMinSketch {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
-	result := redis.Store.CMSQuery(args[0], args[1:])
 	return core.EncodeResp(result, false)
 }

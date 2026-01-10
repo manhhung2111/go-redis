@@ -47,6 +47,8 @@ var RESP_CMS_BAD_DEPTH []byte = []byte("-invalid depth value\r\n")
 var RESP_CMS_BAD_PROBABILITY []byte = []byte("-invalid probability value\r\n")
 var RESP_CMS_PROBABILITY_INVALID_RANGE []byte = []byte("-probability must be in the range (0, 1)\r\n")
 
+var RESP_ERR_NO_SUCH_KEY []byte = []byte("-ERR no such key\r\n")
+
 const NO_EXPIRE int64 = -1
 const KEY_NOT_EXISTS int64 = -2
 

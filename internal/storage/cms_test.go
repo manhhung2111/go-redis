@@ -20,11 +20,12 @@ func TestCMSInitByDim_NewKey(t *testing.T) {
 	assert.Equal(t, EncCountMinSketch, rObj.Encoding)
 
 	// Verify dimensions via Info
-	info := s.CMSInfo("cms")
+	info, err := s.CMSInfo("cms")
 	assert.Equal(t, "width", info[0])
 	assert.Equal(t, 100, info[1])
 	assert.Equal(t, "depth", info[2])
 	assert.Equal(t, 5, info[3])
+	require.NoError(t, err)
 }
 
 func TestCMSInitByDim_KeyExists(t *testing.T) {
@@ -40,9 +41,10 @@ func TestCMSInitByDim_KeyExists(t *testing.T) {
 	assert.Contains(t, err.Error(), "key already exists")
 
 	// Original dimensions should be preserved
-	info := s.CMSInfo("cms")
+	info, err := s.CMSInfo("cms")
 	assert.Equal(t, 100, info[1])
 	assert.Equal(t, 5, info[3])
+	require.NoError(t, err)
 }
 
 func TestCMSInitByDim_ExpiredKey(t *testing.T) {
@@ -58,9 +60,10 @@ func TestCMSInitByDim_ExpiredKey(t *testing.T) {
 	require.NoError(t, err)
 
 	// New dimensions should be set
-	info := s.CMSInfo("cms")
+	info, err := s.CMSInfo("cms")
 	assert.Equal(t, 200, info[1])
 	assert.Equal(t, 10, info[3])
+	require.NoError(t, err)
 }
 
 func TestCMSInitByProb_NewKey(t *testing.T) {
@@ -78,9 +81,10 @@ func TestCMSInitByProb_NewKey(t *testing.T) {
 	// Verify dimensions via Info
 	// errorRate = 0.01 -> width = ceil(e / 0.01) = 272
 	// probability = 0.01 -> depth = ceil(ln(100)) = 5
-	info := s.CMSInfo("cms")
+	info, err := s.CMSInfo("cms")
 	assert.Equal(t, 272, info[1])
 	assert.Equal(t, 5, info[3])
+	require.NoError(t, err)
 }
 
 func TestCMSInitByProb_KeyExists(t *testing.T) {
@@ -113,9 +117,10 @@ func TestCMSIncrBy_SingleItem(t *testing.T) {
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
 
-	result := s.CMSIncrBy("cms", map[string]uint64{"item1": 1})
+	result, err := s.CMSIncrBy("cms", map[string]uint64{"item1": 1})
 	require.Len(t, result, 1)
 	assert.Equal(t, uint64(1), result[0])
+	require.NoError(t, err)
 }
 
 func TestCMSIncrBy_MultipleItems(t *testing.T) {
@@ -130,8 +135,9 @@ func TestCMSIncrBy_MultipleItems(t *testing.T) {
 		"cherry": 15,
 	}
 
-	result := s.CMSIncrBy("cms", items)
+	result, err := s.CMSIncrBy("cms", items)
 	require.Len(t, result, 3)
+	require.NoError(t, err)
 
 	// All results should be at least the increment value
 	for _, count := range result {
@@ -146,23 +152,27 @@ func TestCMSIncrBy_IncrementSameItem(t *testing.T) {
 	require.NoError(t, err)
 
 	// Add item with increment of 5
-	result := s.CMSIncrBy("cms", map[string]uint64{"item1": 5})
+	result, err := s.CMSIncrBy("cms", map[string]uint64{"item1": 5})
 	assert.Equal(t, uint64(5), result[0])
+	require.NoError(t, err)
 
 	// Add more to the same item
-	result = s.CMSIncrBy("cms", map[string]uint64{"item1": 3})
+	result, err = s.CMSIncrBy("cms", map[string]uint64{"item1": 3})
 	assert.Equal(t, uint64(8), result[0])
+	require.NoError(t, err)
 
 	// Verify via query
-	queryResult := s.CMSQuery("cms", []string{"item1"})
+	queryResult, err := s.CMSQuery("cms", []string{"item1"})
 	assert.Equal(t, uint64(8), queryResult[0])
+	require.NoError(t, err)
 }
 
 func TestCMSIncrBy_NonExistingKey(t *testing.T) {
 	s := NewStore().(*store)
 
-	result := s.CMSIncrBy("nonexistent", map[string]uint64{"item1": 1})
+	result, err := s.CMSIncrBy("nonexistent", map[string]uint64{"item1": 1})
 	assert.Nil(t, result)
+	require.Error(t, err)
 }
 
 func TestCMSIncrBy_WrongType(t *testing.T) {
@@ -171,10 +181,8 @@ func TestCMSIncrBy_WrongType(t *testing.T) {
 	// Create a string key
 	s.Set("mykey", "value")
 
-	// Should panic when trying to use wrong type
-	assert.Panics(t, func() {
-		s.CMSIncrBy("mykey", map[string]uint64{"item1": 1})
-	})
+	_, err := s.CMSIncrBy("mykey", map[string]uint64{"item1": 1})
+	assert.Error(t, err)
 }
 
 func TestCMSIncrBy_ExpiredKey(t *testing.T) {
@@ -186,8 +194,9 @@ func TestCMSIncrBy_ExpiredKey(t *testing.T) {
 	s.expires["cms"] = 1 // expired
 
 	// Should return nil since key expired
-	result := s.CMSIncrBy("cms", map[string]uint64{"item1": 5})
+	result, err := s.CMSIncrBy("cms", map[string]uint64{"item1": 5})
 	assert.Nil(t, result)
+	assert.Error(t, err)
 }
 
 func TestCMSIncrBy_EmptyMap(t *testing.T) {
@@ -196,8 +205,9 @@ func TestCMSIncrBy_EmptyMap(t *testing.T) {
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
 
-	result := s.CMSIncrBy("cms", map[string]uint64{})
+	result, err := s.CMSIncrBy("cms", map[string]uint64{})
 	assert.Len(t, result, 0)
+	assert.NoError(t, err)
 }
 
 func TestCMSIncrBy_UpdatesTotalCount(t *testing.T) {
@@ -210,8 +220,9 @@ func TestCMSIncrBy_UpdatesTotalCount(t *testing.T) {
 	s.CMSIncrBy("cms", map[string]uint64{"item2": 10})
 	s.CMSIncrBy("cms", map[string]uint64{"item1": 3})
 
-	info := s.CMSInfo("cms")
+	info, err := s.CMSInfo("cms")
 	assert.Equal(t, uint64(18), info[5]) // 5 + 10 + 3 = 18
+	assert.NoError(t, err)
 }
 
 func TestCMSQuery_SingleItem(t *testing.T) {
@@ -222,9 +233,10 @@ func TestCMSQuery_SingleItem(t *testing.T) {
 
 	s.CMSIncrBy("cms", map[string]uint64{"item1": 10})
 
-	result := s.CMSQuery("cms", []string{"item1"})
+	result, err := s.CMSQuery("cms", []string{"item1"})
 	require.Len(t, result, 1)
 	assert.Equal(t, uint64(10), result[0])
+	assert.NoError(t, err)
 }
 
 func TestCMSQuery_MultipleItems(t *testing.T) {
@@ -238,13 +250,13 @@ func TestCMSQuery_MultipleItems(t *testing.T) {
 	s.CMSIncrBy("cms", map[string]uint64{"cherry": 15})
 
 	// Query all items
-	appleCount := s.CMSQuery("cms", []string{"apple"})[0]
-	bananaCount := s.CMSQuery("cms", []string{"banana"})[0]
-	cherryCount := s.CMSQuery("cms", []string{"cherry"})[0]
+	appleCount, _ := s.CMSQuery("cms", []string{"apple"})
+	bananaCount, _ := s.CMSQuery("cms", []string{"banana"})
+	cherryCount, _ := s.CMSQuery("cms", []string{"cherry"})
 
-	assert.Equal(t, uint64(5), appleCount)
-	assert.Equal(t, uint64(10), bananaCount)
-	assert.Equal(t, uint64(15), cherryCount)
+	assert.Equal(t, uint64(5), appleCount[0])
+	assert.Equal(t, uint64(10), bananaCount[0])
+	assert.Equal(t, uint64(15), cherryCount[0])
 }
 
 func TestCMSQuery_NonExistentItem(t *testing.T) {
@@ -256,21 +268,17 @@ func TestCMSQuery_NonExistentItem(t *testing.T) {
 	s.CMSIncrBy("cms", map[string]uint64{"item1": 10})
 
 	// Query for item that was never added
-	result := s.CMSQuery("cms", []string{"nonexistent"})
+	result, err := s.CMSQuery("cms", []string{"nonexistent"})
 	require.Len(t, result, 1)
 	assert.Equal(t, uint64(0), result[0])
+	assert.NoError(t, err)
 }
 
 func TestCMSQuery_NonExistingKey(t *testing.T) {
 	s := NewStore().(*store)
 
-	result := s.CMSQuery("nonexistent", []string{"item1", "item2", "item3"})
-	require.Len(t, result, 3)
-
-	// All should be zero
-	for _, count := range result {
-		assert.Equal(t, uint64(0), count)
-	}
+	_, err := s.CMSQuery("nonexistent", []string{"item1", "item2", "item3"})
+	assert.Error(t, err)
 }
 
 func TestCMSQuery_WrongType(t *testing.T) {
@@ -279,9 +287,8 @@ func TestCMSQuery_WrongType(t *testing.T) {
 	// Create a list key
 	s.LPush("mylist", "value")
 
-	assert.Panics(t, func() {
-		s.CMSQuery("mylist", []string{"item1"})
-	})
+	_, err := s.CMSQuery("mylist", []string{"item1"})
+	assert.Error(t, err)
 }
 
 func TestCMSQuery_ExpiredKey(t *testing.T) {
@@ -293,10 +300,8 @@ func TestCMSQuery_ExpiredKey(t *testing.T) {
 	s.expires["cms"] = 1 // expired
 
 	// Should return zeros since key expired
-	result := s.CMSQuery("cms", []string{"item1", "item2"})
-	require.Len(t, result, 2)
-	assert.Equal(t, uint64(0), result[0])
-	assert.Equal(t, uint64(0), result[1])
+	_, err = s.CMSQuery("cms", []string{"item1", "item2"})
+	assert.Error(t, err)
 }
 
 func TestCMSQuery_EmptySlice(t *testing.T) {
@@ -305,8 +310,9 @@ func TestCMSQuery_EmptySlice(t *testing.T) {
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
 
-	result := s.CMSQuery("cms", []string{})
+	result, err := s.CMSQuery("cms", []string{})
 	assert.Len(t, result, 0)
+	assert.NoError(t, err)
 }
 
 func TestCMSInfo_ValidKey(t *testing.T) {
@@ -317,8 +323,9 @@ func TestCMSInfo_ValidKey(t *testing.T) {
 
 	s.CMSIncrBy("cms", map[string]uint64{"item1": 100})
 
-	info := s.CMSInfo("cms")
+	info, err := s.CMSInfo("cms")
 	require.Len(t, info, 6)
+	assert.NoError(t, err)
 
 	assert.Equal(t, "width", info[0])
 	assert.Equal(t, 200, info[1])
@@ -331,8 +338,9 @@ func TestCMSInfo_ValidKey(t *testing.T) {
 func TestCMSInfo_NonExistingKey(t *testing.T) {
 	s := NewStore().(*store)
 
-	info := s.CMSInfo("nonexistent")
+	info, err := s.CMSInfo("nonexistent")
 	assert.Nil(t, info)
+	assert.Error(t, err)
 }
 
 func TestCMSInfo_WrongType(t *testing.T) {
@@ -340,9 +348,8 @@ func TestCMSInfo_WrongType(t *testing.T) {
 
 	s.Set("mykey", "value")
 
-	assert.Panics(t, func() {
-		s.CMSInfo("mykey")
-	})
+	_, err := s.CMSInfo("mykey")
+	assert.Error(t, err)
 }
 
 func TestCMSInfo_ExpiredKey(t *testing.T) {
@@ -352,8 +359,9 @@ func TestCMSInfo_ExpiredKey(t *testing.T) {
 	require.NoError(t, err)
 	s.expires["cms"] = 1 // expired
 
-	info := s.CMSInfo("cms")
+	info, err := s.CMSInfo("cms")
 	assert.Nil(t, info)
+	assert.Error(t, err)
 }
 
 func TestCMS_Workflow(t *testing.T) {
@@ -374,17 +382,18 @@ func TestCMS_Workflow(t *testing.T) {
 	s.CMSIncrBy("pageviews", map[string]uint64{"/home": 50})
 
 	// Query counts
-	homeViews := s.CMSQuery("pageviews", []string{"/home"})[0]
-	aboutViews := s.CMSQuery("pageviews", []string{"/about"})[0]
-	contactViews := s.CMSQuery("pageviews", []string{"/contact"})[0]
+	homeViews, _ := s.CMSQuery("pageviews", []string{"/home"})
+	aboutViews, _ := s.CMSQuery("pageviews", []string{"/about"})
+	contactViews, _ := s.CMSQuery("pageviews", []string{"/contact"})
 
-	assert.Equal(t, uint64(150), homeViews)
-	assert.Equal(t, uint64(50), aboutViews)
-	assert.Equal(t, uint64(25), contactViews)
+	assert.Equal(t, uint64(150), homeViews[0])
+	assert.Equal(t, uint64(50), aboutViews[0])
+	assert.Equal(t, uint64(25), contactViews[0])
 
 	// Check info
-	info := s.CMSInfo("pageviews")
+	info, err := s.CMSInfo("pageviews")
 	assert.Equal(t, uint64(225), info[5]) // total count
+	assert.NoError(t, err)
 }
 
 func TestCMS_MultipleKeys(t *testing.T) {
@@ -401,11 +410,11 @@ func TestCMS_MultipleKeys(t *testing.T) {
 	s.CMSIncrBy("cms2", map[string]uint64{"item": 20})
 
 	// Verify they are independent
-	count1 := s.CMSQuery("cms1", []string{"item"})[0]
-	count2 := s.CMSQuery("cms2", []string{"item"})[0]
+	count1, _ := s.CMSQuery("cms1", []string{"item"})
+	count2, _ := s.CMSQuery("cms2", []string{"item"})
 
-	assert.Equal(t, uint64(10), count1)
-	assert.Equal(t, uint64(20), count2)
+	assert.Equal(t, uint64(10), count1[0])
+	assert.Equal(t, uint64(20), count2[0])
 }
 
 func TestCMS_SpecialCharacters(t *testing.T) {
@@ -419,15 +428,16 @@ func TestCMS_SpecialCharacters(t *testing.T) {
 		"tab\there":     2,
 		"newline\nhere": 3,
 		"unicode: 你好":   4,
-		"emoji: 🎉":     5,
+		"emoji: 🎉":      5,
 	}
 
 	s.CMSIncrBy("cms", specialItems)
 
 	for item, expectedCount := range specialItems {
-		result := s.CMSQuery("cms", []string{item})
+		result, err := s.CMSQuery("cms", []string{item})
 		assert.GreaterOrEqual(t, result[0], expectedCount,
 			"count for special item should be at least %d", expectedCount)
+		assert.NoError(t, err)
 	}
 }
 
@@ -440,10 +450,10 @@ func TestCMS_LargeIncrement(t *testing.T) {
 	largeCount := uint64(1 << 32) // 4 billion+
 	s.CMSIncrBy("cms", map[string]uint64{"item1": largeCount})
 
-	result := s.CMSQuery("cms", []string{"item1"})
+	result, _ := s.CMSQuery("cms", []string{"item1"})
 	assert.Equal(t, largeCount, result[0])
 
-	info := s.CMSInfo("cms")
+	info, _ := s.CMSInfo("cms")
 	assert.Equal(t, largeCount, info[5])
 }
 
@@ -453,16 +463,16 @@ func TestGetCountMinSketch_ValidKey(t *testing.T) {
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
 
-	cms, exists := s.getCountMinSketch("cms")
-	assert.True(t, exists)
+	cms, err := s.getCountMinSketch("cms")
+	assert.NoError(t, err)
 	assert.NotNil(t, cms)
 }
 
 func TestGetCountMinSketch_NonExistingKey(t *testing.T) {
 	s := NewStore().(*store)
 
-	cms, exists := s.getCountMinSketch("nonexistent")
-	assert.False(t, exists)
+	cms, err := s.getCountMinSketch("nonexistent")
+	assert.Error(t, err)
 	assert.Nil(t, cms)
 }
 
@@ -471,9 +481,8 @@ func TestGetCountMinSketch_WrongType(t *testing.T) {
 
 	s.Set("mykey", "value")
 
-	assert.Panics(t, func() {
-		s.getCountMinSketch("mykey")
-	})
+	_, err := s.getCountMinSketch("mykey")
+	assert.Error(t, err)
 }
 
 func TestGetCountMinSketch_ExpiredKey(t *testing.T) {
@@ -483,7 +492,7 @@ func TestGetCountMinSketch_ExpiredKey(t *testing.T) {
 	require.NoError(t, err)
 	s.expires["cms"] = 1 // expired
 
-	cms, exists := s.getCountMinSketch("cms")
-	assert.False(t, exists)
+	cms, err := s.getCountMinSketch("cms")
+	assert.Error(t, err)
 	assert.Nil(t, cms)
 }

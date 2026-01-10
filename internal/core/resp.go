@@ -168,6 +168,8 @@ func EncodeResp(value interface{}, isSimpleString bool) []byte {
 		return encodeInteger(int64(v))
 	case int64:
 		return encodeInteger(v)
+	case *int64:
+		return encodeInteger(*v)
 	case uint64:
 		return encodeUnsignedInteger(v)
 	case uint32:
