@@ -5,7 +5,6 @@ import (
 
 	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
-	"github.com/manhhung2111/go-redis/internal/storage"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
 
@@ -16,13 +15,11 @@ func (redis *redis) SAdd(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	key := args[0]
-	rObj, existing := redis.Store.Get(key)
-	if existing && rObj.Type != storage.ObjSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	added, err := redis.Store.SAdd(args[0], args[1:]...)
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	added := redis.Store.SAdd(key, args[1:]...)
 	return core.EncodeResp(added, false)
 }
 
@@ -33,13 +30,11 @@ func (redis *redis) SCard(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	key := args[0]
-	rObj, existing := redis.Store.Get(key)
-	if existing && rObj.Type != storage.ObjSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	setLen, err := redis.Store.SCard(args[0])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	setLen := redis.Store.SCard(key)
 	return core.EncodeResp(setLen, false)
 }
 
@@ -50,14 +45,13 @@ func (redis *redis) SIsMember(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	key := args[0]
-	rObj, existing := redis.Store.Get(key)
-	if existing && rObj.Type != storage.ObjSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	var isMember int64 = 0
+	exists, err := redis.Store.SIsMember(args[0], args[1])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	var isMember int64 = 0
-	if redis.Store.SIsMember(key, args[1]) {
+	if exists {
 		isMember = 1
 	}
 
@@ -71,12 +65,11 @@ func (redis *redis) SMembers(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, existing := redis.Store.Get(args[0])
-	if existing && rObj.Type != storage.ObjSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	members, err := redis.Store.SMembers(args[0])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	members := redis.Store.SMembers(args[0])
 	return core.EncodeResp(members, false)
 }
 
@@ -87,14 +80,12 @@ func (redis *redis) SMIsMember(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, existing := redis.Store.Get(args[0])
-	if existing && rObj.Type != storage.ObjSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	isMembers, err := redis.Store.SMIsMember(args[0], args[1:]...)
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	isMembers := redis.Store.SMIsMember(args[0], args[1:]...)
 	result := make([]int64, len(isMembers))
-
 	for i := range isMembers {
 		result[i] = 0
 		if isMembers[i] {
@@ -112,12 +103,11 @@ func (redis *redis) SRem(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, existing := redis.Store.Get(args[0])
-	if existing && rObj.Type != storage.ObjSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	removedElements, err := redis.Store.SRem(args[0], args[1:]...)
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	removedElements := redis.Store.SRem(args[0], args[1:]...)
 	return core.EncodeResp(removedElements, false)
 }
 
@@ -126,15 +116,6 @@ func (redis *redis) SPop(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 && len(args) != 2 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
-	}
-
-	rObj, existing := redis.Store.Get(args[0])
-	if !existing {
-		return constant.RESP_NIL_BULK_STRING
-	}
-
-	if existing && rObj.Type != storage.ObjSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
 	}
 
 	count := 1
@@ -147,7 +128,11 @@ func (redis *redis) SPop(cmd core.RedisCmd) []byte {
 		count = int(newCount)
 	}
 
-	poppedElements := redis.Store.SPop(args[0], count)
+	poppedElements, err := redis.Store.SPop(args[0], count)
+	if err != nil {
+		return core.EncodeResp(err, false)
+	}
+
 	if len(poppedElements) == 0 {
 		return constant.RESP_NIL_BULK_STRING
 	}
@@ -165,15 +150,6 @@ func (redis *redis) SRandMember(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, existing := redis.Store.Get(args[0])
-	if !existing {
-		return constant.RESP_NIL_BULK_STRING
-	}
-
-	if existing && rObj.Type != storage.ObjSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
 	count := 1
 	if len(args) == 2 {
 		newCount, err := strconv.ParseInt(args[1], 10, 64)
@@ -184,7 +160,11 @@ func (redis *redis) SRandMember(cmd core.RedisCmd) []byte {
 		count = int(newCount)
 	}
 
-	randMembers := redis.Store.SRandMember(args[0], count)
+	randMembers, err := redis.Store.SRandMember(args[0], count)
+	if err != nil {
+		return core.EncodeResp(err, false)
+	}
+
 	if len(args) == 1 && len(randMembers) > 0 {
 		return core.EncodeResp(randMembers[0], false)
 	}

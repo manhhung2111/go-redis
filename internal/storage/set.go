@@ -9,15 +9,14 @@ import (
 	"github.com/manhhung2111/go-redis/internal/util"
 )
 
-func (s *store) SAdd(key string, members ...string) int64 {
-	s.expireIfNeeded(key)
+func (s *store) SAdd(key string, members ...string) (int64, error) {
+	result := s.access(key, ObjSet)
+	if result.typeErr != nil {
+		return 0, result.typeErr
+	}
 
-	rObj, exists := s.data[key]
-	if exists {
-		if rObj.Type != ObjSet {
-			panic("SAdd called on non-set object")
-		}
-
+	if result.exists {
+		rObj := result.object
 		if rObj.Encoding == EncIntSet {
 			// Upgrade to SimpleSet if one of the following condition holds:
 			// members contain an element can not be converted to int64
@@ -34,15 +33,15 @@ func (s *store) SAdd(key string, members ...string) int64 {
 				rObj.Encoding = EncHashTable
 				rObj.Value = simpleSet
 
-				return added
+				return added, nil
 			} else {
-				return added
+				return added, nil
 			}
 		}
 
 		simpleSet := rObj.Value.(data_structure.Set)
 		added, _ := simpleSet.Add(members...)
-		return added
+		return added, nil
 	}
 
 	// Key doesn't exist - create new set
@@ -55,7 +54,7 @@ func (s *store) SAdd(key string, members ...string) int64 {
 				Encoding: EncIntSet,
 				Value:    intset,
 			}
-			return added
+			return added, nil
 		}
 		// If IntSet failed (capacity), fall through to SimpleSet
 	}
@@ -69,191 +68,168 @@ func (s *store) SAdd(key string, members ...string) int64 {
 		Value:    simpleSet,
 	}
 
-	return added
+	return added, nil
 }
 
-func (s *store) SCard(key string) int64 {
-	if isExpired := s.expireIfNeeded(key); isExpired {
-		return 0
+func (s *store) SCard(key string) (int64, error) {
+	result := s.access(key, ObjSet)
+	if result.expired || !result.exists {
+		return 0, nil
 	}
 
-	rObj, exists := s.data[key]
-	if !exists {
-		return 0
+	if result.typeErr != nil {
+		return 0, result.typeErr
 	}
 
-	if rObj.Type != ObjSet {
-		panic("SCard called on non-set object")
-	}
-
-	set := rObj.Value.(data_structure.Set)
-	return set.Size()
+	set := result.object.Value.(data_structure.Set)
+	return set.Size(), nil
 }
 
-func (s *store) SIsMember(key string, member string) bool {
-	if isExpired := s.expireIfNeeded(key); isExpired {
-		return false
+func (s *store) SIsMember(key string, member string) (bool, error) {
+	result := s.access(key, ObjSet)
+	if result.expired || !result.exists {
+		return false, nil
 	}
 
-	rObj, exists := s.data[key]
-	if !exists {
-		return false
+	if result.typeErr != nil {
+		return false, result.typeErr
 	}
 
-	if rObj.Type != ObjSet {
-		panic("SIsMember called on non-set object")
-	}
-
-	set := rObj.Value.(data_structure.Set)
-	return set.IsMember(member)
+	set := result.object.Value.(data_structure.Set)
+	return set.IsMember(member), nil
 }
 
-func (s *store) SMembers(key string) []string {
-	if isExpired := s.expireIfNeeded(key); isExpired {
-		return []string{}
+func (s *store) SMembers(key string) ([]string, error) {
+	result := s.access(key, ObjSet)
+	if result.expired || !result.exists {
+		return []string{}, nil
 	}
 
-	rObj, exists := s.data[key]
-	if !exists {
-		return []string{}
+	if result.typeErr != nil {
+		return []string{}, result.typeErr
 	}
 
-	if rObj.Type != ObjSet {
-		panic("SMembers called on non-set object")
-	}
-
-	set := rObj.Value.(data_structure.Set)
-	return set.Members()
+	set := result.object.Value.(data_structure.Set)
+	return set.Members(), nil
 }
 
-func (s *store) SMIsMember(key string, members ...string) []bool {
-	result := make([]bool, len(members))
-	for i := range members {
-		result[i] = false
+func (s *store) SMIsMember(key string, members ...string) ([]bool, error) {
+	defaultResult := make([]bool, len(members))
+
+	accessResult := s.access(key, ObjSet)
+	if accessResult.expired || !accessResult.exists {
+		return defaultResult, nil
 	}
 
-	if isExpired := s.expireIfNeeded(key); isExpired {
-		return result
+	if accessResult.typeErr != nil {
+		return nil, accessResult.typeErr
 	}
 
-	rObj, exists := s.data[key]
-	if !exists {
-		return result
-	}
-
-	if rObj.Type != ObjSet {
-		panic("SMIsMember called on non-set object")
-	}
-
-	set := rObj.Value.(data_structure.Set)
-	return set.MIsMember(members...)
+	set := accessResult.object.Value.(data_structure.Set)
+	return set.MIsMember(members...), nil
 }
 
-func (s *store) SRem(key string, members ...string) int64 {
-	if isExpired := s.expireIfNeeded(key); isExpired {
-		return 0
+func (s *store) SRem(key string, members ...string) (int64, error) {
+	result := s.access(key, ObjSet)
+	if result.expired || !result.exists {
+		return 0, nil
 	}
 
-	rObj, exists := s.data[key]
-	if !exists {
-		return 0
+	if result.typeErr != nil {
+		return 0, result.typeErr
 	}
 
-	if rObj.Type != ObjSet {
-		panic("SRem called on non-set object")
-	}
-
-	set := rObj.Value.(data_structure.Set)
-	return set.Delete(members...)
+	set := result.object.Value.(data_structure.Set)
+	return set.Delete(members...), nil
 }
 
-func (s *store) SPop(key string, count int) []string {
-	if isExpired := s.expireIfNeeded(key); isExpired {
-		return []string{}
+func (s *store) SPop(key string, count int) ([]string, error) {
+	result := s.access(key, ObjSet)
+	if result.expired || !result.exists {
+		return []string{}, nil
 	}
 
-	rObj, exists := s.data[key]
-	if !exists {
-		return []string{}
+	if result.typeErr != nil {
+		return []string{}, result.typeErr
 	}
 
-	set := rObj.Value.(data_structure.Set)
+	set := result.object.Value.(data_structure.Set)
 	setLen := int(set.Size())
+
 	if setLen == 0 {
-		return []string{}
+		return []string{}, nil
 	}
 
 	// Pop everything
 	if count >= setLen {
-		result := set.Members()
-		s.Del(key)
-		return result
+		members := set.Members()
+		s.delete(key)
+		return members, nil
 	}
 
 	indices := util.FloydSamplingIndices(setLen, count)
 	members := set.Members()
-	result := make([]string, 0, count)
+	popped := make([]string, 0, count)
 
 	for idx, m := range members {
 		if _, ok := indices[idx]; ok {
-			result = append(result, m)
+			popped = append(popped, m)
 		}
 	}
 
-	set.Delete(result...)
+	set.Delete(popped...)
 
-	return result
+	return popped, nil
 }
 
-func (s *store) SRandMember(key string, count int) []string {
+func (s *store) SRandMember(key string, count int) ([]string, error) {
+	result := s.access(key, ObjSet)
+	if result.expired || !result.exists {
+		return []string{}, nil
+	}
+
+	if result.typeErr != nil {
+		return []string{}, result.typeErr
+	}
+
 	if count == 0 {
-		return []string{}
+		return []string{}, nil
 	}
 
-	if isExpired := s.expireIfNeeded(key); isExpired {
-		return []string{}
-	}
-
-	rObj, exists := s.data[key]
-	if !exists {
-		return []string{}
-	}
-
-	set := rObj.Value.(data_structure.Set)
+	set := result.object.Value.(data_structure.Set)
 	setLen := int(set.Size())
 	if setLen == 0 {
-		return []string{}
+		return []string{}, nil
 	}
 
-	// Pop everything
 	if count > 0 {
 		// If count >= size → return all members
 		if count >= setLen {
-			return set.Members()
+			return set.Members(), nil
 		}
 
 		indices := util.FloydSamplingIndices(setLen, count)
 		members := set.Members()
-		result := make([]string, 0, count)
+		selected := make([]string, 0, count)
 
 		for idx, m := range members {
 			if _, ok := indices[idx]; ok {
-				result = append(result, m)
+				selected = append(selected, m)
 			}
 		}
 
-		return result
+		return selected, nil
 	}
 
 	k := -count
-	result := make([]string, 0, k)
+	selected := make([]string, 0, k)
 	members := set.Members()
 
 	for range k {
-		result = append(result, members[rand.Intn(setLen)])
+		selected = append(selected, members[rand.Intn(setLen)])
 	}
 
-	return result
+	return selected, nil
 }
 
 func canBeConvertedToInt64(members ...string) bool {

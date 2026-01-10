@@ -50,14 +50,14 @@ type Store interface {
 	TTL(key string) int64
 	Expire(key string, ttlSeconds int64, opt ExpireOptions) bool
 
-	SAdd(key string, members ...string) int64
-	SCard(key string) int64
-	SIsMember(key string, member string) bool
-	SMembers(key string) []string
-	SMIsMember(key string, member ...string) []bool
-	SRem(key string, members ...string) int64
-	SPop(key string, count int) []string
-	SRandMember(key string, count int) []string
+	SAdd(key string, members ...string) (int64, error)
+	SCard(key string) (int64, error)
+	SIsMember(key string, member string) (bool, error)
+	SMembers(key string) ([]string, error)
+	SMIsMember(key string, member ...string) ([]bool, error)
+	SRem(key string, members ...string) (int64, error)
+	SPop(key string, count int) ([]string, error)
+	SRandMember(key string, count int) ([]string, error)
 
 	LPush(key string, elements ...string) uint32
 	LPop(key string, count uint32) []string
