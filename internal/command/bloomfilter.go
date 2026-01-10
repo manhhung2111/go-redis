@@ -7,7 +7,6 @@ import (
 	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
-	"github.com/manhhung2111/go-redis/internal/storage"
 	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
@@ -19,12 +18,12 @@ func (redis *redis) BFAdd(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjBloomFilter {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	result, err := redis.Store.BFAdd(args[0], args[1])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	return core.EncodeResp(redis.Store.BFAdd(args[0], args[1]), false)
+	return core.EncodeResp(result, false)
 }
 
 /* Support BF.CARD key */
@@ -34,12 +33,12 @@ func (redis *redis) BFCard(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjBloomFilter {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	result, err := redis.Store.BFCard(args[0])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	return core.EncodeResp(redis.Store.BFCard(args[0]), false)
+	return core.EncodeResp(result, false)
 }
 
 /* Support BF.EXISTS key item */
@@ -49,12 +48,12 @@ func (redis *redis) BFExists(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjBloomFilter {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	result, err := redis.Store.BFExists(args[0], args[1])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	return core.EncodeResp(redis.Store.BFExists(args[0], args[1]), false)
+	return core.EncodeResp(result, false)
 }
 
 /* Support BF.INFO key [CAPACITY | SIZE | FILTERS | ITEMS | EXPANSION] */
@@ -62,16 +61,6 @@ func (redis *redis) BFInfo(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 && len(args) != 2 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
-	}
-
-	rObj, exists := redis.Store.Get(args[0])
-
-	if !exists {
-		return constant.RESP_NOT_FOUND
-	}
-
-	if exists && rObj.Type != storage.ObjBloomFilter {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
 	}
 
 	option := data_structure.BloomFilterInfoAll
@@ -92,7 +81,12 @@ func (redis *redis) BFInfo(cmd core.RedisCmd) []byte {
 		}
 	}
 
-	return core.EncodeResp(redis.Store.BFInfo(args[0], option), false)
+	result, err := redis.Store.BFInfo(args[0], option)
+	if err != nil {
+		return core.EncodeResp(err, false)
+	}
+
+	return core.EncodeResp(result, false)
 }
 
 /* Support BF.MADD key item [item ...] */
@@ -102,12 +96,12 @@ func (redis *redis) BFMAdd(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjBloomFilter {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	result, err := redis.Store.BFMAdd(args[0], args[1:])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	return core.EncodeResp(redis.Store.BFMAdd(args[0], args[1:]), false)
+	return core.EncodeResp(result, false)
 }
 
 /* Support BF.MEXISTS key item [item ...] */
@@ -117,12 +111,12 @@ func (redis *redis) BFMExists(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjBloomFilter {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	result, err := redis.Store.BFMExists(args[0], args[1:])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	return core.EncodeResp(redis.Store.BFMExists(args[0], args[1:]), false)
+	return core.EncodeResp(result, false)
 }
 
 /* Support BF.RESERVE key error_rate capacity [EXPANSION expansion] */
@@ -130,15 +124,6 @@ func (redis *redis) BFReserve(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 3 && len(args) != 5 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
-	}
-
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjBloomFilter {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
-	if exists {
-		return constant.RESP_ITEM_EXISTS
 	}
 
 	errorRate, err := strconv.ParseFloat(args[1], 64)

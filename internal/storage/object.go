@@ -108,12 +108,12 @@ type Store interface {
 	GeoPos(key string, members []string) ([]*data_structure.GeoPoint, error)
 	GeoSearch(key string, options data_structure.GeoSearchOptions) ([]data_structure.GeoResult, error)
 
-	BFAdd(key string, item string) int
-	BFCard(key string) int
-	BFExists(key string, item string) int
-	BFInfo(key string, option int) []any
-	BFMAdd(key string, items []string) []int
-	BFMExists(key string, items []string) []int
+	BFAdd(key string, item string) (int, error)
+	BFCard(key string) (int, error)
+	BFExists(key string, item string) (int, error)
+	BFInfo(key string, option int) ([]any, error)
+	BFMAdd(key string, items []string) ([]int, error)
+	BFMExists(key string, items []string) ([]int, error)
 	BFReserve(key string, errorRate float64, capacity uint32, expansion uint32) error
 
 	CFAdd(key string, item string) int
