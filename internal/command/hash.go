@@ -5,7 +5,6 @@ import (
 
 	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
-	"github.com/manhhung2111/go-redis/internal/storage"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
 
@@ -16,17 +15,12 @@ func (redis *redis) HGet(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, existing := redis.Store.Get(args[0])
-	if !existing {
-		return constant.RESP_NIL_BULK_STRING
+	result, err := redis.Store.HGet(args[0], args[1])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	if rObj.Type != storage.ObjHash {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
-	result, existing := redis.Store.HGet(args[0], args[1])
-	if !existing {
+	if result == nil {
 		return constant.RESP_NIL_BULK_STRING
 	}
 
@@ -40,16 +34,11 @@ func (redis *redis) HGetAll(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, existing := redis.Store.Get(args[0])
-	if !existing {
-		return core.EncodeResp([]string{}, false)
+	result, err := redis.Store.HGetAll(args[0])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	if rObj.Type != storage.ObjHash {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
-	result := redis.Store.HGetAll(args[0])
 	return core.EncodeResp(result, false)
 }
 
@@ -60,12 +49,11 @@ func (redis *redis) HMGet(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, existing := redis.Store.Get(args[0])
-	if existing && rObj.Type != storage.ObjHash {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	result, err := redis.Store.HMGet(args[0], args[1:])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	result := redis.Store.HMGet(args[0], args[1:])
 	return core.EncodeResp(result, false)
 }
 
@@ -74,11 +62,6 @@ func (redis *redis) HIncrBy(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 3 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
-	}
-
-	rObj, existing := redis.Store.Get(args[0])
-	if existing && rObj.Type != storage.ObjHash {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
 	}
 
 	increment, err := strconv.ParseInt(args[2], 10, 64)
@@ -101,16 +84,11 @@ func (redis *redis) HKeys(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, existing := redis.Store.Get(args[0])
-	if !existing {
-		return core.EncodeResp([]string{}, false)
+	result, err := redis.Store.HKeys(args[0])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	if rObj.Type != storage.ObjHash {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
-	result := redis.Store.HKeys(args[0])
 	return core.EncodeResp(result, false)
 }
 
@@ -121,16 +99,11 @@ func (redis *redis) HVals(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, existing := redis.Store.Get(args[0])
-	if !existing {
-		return core.EncodeResp([]string{}, false)
+	result, err := redis.Store.HVals(args[0])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	if rObj.Type != storage.ObjHash {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
-	result := redis.Store.HVals(args[0])
 	return core.EncodeResp(result, false)
 }
 
@@ -141,16 +114,11 @@ func (redis *redis) HLen(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, existing := redis.Store.Get(args[0])
-	if !existing {
-		return core.EncodeResp(uint32(0), false)
+	result, err := redis.Store.HLen(args[0])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	if rObj.Type != storage.ObjHash {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
-	result := redis.Store.HLen(args[0])
 	return core.EncodeResp(result, false)
 }
 
@@ -161,17 +129,16 @@ func (redis *redis) HSet(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, existing := redis.Store.Get(args[0])
-	if existing && rObj.Type != storage.ObjHash {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
 	fieldValue := make(map[string]string)
 	for i := 1; i < len(args); i += 2 {
 		fieldValue[args[i]] = args[i+1]
 	}
 
-	result := redis.Store.HSet(args[0], fieldValue)
+	result, err := redis.Store.HSet(args[0], fieldValue)
+	if err != nil {
+		return core.EncodeResp(err, false)
+	}
+
 	return core.EncodeResp(result, false)
 }
 
@@ -182,12 +149,11 @@ func (redis *redis) HSetNx(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, existing := redis.Store.Get(args[0])
-	if existing && rObj.Type != storage.ObjHash {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	result, err := redis.Store.HSetNx(args[0], args[1], args[2])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	result := redis.Store.HSetNx(args[0], args[1], args[2])
 	return core.EncodeResp(result, false)
 }
 
@@ -198,16 +164,11 @@ func (redis *redis) HDel(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, existing := redis.Store.Get(args[0])
-	if !existing {
-		return core.EncodeResp(int64(0), false)
+	result, err := redis.Store.HDel(args[0], args[1:])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	if existing && rObj.Type != storage.ObjHash {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
-	result := redis.Store.HDel(args[0], args[1:])
 	return core.EncodeResp(result, false)
 }
 
@@ -218,15 +179,10 @@ func (redis *redis) HExists(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, existing := redis.Store.Get(args[0])
-	if !existing {
-		return core.EncodeResp(int64(0), false)
+	result, err := redis.Store.HExists(args[0], args[1])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	if existing && rObj.Type != storage.ObjHash {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
-	result := redis.Store.HExists(args[0], args[1])
 	return core.EncodeResp(result, false)
 }

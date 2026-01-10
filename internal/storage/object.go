@@ -70,17 +70,17 @@ type Store interface {
 	LSet(key string, index int32, element string) error
 	LTrim(key string, start, end int32) error
 
-	HGet(key, field string) (string, bool)
-	HGetAll(key string) []string
-	HMGet(key string, fields []string) []*string
+	HGet(key, field string) (*string, error)
+	HGetAll(key string) ([]string, error)
+	HMGet(key string, fields []string) ([]*string, error)
 	HIncrBy(key string, field string, increment int64) (int64, error)
-	HKeys(key string) []string
-	HVals(key string) []string
-	HLen(key string) uint32
-	HSet(key string, fieldValue map[string]string) int64
-	HSetNx(key, field, value string) int64
-	HDel(key string, fields []string) int64
-	HExists(key, field string) int64
+	HKeys(key string) ([]string, error)
+	HVals(key string) ([]string, error)
+	HLen(key string) (uint32, error)
+	HSet(key string, fieldValue map[string]string) (int64, error)
+	HSetNx(key, field, value string) (int64, error)
+	HDel(key string, fields []string) (int64, error)
+	HExists(key, field string) (int64, error)
 
 	ZAdd(key string, scoreMember map[string]float64, options data_structure.ZAddOptions) *uint32
 	ZCard(key string) uint32
