@@ -7,6 +7,7 @@ const (
 	ErrNone ErrorCode = iota
 	ErrWrongType
 	ErrKeyNotFound
+	ErrValueIsNotIntegerOrOutOfRange
 )
 
 // StorageError represents a typed error from the storage layer
@@ -20,6 +21,7 @@ func (e *StorageError) Error() string {
 }
 
 var (
-	ErrWrongTypeError   = &StorageError{Code: ErrWrongType, Message: "WRONGTYPE Operation against a key holding the wrong kind of value"}
-	ErrKeyNotFoundError = &StorageError{Code: ErrKeyNotFound, Message: "ERR no such key"}
+	ErrWrongTypeError                     = &StorageError{Code: ErrWrongType, Message: "WRONGTYPE Operation against a key holding the wrong kind of value"}
+	ErrKeyNotFoundError                   = &StorageError{Code: ErrKeyNotFound, Message: "ERR no such key"}
+	ErrValueIsNotIntegerOrOutOfRangeError = &StorageError{Code: ErrValueIsNotIntegerOrOutOfRange, Message: "value is not an integer or out of range"}
 )

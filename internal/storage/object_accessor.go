@@ -25,7 +25,8 @@ func (s *store) access(key string, expectedType ObjectType) storageAccessResult 
 	result.object = obj
 	result.exists = exists
 
-	if exists && obj.Type != expectedType {
+	// Skip type check if expectedType is ObjAny
+	if exists && expectedType != ObjAny && obj.Type != expectedType {
 		result.typeErr = ErrWrongTypeError
 	}
 

@@ -7,7 +7,6 @@ import (
 )
 
 func newStringObject(s string) *RObj {
-	// Try int encoding
 	if v, err := strconv.ParseInt(s, 10, 64); err == nil {
 		return &RObj{
 			Type:     ObjString,
@@ -23,24 +22,9 @@ func newStringObject(s string) *RObj {
 	}
 }
 
-func (o *RObj) StringValue() (string, bool) {
-	if o == nil || o.Type != ObjString {
-		return "", false
-	}
-
-	switch o.Encoding {
-	case EncRaw:
-		return o.Value.(string), true
-	case EncInt:
-		return strconv.FormatInt(o.Value.(int64), 10), true
-	default:
-		return "", false
-	}
-}
-
 func (s *store) Set(key string, value string) {
+	s.delete(key)
 	s.data[key] = newStringObject(value)
-	delete(s.expires, key)
 }
 
 func (s *store) SetEx(key string, value string, ttlSeconds uint64) {
@@ -49,58 +33,54 @@ func (s *store) SetEx(key string, value string, ttlSeconds uint64) {
 	s.expires[key] = expireAt
 }
 
-func (s *store) Get(key string) (*RObj, bool) {
-	obj, ok := s.data[key]
-	if !ok {
-		return nil, false
+func (s *store) Get(key string) (*string, error) {
+	result := s.access(key, ObjString)
+	if result.typeErr != nil {
+		return nil, result.typeErr
 	}
 
-	if ttl, ok := s.expires[key]; ok {
-		now := time.Now().UnixMilli()
-		if ttl <= uint64(now) {
-			s.Del(key)
-			return nil, false
-		}
+	if result.expired || !result.exists {
+		return nil, nil
 	}
 
-	return obj, true
+	// Encoding must be raw or int
+	rObj := result.object
+	if rObj.Encoding == EncInt {
+		val := strconv.FormatInt(rObj.Value.(int64), 10)
+		return &val, nil
+	}
+
+	val := rObj.Value.(string)
+	return &val, nil
 }
 
 func (s *store) Del(key string) bool {
-	_, ok := s.data[key]
-	if ok {
-		delete(s.data, key)
-		delete(s.expires, key)
-		return true
-	}
-	return false
+	return s.delete(key)
 }
 
-func (o *RObj) IncrBy(increment int64) (int64, bool) {
-	if o.Type != ObjString {
-		return 0, false
+func (s *store) IncrBy(key string, increment int64) (*int64, error) {
+	result := s.access(key, ObjString)
+	if result.typeErr != nil {
+		return nil, result.typeErr
 	}
 
-	var v int64
-	switch o.Encoding {
-	case EncInt:
-		v = o.Value.(int64)
-	case EncRaw:
-		var err error
-		v, err = strconv.ParseInt(o.Value.(string), 10, 64)
-		if err != nil {
-			return 0, false
-		}
-	default:
-		return 0, false
+	if result.expired || !result.exists {
+		s.Set(key, strconv.FormatInt(increment, 10))
+		return &increment, nil
 	}
 
-	if (increment > 0 && v > math.MaxInt64-increment) || (increment < 0 && v < math.MinInt64-increment) {
-		return 0, false
+	// Encoding must be raw or int
+	rObj := result.object
+	if rObj.Encoding != EncInt {
+		return nil, ErrValueIsNotIntegerOrOutOfRangeError
 	}
 
-	v += increment
-	o.Encoding = EncInt
-	o.Value = v
-	return v, true
+	val := rObj.Value.(int64)
+	if (increment > 0 && val > math.MaxInt64-increment) || (increment < 0 && val < math.MinInt64-increment) {
+		return nil, ErrValueIsNotIntegerOrOutOfRangeError
+	}
+
+	val += increment
+	rObj.Value = val
+	return &val, nil
 }

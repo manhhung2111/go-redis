@@ -16,14 +16,9 @@ func (redis *redis) Get(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(cmd.Args[0])
-	if !exists {
-		return constant.RESP_NIL_BULK_STRING
-	}
-
-	value, ok := rObj.StringValue()
-	if !ok {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	value, err := redis.Store.Get(cmd.Args[0])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
 	return core.EncodeResp(value, false)
@@ -73,7 +68,7 @@ func (redis *redis) Set(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidCommandOption("NX|XX", cmd.Cmd), false)
 	}
 
-	_, exists := redis.Store.Get(key)
+	exists := redis.Store.Exists(key)
 
 	if nx && exists {
 		return constant.RESP_NIL_BULK_STRING
@@ -119,17 +114,8 @@ func (redis *redis) MGet(cmd core.RedisCmd) []byte {
 	res := make([]*string, len(args))
 
 	for i := 0; i < len(args); i++ {
-		rObj, ok := redis.Store.Get(args[i])
-		if !ok {
-			res[i] = nil
-			continue
-		}
-
-		if s, ok := rObj.StringValue(); ok {
-			res[i] = &s
-		} else {
-			res[i] = nil
-		}
+		str, _ := redis.Store.Get(args[i])
+		res[i] = str
 	}
 
 	return core.EncodeResp(res, false)
@@ -156,19 +142,12 @@ func (redis *redis) Incr(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	key := args[0]
-	rObj, exists := redis.Store.Get(key)
-	if exists && rObj != nil {
-		res, succeeded := rObj.IncrBy(1)
-		if !succeeded {
-			return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
-		}
-		return core.EncodeResp(res, false)
-	} else {
-		var res int64 = 1
-		redis.Store.Set(key, strconv.FormatInt(res, 10))
-		return core.EncodeResp(res, false)
+	result, err := redis.Store.IncrBy(args[0], 1)
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
+
+	return core.EncodeResp(result, false)
 }
 
 /* Support INCRBY key increment */
@@ -178,24 +157,17 @@ func (redis *redis) IncrBy(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	key := args[0]
 	increment, err := strconv.ParseInt(args[1], 10, 64)
 	if err != nil {
 		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
 	}
 
-	rObj, exists := redis.Store.Get(key)
-	if exists && rObj != nil {
-		res, succeeded := rObj.IncrBy(increment)
-		if !succeeded {
-			return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
-		}
-		return core.EncodeResp(res, false)
-	} else {
-		var res int64 = increment
-		redis.Store.Set(key, strconv.FormatInt(res, 10))
-		return core.EncodeResp(res, false)
+	result, err := redis.Store.IncrBy(args[0], increment)
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
+
+	return core.EncodeResp(result, false)
 }
 
 /* Support DECR key */
@@ -205,19 +177,12 @@ func (redis *redis) Decr(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	key := args[0]
-	rObj, exists := redis.Store.Get(key)
-	if exists && rObj != nil {
-		res, succeeded := rObj.IncrBy(-1)
-		if !succeeded {
-			return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
-		}
-		return core.EncodeResp(res, false)
-	} else {
-		var res int64 = -1
-		redis.Store.Set(key, strconv.FormatInt(res, 10))
-		return core.EncodeResp(res, false)
+	result, err := redis.Store.IncrBy(args[0], -1)
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
+
+	return core.EncodeResp(result, false)
 }
 
 /* Support DECRBY key decrement */
@@ -227,22 +192,15 @@ func (redis *redis) DecrBy(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	key := args[0]
 	decrement, err := strconv.ParseInt(args[1], 10, 64)
 	if err != nil {
 		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
 	}
 
-	rObj, exists := redis.Store.Get(key)
-	if exists && rObj != nil {
-		res, succeeded := rObj.IncrBy(-decrement)
-		if !succeeded {
-			return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
-		}
-		return core.EncodeResp(res, false)
-	} else {
-		var res int64 = -decrement
-		redis.Store.Set(key, strconv.FormatInt(res, 10))
-		return core.EncodeResp(res, false)
+	result, err := redis.Store.IncrBy(args[0], -decrement)
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
+
+	return core.EncodeResp(result, false)
 }

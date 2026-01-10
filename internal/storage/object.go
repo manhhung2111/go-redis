@@ -15,6 +15,9 @@ const (
 	ObjCuckooFilter
 	ObjHyperLogLog
 	ObjCountMinSketch
+
+	// ObjAny is a sentinel value to skip type checking in access()
+	ObjAny ObjectType = 255
 )
 
 const (
@@ -37,10 +40,12 @@ type RObj struct {
 }
 
 type Store interface {
-	Get(key string) (*RObj, bool)
+	Get(key string) (*string, error)
 	Set(key string, value string)
 	SetEx(key string, value string, ttlSeconds uint64)
 	Del(key string) bool
+	IncrBy(key string, increment int64) (*int64, error)
+	Exists(key string) bool
 
 	TTL(key string) int64
 	Expire(key string, ttlSeconds int64, opt ExpireOptions) bool
@@ -141,4 +146,9 @@ func NewStore() Store {
 		data:    make(map[string]*RObj),
 		expires: make(map[string]uint64),
 	}
+}
+
+func (s *store) Exists(key string) bool {
+	result := s.access(key, ObjAny)
+	return result.object != nil
 }
