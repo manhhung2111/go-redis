@@ -44,8 +44,9 @@ func TestTTL_DeletesExpiredKey(t *testing.T) {
 
 	assert.Equal(t, int64(-2), ttl)
 
-	_, exists := s.Get("mykey")
-	assert.False(t, exists)
+	str, err := s.Get("mykey")
+	assert.NoError(t, err)
+	assert.Nil(t, str)
 }
 
 func TestTTL_AfterNaturalExpiration(t *testing.T) {
@@ -171,8 +172,9 @@ func TestExpire_AlreadyExpiredKey(t *testing.T) {
 
 	assert.False(t, ok)
 
-	_, exists := s.Get("mykey")
-	assert.False(t, exists)
+	str, err := s.Get("mykey")
+	assert.NoError(t, err)
+	assert.Nil(t, str)
 }
 
 func TestExpire_ZeroTTL(t *testing.T) {
@@ -213,9 +215,9 @@ func TestExpireIntegration_ComplexScenario(t *testing.T) {
 
 	assert.False(t, s.Expire("mykey", 100, ExpireOptions{NX: true}))
 
-	rObj, exists := s.Get("mykey")
-	require.True(t, exists)
-	assert.Equal(t, "value", rObj.Value)
+	str, err := s.Get("mykey")
+	assert.NoError(t, err)
+	assert.Equal(t, "value", *str)
 }
 
 func TestExpireIntegration_DifferentDataTypes(t *testing.T) {

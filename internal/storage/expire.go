@@ -1,6 +1,10 @@
 package storage
 
-import "time"
+import (
+	"time"
+
+	"github.com/manhhung2111/go-redis/internal/constant"
+)
 
 type ExpireOptions struct {
 	NX bool
@@ -9,27 +13,23 @@ type ExpireOptions struct {
 	LT bool
 }
 
-
 func (s *store) TTL(key string) int64 {
-	obj, ok := s.data[key]
-	if !ok || obj == nil {
-		return -2
+	result := s.access(key, ObjAny)
+	if result.expired || !result.exists {
+		return constant.KEY_NOT_EXISTS
 	}
 
 	if expireAt, ok := s.expires[key]; ok {
 		now := uint64(time.Now().UnixMilli())
-		if expireAt <= now {
-			s.Del(key)
-			return -2
-		}
 		return int64((expireAt - now) / 1000)
 	}
 
-	return -1
+	return constant.NO_EXPIRE
 }
 
 func (s *store) Expire(key string, ttlSeconds int64, opt ExpireOptions) bool {
-	if _, ok := s.data[key]; !ok {
+	result := s.access(key, ObjAny)
+	if result.expired || !result.exists {
 		return false
 	}
 
@@ -50,11 +50,6 @@ func (s *store) Expire(key string, ttlSeconds int64, opt ExpireOptions) bool {
 
 	// GT / LT only apply if key already has expire
 	if hasExpire {
-		if oldExpireAt <= uint64(now) {
-			s.Del(key)
-			return false
-		}
-
 		oldTTL := int64((oldExpireAt - uint64(now)) / 1000)
 
 		if opt.GT && oldTTL >= ttlSeconds {
@@ -67,14 +62,4 @@ func (s *store) Expire(key string, ttlSeconds int64, opt ExpireOptions) bool {
 
 	s.expires[key] = newExpireAt
 	return true
-}
-
-func (s *store) expireIfNeeded(key string) bool {
-	if exp, ok := s.expires[key]; ok {
-		if exp <= uint64(time.Now().UnixMilli()) {
-			s.Del(key)
-			return true
-		}
-	}
-	return false
 }
