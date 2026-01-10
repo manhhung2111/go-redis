@@ -6,7 +6,6 @@ import (
 
 	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
-	"github.com/manhhung2111/go-redis/internal/storage"
 	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
@@ -16,12 +15,6 @@ func (redis *redis) GeoAdd(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 4 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
-	}
-
-	key := args[0]
-	rObj, exists := redis.Store.Get(key)
-	if exists && rObj.Type != storage.ObjZSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
 	}
 
 	options := data_structure.ZAddOptions{}
@@ -83,7 +76,11 @@ func (redis *redis) GeoAdd(cmd core.RedisCmd) []byte {
 		i += 3
 	}
 
-	result := redis.Store.GeoAdd(key, items, options)
+	result, err := redis.Store.GeoAdd(args[0], items, options)
+	if err != nil {
+		return core.EncodeResp(err, false)
+	}
+
 	if result == nil {
 		return constant.RESP_SYNTAX_ERROR
 	}
@@ -98,19 +95,6 @@ func (redis *redis) GeoDist(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	key := args[0]
-	rObj, exists := redis.Store.Get(key)
-	if !exists {
-		return constant.RESP_NIL_BULK_STRING
-	}
-
-	if rObj.Type != storage.ObjZSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
-	member1 := args[1]
-	member2 := args[2]
-
 	unit := "m"
 	if len(args) == 4 {
 		unit = strings.ToLower(args[3])
@@ -119,7 +103,11 @@ func (redis *redis) GeoDist(cmd core.RedisCmd) []byte {
 		}
 	}
 
-	result := redis.Store.GeoDist(key, member1, member2, unit)
+	result, err := redis.Store.GeoDist(args[0], args[1], args[2], unit)
+	if err != nil {
+		return core.EncodeResp(err, false)
+	}
+
 	if result == nil {
 		return constant.RESP_NIL_BULK_STRING
 	}
@@ -134,14 +122,10 @@ func (redis *redis) GeoHash(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	key := args[0]
-	rObj, exists := redis.Store.Get(key)
-	if exists && rObj.Type != storage.ObjZSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	result, err := redis.Store.GeoHash(args[0], args[1:])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
-
-	members := args[1:]
-	result := redis.Store.GeoHash(key, members)
 
 	return core.EncodeResp(result, false)
 }
@@ -153,14 +137,10 @@ func (redis *redis) GeoPos(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	key := args[0]
-	rObj, exists := redis.Store.Get(key)
-	if exists && rObj.Type != storage.ObjZSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	points, err := redis.Store.GeoPos(args[0], args[1:])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
-
-	members := args[1:]
-	points := redis.Store.GeoPos(key, members)
 
 	// Convert to array of arrays for RESP encoding
 	result := make([]any, len(points))
@@ -180,6 +160,7 @@ func (redis *redis) GeoPos(cmd core.RedisCmd) []byte {
 
 /*
 Support GEOSEARCH key [FROMMEMBER member | FROMLONLAT longitude latitude]
+
 	[BYRADIUS radius M | KM | FT | MI | BYBOX width height M | KM | FT | MI]
 	[ASC | DESC] [COUNT count [ANY]] [WITHCOORD] [WITHDIST] [WITHHASH]
 */
@@ -187,15 +168,6 @@ func (redis *redis) GeoSearch(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 4 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
-	}
-
-	key := args[0]
-	rObj, exists := redis.Store.Get(key)
-	if !exists {
-		return core.EncodeResp([]string{}, false)
-	}
-	if rObj.Type != storage.ObjZSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
 	}
 
 	options := data_structure.GeoSearchOptions{
@@ -324,7 +296,11 @@ func (redis *redis) GeoSearch(cmd core.RedisCmd) []byte {
 		return constant.RESP_SYNTAX_ERROR
 	}
 
-	results := redis.Store.GeoSearch(key, options)
+	results, err := redis.Store.GeoSearch(args[0], options)
+	if err != nil {
+		return core.EncodeResp(err, false)
+	}
+
 	if results == nil {
 		return core.EncodeResp([]string{}, false)
 	}

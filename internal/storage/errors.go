@@ -8,6 +8,7 @@ const (
 	ErrWrongType
 	ErrKeyNotFound
 	ErrValueIsNotIntegerOrOutOfRange
+	ErrValueIsNotValidFloat
 )
 
 // StorageError represents a typed error from the storage layer
@@ -24,4 +25,5 @@ var (
 	ErrWrongTypeError                     = &StorageError{Code: ErrWrongType, Message: "WRONGTYPE Operation against a key holding the wrong kind of value"}
 	ErrKeyNotFoundError                   = &StorageError{Code: ErrKeyNotFound, Message: "ERR no such key"}
 	ErrValueIsNotIntegerOrOutOfRangeError = &StorageError{Code: ErrValueIsNotIntegerOrOutOfRange, Message: "value is not an integer or out of range"}
+	ErrValueIsNotValidFloatError          = &StorageError{Code: ErrValueIsNotValidFloat, Message: "value is not a valid float"}
 )

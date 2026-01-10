@@ -82,31 +82,31 @@ type Store interface {
 	HDel(key string, fields []string) (int64, error)
 	HExists(key, field string) (int64, error)
 
-	ZAdd(key string, scoreMember map[string]float64, options data_structure.ZAddOptions) *uint32
-	ZCard(key string) uint32
-	ZCount(key string, minScore, maxScore float64) uint32
-	ZIncrBy(key string, member string, increment float64) (float64, bool)
-	ZLexCount(key, minValue, maxValue string) uint32
-	ZMScore(key string, members []string) []*float64
-	ZPopMax(key string, count int) []string
-	ZPopMin(key string, count int) []string
-	ZRandMember(key string, count int, withScores bool) []string
-	ZRangeByRank(key string, start, stop int, withScores bool) []string
-	ZRangeByLex(key string, start, stop string) []string
-	ZRangeByScore(key string, start, stop float64, withScores bool) []string
-	ZRevRangeByRank(key string, start, stop int, withScores bool) []string
-	ZRevRangeByLex(key string, start, stop string) []string
-	ZRevRangeByScore(key string, start, stop float64, withScores bool) []string
-	ZRank(key string, member string, withScore bool) []any
-	ZRem(key string, members []string) uint32
-	ZRevRank(key, member string, withScore bool) []any
-	ZScore(key, member string) *float64
+	ZAdd(key string, scoreMember map[string]float64, options data_structure.ZAddOptions) (*uint32, error)
+	ZCard(key string) (uint32, error)
+	ZCount(key string, minScore, maxScore float64) (uint32, error)
+	ZIncrBy(key string, member string, increment float64) (float64, error)
+	ZLexCount(key, minValue, maxValue string) (uint32, error)
+	ZMScore(key string, members []string) ([]*float64, error)
+	ZPopMax(key string, count int) ([]string, error)
+	ZPopMin(key string, count int) ([]string, error)
+	ZRandMember(key string, count int, withScores bool) ([]string, error)
+	ZRangeByRank(key string, start, stop int, withScores bool) ([]string, error)
+	ZRangeByLex(key string, start, stop string) ([]string, error)
+	ZRangeByScore(key string, start, stop float64, withScores bool) ([]string, error)
+	ZRevRangeByRank(key string, start, stop int, withScores bool) ([]string, error)
+	ZRevRangeByLex(key string, start, stop string) ([]string, error)
+	ZRevRangeByScore(key string, start, stop float64, withScores bool) ([]string, error)
+	ZRank(key string, member string, withScore bool) ([]any, error)
+	ZRem(key string, members []string) (uint32, error)
+	ZRevRank(key, member string, withScore bool) ([]any, error)
+	ZScore(key, member string) (*float64, error)
 
-	GeoAdd(key string, items []data_structure.GeoPoint, options data_structure.ZAddOptions) *uint32
-	GeoDist(key, member1, member2, unit string) *float64
-	GeoHash(key string, members []string) []*string
-	GeoPos(key string, members []string) []*data_structure.GeoPoint
-	GeoSearch(key string, options data_structure.GeoSearchOptions) []data_structure.GeoResult
+	GeoAdd(key string, items []data_structure.GeoPoint, options data_structure.ZAddOptions) (*uint32, error)
+	GeoDist(key, member1, member2, unit string) (*float64, error)
+	GeoHash(key string, members []string) ([]*string, error)
+	GeoPos(key string, members []string) ([]*data_structure.GeoPoint, error)
+	GeoSearch(key string, options data_structure.GeoSearchOptions) ([]data_structure.GeoResult, error)
 
 	BFAdd(key string, item string) int
 	BFCard(key string) int

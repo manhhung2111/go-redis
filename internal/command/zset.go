@@ -7,7 +7,6 @@ import (
 
 	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
-	"github.com/manhhung2111/go-redis/internal/storage"
 	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
@@ -22,12 +21,6 @@ func (redis *redis) ZAdd(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 3 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
-	}
-
-	key := args[0]
-	rObj, exists := redis.Store.Get(key)
-	if exists && rObj.Type != storage.ObjZSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
 	}
 
 	options := data_structure.ZAddOptions{}
@@ -82,7 +75,11 @@ func (redis *redis) ZAdd(cmd core.RedisCmd) []byte {
 		i += 2
 	}
 
-	result := redis.Store.ZAdd(key, scoreMember, options)
+	result, err := redis.Store.ZAdd(args[0], scoreMember, options)
+	if err != nil {
+		return core.EncodeResp(err, false)
+	}
+
 	if result == nil {
 		return constant.RESP_SYNTAX_ERROR
 	}
@@ -97,12 +94,11 @@ func (redis *redis) ZCard(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjZSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	result, err := redis.Store.ZCard(args[0])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	result := redis.Store.ZCard(args[0])
 	return core.EncodeResp(result, false)
 }
 
@@ -111,11 +107,6 @@ func (redis *redis) ZCount(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 3 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
-	}
-
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjZSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
 	}
 
 	minValue, err := strconv.ParseFloat(args[1], 64)
@@ -128,7 +119,11 @@ func (redis *redis) ZCount(cmd core.RedisCmd) []byte {
 		return constant.RESP_VALUE_IS_NOT_VALID_FLOAT
 	}
 
-	result := redis.Store.ZCount(args[0], minValue, maxValue)
+	result, err := redis.Store.ZCount(args[0], minValue, maxValue)
+	if err != nil {
+		return core.EncodeResp(err, false)
+	}
+
 	return core.EncodeResp(result, false)
 }
 
@@ -139,19 +134,14 @@ func (redis *redis) ZIncrBy(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjZSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
 	increment, err := strconv.ParseFloat(args[1], 64)
 	if err != nil {
 		return constant.RESP_VALUE_IS_NOT_VALID_FLOAT
 	}
 
-	result, succeeded := redis.Store.ZIncrBy(args[0], args[2], increment)
-	if !succeeded {
-		return constant.RESP_VALUE_IS_NOT_VALID_FLOAT
+	result, err := redis.Store.ZIncrBy(args[0], args[2], increment)
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
 	return core.EncodeResp(result, false)
@@ -164,11 +154,6 @@ func (redis *redis) ZLexCount(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjZSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
 	minValue, err := getLexString(args[1])
 	if err != nil {
 		return core.EncodeResp(err, false)
@@ -179,7 +164,11 @@ func (redis *redis) ZLexCount(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(err, false)
 	}
 
-	result := redis.Store.ZLexCount(args[0], minValue, maxValue)
+	result, err := redis.Store.ZLexCount(args[0], minValue, maxValue)
+	if err != nil {
+		return core.EncodeResp(err, false)
+	}
+
 	return core.EncodeResp(result, false)
 }
 
@@ -190,12 +179,11 @@ func (redis *redis) ZMScore(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjZSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
+	result, err := redis.Store.ZMScore(args[0], args[1:])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	result := redis.Store.ZMScore(args[0], args[1:])
 	return core.EncodeResp(result, false)
 }
 
@@ -206,11 +194,6 @@ func (redis *redis) ZPopMax(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjZSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
 	count := 1
 	if len(args) == 2 {
 		newCount, err := strconv.ParseInt(args[1], 10, 64)
@@ -220,7 +203,11 @@ func (redis *redis) ZPopMax(cmd core.RedisCmd) []byte {
 		count = int(newCount)
 	}
 
-	result := redis.Store.ZPopMax(args[0], count)
+	result, err := redis.Store.ZPopMax(args[0], count)
+	if err != nil {
+		return core.EncodeResp(err, false)
+	}
+
 	return core.EncodeResp(result, false)
 }
 
@@ -231,11 +218,6 @@ func (redis *redis) ZPopMin(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjZSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
 	count := 1
 	if len(args) == 2 {
 		newCount, err := strconv.ParseInt(args[1], 10, 64)
@@ -245,7 +227,11 @@ func (redis *redis) ZPopMin(cmd core.RedisCmd) []byte {
 		count = int(newCount)
 	}
 
-	result := redis.Store.ZPopMin(args[0], count)
+	result, err := redis.Store.ZPopMin(args[0], count)
+	if err != nil {
+		return core.EncodeResp(err, false)
+	}
+
 	return core.EncodeResp(result, false)
 }
 
@@ -254,11 +240,6 @@ func (redis *redis) ZRandMember(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 && len(args) != 2 && len(args) != 3 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
-	}
-
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjZSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
 	}
 
 	count := 1
@@ -279,7 +260,11 @@ func (redis *redis) ZRandMember(cmd core.RedisCmd) []byte {
 		}
 	}
 
-	result := redis.Store.ZRandMember(args[0], count, withScores)
+	result, err := redis.Store.ZRandMember(args[0], count, withScores)
+	if err != nil {
+		return core.EncodeResp(err, false)
+	}
+
 	if len(args) == 1 {
 		if len(result) == 0 {
 			return constant.RESP_NIL_BULK_STRING
@@ -294,11 +279,6 @@ func (redis *redis) ZRange(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 3 || len(args) > 6 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
-	}
-
-	rObj, exists := redis.Store.Get(args[0])
-	if exists && rObj.Type != storage.ObjZSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
 	}
 
 	var (
@@ -345,9 +325,13 @@ func (redis *redis) ZRange(cmd core.RedisCmd) []byte {
 
 		result := []string{}
 		if rev {
-			result = redis.Store.ZRevRangeByRank(args[0], int(start), int(stop), withScores)
+			result, err = redis.Store.ZRevRangeByRank(args[0], int(start), int(stop), withScores)
 		} else {
-			result = redis.Store.ZRangeByRank(args[0], int(start), int(stop), withScores)
+			result, err = redis.Store.ZRangeByRank(args[0], int(start), int(stop), withScores)
+		}
+
+		if err != nil {
+			return core.EncodeResp(err, false)
 		}
 
 		return core.EncodeResp(result, false)
@@ -366,9 +350,13 @@ func (redis *redis) ZRange(cmd core.RedisCmd) []byte {
 
 		result := []string{}
 		if rev {
-			result = redis.Store.ZRevRangeByScore(args[0], start, stop, withScores)
+			result, err = redis.Store.ZRevRangeByScore(args[0], start, stop, withScores)
 		} else {
-			result = redis.Store.ZRangeByScore(args[0], start, stop, withScores)
+			result, err = redis.Store.ZRangeByScore(args[0], start, stop, withScores)
+		}
+
+		if err != nil {
+			return core.EncodeResp(err, false)
 		}
 
 		return core.EncodeResp(result, false)
@@ -387,9 +375,13 @@ func (redis *redis) ZRange(cmd core.RedisCmd) []byte {
 
 		result := []string{}
 		if rev {
-			result = redis.Store.ZRevRangeByLex(args[0], start, stop)
+			result, err = redis.Store.ZRevRangeByLex(args[0], start, stop)
 		} else {
-			result = redis.Store.ZRangeByLex(args[0], start, stop)
+			result, err = redis.Store.ZRangeByLex(args[0], start, stop)
+		}
+
+		if err != nil {
+			return core.EncodeResp(err, false)
 		}
 
 		return core.EncodeResp(result, false)
@@ -406,15 +398,6 @@ func (redis *redis) ZRank(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if !exists {
-		return constant.RESP_NIL_BULK_STRING
-	}
-
-	if exists && rObj.Type != storage.ObjZSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
 	withScore := false
 	if len(args) == 3 {
 		if strings.ToUpper(args[2]) == "WITHSCORE" {
@@ -424,7 +407,11 @@ func (redis *redis) ZRank(cmd core.RedisCmd) []byte {
 		}
 	}
 
-	result := redis.Store.ZRank(args[0], args[1], withScore)
+	result, err := redis.Store.ZRank(args[0], args[1], withScore)
+	if err != nil {
+		return core.EncodeResp(err, false)
+	}
+
 	if result == nil {
 		return constant.RESP_NIL_BULK_STRING
 	}
@@ -441,16 +428,11 @@ func (redis *redis) ZRem(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if !exists {
-		return core.EncodeResp(0, false)
+	result, err := redis.Store.ZRem(args[0], args[1:])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	if exists && rObj.Type != storage.ObjZSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
-	result := redis.Store.ZRem(args[0], args[1:])
 	return core.EncodeResp(result, false)
 }
 
@@ -459,15 +441,6 @@ func (redis *redis) ZRevRank(cmd core.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 2 && len(args) != 3 {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
-	}
-
-	rObj, exists := redis.Store.Get(args[0])
-	if !exists {
-		return constant.RESP_NIL_BULK_STRING
-	}
-
-	if exists && rObj.Type != storage.ObjZSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
 	}
 
 	withScore := false
@@ -479,7 +452,11 @@ func (redis *redis) ZRevRank(cmd core.RedisCmd) []byte {
 		}
 	}
 
-	result := redis.Store.ZRevRank(args[0], args[1], withScore)
+	result, err := redis.Store.ZRevRank(args[0], args[1], withScore)
+	if err != nil {
+		return core.EncodeResp(err, false)
+	}
+
 	if result == nil {
 		return constant.RESP_NIL_BULK_STRING
 	}
@@ -496,16 +473,11 @@ func (redis *redis) ZScore(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	rObj, exists := redis.Store.Get(args[0])
-	if !exists {
-		return constant.RESP_NIL_BULK_STRING
+	result, err := redis.Store.ZScore(args[0], args[1])
+	if err != nil {
+		return core.EncodeResp(err, false)
 	}
 
-	if exists && rObj.Type != storage.ObjZSet {
-		return constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY
-	}
-
-	result := redis.Store.ZScore(args[0], args[1])
 	return core.EncodeResp(result, false)
 }
 

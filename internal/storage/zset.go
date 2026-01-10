@@ -1,222 +1,295 @@
 package storage
 
-import "github.com/manhhung2111/go-redis/internal/storage/data_structure"
+import (
+	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
+)
 
-func (s *store) ZAdd(key string, scoreMember map[string]float64, options data_structure.ZAddOptions) *uint32 {
-	s.expireIfNeeded(key)
+func (s *store) ZAdd(key string, scoreMember map[string]float64, options data_structure.ZAddOptions) (*uint32, error) {
+	result := s.access(key, ObjZSet)
+	if result.typeErr != nil {
+		return nil, result.typeErr
+	}
 
-	rObj, exists := s.data[key]
-	if !exists {
+	if !result.exists {
 		zset := data_structure.NewZSet()
-		result := zset.ZAdd(scoreMember, options)
+		added := zset.ZAdd(scoreMember, options)
+		s.data[key] = &RObj{
+			Type:     ObjZSet,
+			Encoding: EncSortedSet,
+			Value:    zset,
+		}
+		return added, nil
+	}
+
+	zset := result.object.Value.(data_structure.ZSet)
+	return zset.ZAdd(scoreMember, options), nil
+}
+
+func (s *store) ZCard(key string) (uint32, error) {
+	zset, err := s.getZSet(key)
+	if err != nil {
+		return 0, err
+	}
+
+	if zset == nil {
+		return 0, nil
+	}
+
+	return zset.ZCard(), nil
+}
+
+func (s *store) ZCount(key string, minScore float64, maxScore float64) (uint32, error) {
+	zset, err := s.getZSet(key)
+	if err != nil {
+		return 0, err
+	}
+
+	if zset == nil {
+		return 0, nil
+	}
+
+	return zset.ZCount(minScore, maxScore), nil
+}
+
+func (s *store) ZIncrBy(key string, member string, increment float64) (float64, error) {
+	result := s.access(key, ObjZSet)
+	if result.typeErr != nil {
+		return 0, result.typeErr
+	}
+
+	if !result.exists {
+		zset := data_structure.NewZSet()
+		res, succeeded := zset.ZIncrBy(member, increment)
+
+		if !succeeded {
+			return 0, ErrValueIsNotValidFloatError
+		}
+
 		s.data[key] = &RObj{
 			Type:     ObjZSet,
 			Encoding: EncSortedSet,
 			Value:    zset,
 		}
 
-		return result
+		return res, nil
 	}
 
-	zset, ok := rObj.Value.(data_structure.ZSet)
-	if !ok {
-		panic("ZAdd operation called on object not type ZSet")
+	zset := result.object.Value.(data_structure.ZSet)
+	res, succeeded := zset.ZIncrBy(member, increment)
+
+	if !succeeded {
+		return 0, ErrValueIsNotValidFloatError
 	}
 
-	return zset.ZAdd(scoreMember, options)
+	return res, nil
 }
 
-func (s *store) ZCard(key string) uint32 {
-	zset, exists := s.getZSet(key)
-	if !exists {
-		return 0
+func (s *store) ZLexCount(key string, minValue string, maxValue string) (uint32, error) {
+	zset, err := s.getZSet(key)
+	if err != nil {
+		return 0, err
 	}
-	return zset.ZCard()
+
+	if zset == nil {
+		return 0, nil
+	}
+
+	return zset.ZLexCount(minValue, maxValue), nil
 }
 
-func (s *store) ZCount(key string, minScore float64, maxScore float64) uint32 {
-	zset, exists := s.getZSet(key)
-	if !exists {
-		return 0
+func (s *store) ZMScore(key string, members []string) ([]*float64, error) {
+	zset, err := s.getZSet(key)
+	if err != nil {
+		return nil, err
 	}
-	return zset.ZCount(minScore, maxScore)
+
+	if zset == nil {
+		return make([]*float64, len(members)), nil
+	}
+
+	return zset.ZMScore(members), nil
 }
 
-func (s *store) ZIncrBy(key string, member string, increment float64) (float64, bool) {
-	s.expireIfNeeded(key)
-
-	rObj, exists := s.data[key]
-	if !exists {
-		zset := data_structure.NewZSet()
-		result, succeeded := zset.ZIncrBy(member, increment)
-
-		if succeeded {
-			s.data[key] = &RObj{
-				Type:     ObjZSet,
-				Encoding: EncSortedSet,
-				Value:    zset,
-			}
-		}
-
-		return result, succeeded
+func (s *store) ZPopMax(key string, count int) ([]string, error) {
+	zset, err := s.getZSet(key)
+	if err != nil {
+		return nil, err
 	}
 
-	zset, ok := rObj.Value.(data_structure.ZSet)
-	if !ok {
-		panic("ZIncrBy operation called on object not type ZSet")
+	if zset == nil {
+		return []string{}, nil
 	}
 
-	return zset.ZIncrBy(member, increment)
+	return zset.ZPopMax(count), nil
 }
 
-func (s *store) ZLexCount(key string, minValue string, maxValue string) uint32 {
-	zset, exists := s.getZSet(key)
-	if !exists {
-		return 0
+func (s *store) ZPopMin(key string, count int) ([]string, error) {
+	zset, err := s.getZSet(key)
+	if err != nil {
+		return nil, err
 	}
 
-	return zset.ZLexCount(minValue, maxValue)
+	if zset == nil {
+		return []string{}, nil
+	}
+
+	return zset.ZPopMin(count), nil
 }
 
-func (s *store) ZMScore(key string, members []string) []*float64 {
-	zset, exists := s.getZSet(key)
-	if !exists {
-		return make([]*float64, len(members))
+func (s *store) ZRandMember(key string, count int, withScores bool) ([]string, error) {
+	zset, err := s.getZSet(key)
+	if err != nil {
+		return nil, err
 	}
-	return zset.ZMScore(members)
+
+	if zset == nil {
+		return []string{}, nil
+	}
+
+	return zset.ZRandMember(count, withScores), nil
 }
 
-func (s *store) ZPopMax(key string, count int) []string {
-	zset, exists := s.getZSet(key)
-	if !exists {
-		return []string{}
+func (s *store) ZRangeByLex(key string, start string, stop string) ([]string, error) {
+	zset, err := s.getZSet(key)
+	if err != nil {
+		return nil, err
 	}
 
-	return zset.ZPopMax(count)
+	if zset == nil {
+		return []string{}, nil
+	}
+
+	return zset.ZRangeByLex(start, stop, false), nil
 }
 
-func (s *store) ZPopMin(key string, count int) []string {
-	zset, exists := s.getZSet(key)
-	if !exists {
-		return []string{}
+func (s *store) ZRangeByRank(key string, start int, stop int, withScores bool) ([]string, error) {
+	zset, err := s.getZSet(key)
+	if err != nil {
+		return nil, err
 	}
 
-	return zset.ZPopMin(count)
+	if zset == nil {
+		return []string{}, nil
+	}
+
+	return zset.ZRangeByRank(start, stop, withScores), nil
 }
 
-func (s *store) ZRandMember(key string, count int, withScores bool) []string {
-	zset, exists := s.getZSet(key)
-	if !exists {
-		return []string{}
+func (s *store) ZRangeByScore(key string, start float64, stop float64, withScores bool) ([]string, error) {
+	zset, err := s.getZSet(key)
+	if err != nil {
+		return nil, err
 	}
 
-	return zset.ZRandMember(count, withScores)
+	if zset == nil {
+		return []string{}, nil
+	}
+
+	return zset.ZRangeByScore(start, stop, withScores), nil
 }
 
-func (s *store) ZRangeByLex(key string, start string, stop string) []string {
-	zset, exists := s.getZSet(key)
-	if !exists {
-		return []string{}
+func (s *store) ZRank(key string, member string, withScore bool) ([]any, error) {
+	zset, err := s.getZSet(key)
+	if err != nil {
+		return nil, err
 	}
 
-	return zset.ZRangeByLex(start, stop, false)
+	if zset == nil {
+		return nil, nil
+	}
+
+	return zset.ZRank(member, withScore), nil
 }
 
-func (s *store) ZRangeByRank(key string, start int, stop int, withScores bool) []string {
-	zset, exists := s.getZSet(key)
-	if !exists {
-		return []string{}
+func (s *store) ZRem(key string, members []string) (uint32, error) {
+	zset, err := s.getZSet(key)
+	if err != nil {
+		return 0, err
 	}
 
-	return zset.ZRangeByRank(start, stop, withScores)
+	if zset == nil {
+		return 0, nil
+	}
+
+	return uint32(zset.ZRem(members)), nil
 }
 
-func (s *store) ZRangeByScore(key string, start float64, stop float64, withScores bool) []string {
-	zset, exists := s.getZSet(key)
-	if !exists {
-		return []string{}
+func (s *store) ZRevRangeByLex(key string, start string, stop string) ([]string, error) {
+	zset, err := s.getZSet(key)
+	if err != nil {
+		return nil, err
 	}
 
-	return zset.ZRangeByScore(start, stop, withScores)
+	if zset == nil {
+		return []string{}, nil
+	}
+
+	return zset.ZRevRangeByLex(start, stop, false), nil
 }
 
-func (s *store) ZRank(key string, member string, withScore bool) []any {
-	zset, exists := s.getZSet(key)
-	if !exists {
-		return nil
+func (s *store) ZRevRangeByRank(key string, start int, stop int, withScores bool) ([]string, error) {
+	zset, err := s.getZSet(key)
+	if err != nil {
+		return nil, err
 	}
 
-	return zset.ZRank(member, withScore)
+	if zset == nil {
+		return []string{}, nil
+	}
+
+	return zset.ZRevRangeByRank(start, stop, withScores), nil
 }
 
-func (s *store) ZRem(key string, members []string) uint32 {
-	zset, exists := s.getZSet(key)
-	if !exists {
-		return 0
+func (s *store) ZRevRangeByScore(key string, start float64, stop float64, withScores bool) ([]string, error) {
+	zset, err := s.getZSet(key)
+	if err != nil {
+		return nil, err
 	}
 
-	return uint32(zset.ZRem(members))
+	if zset == nil {
+		return []string{}, nil
+	}
+
+	return zset.ZRevRangeByScore(start, stop, withScores), nil
 }
 
-func (s *store) ZRevRangeByLex(key string, start string, stop string) []string {
-	zset, exists := s.getZSet(key)
-	if !exists {
-		return []string{}
+func (s *store) ZRevRank(key string, member string, withScore bool) ([]any, error) {
+	zset, err := s.getZSet(key)
+	if err != nil {
+		return nil, err
 	}
 
-	return zset.ZRevRangeByLex(start, stop, false)
+	if zset == nil {
+		return nil, nil
+	}
+
+	return zset.ZRevRank(member, withScore), nil
 }
 
-func (s *store) ZRevRangeByRank(key string, start int, stop int, withScores bool) []string {
-	zset, exists := s.getZSet(key)
-	if !exists {
-		return []string{}
+func (s *store) ZScore(key string, member string) (*float64, error) {
+	zset, err := s.getZSet(key)
+	if err != nil {
+		return nil, err
 	}
 
-	return zset.ZRevRangeByRank(start, stop, withScores)
+	if zset == nil {
+		return nil, nil
+	}
+
+	return zset.ZScore(member), nil
 }
 
-func (s *store) ZRevRangeByScore(key string, start float64, stop float64, withScores bool) []string {
-	zset, exists := s.getZSet(key)
-	if !exists {
-		return []string{}
+// getZSet is a helper that uses centralized access for expiration and type checking
+func (s *store) getZSet(key string) (data_structure.ZSet, error) {
+	result := s.access(key, ObjZSet)
+	if result.typeErr != nil {
+		return nil, result.typeErr
 	}
 
-	return zset.ZRevRangeByScore(start, stop, withScores)
-}
-
-func (s *store) ZRevRank(key string, member string, withScore bool) []any {
-	zset, exists := s.getZSet(key)
-	if !exists {
-		return nil
+	if result.expired || !result.exists {
+		return nil, nil
 	}
 
-	return zset.ZRevRank(member, withScore)
-}
-
-func (s *store) ZScore(key string, member string) *float64 {
-	zset, exists := s.getZSet(key)
-	if !exists {
-		return nil
-	}
-
-	return zset.ZScore(member)
-}
-
-func (s *store) getZSet(key string) (data_structure.ZSet, bool) {
-	if expired := s.expireIfNeeded(key); expired {
-		return nil, false
-	}
-
-	rObj, exists := s.data[key]
-	if !exists {
-		return nil, false
-	}
-
-	zset, ok := rObj.Value.(data_structure.ZSet)
-	if !ok {
-		panic("Operation called on object not type ZSet")
-	}
-
-	return zset, true
+	zset := result.object.Value.(data_structure.ZSet)
+	return zset, nil
 }
