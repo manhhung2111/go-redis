@@ -27,3 +27,8 @@ var CF_DEFAULT_MAX_EXPANSIONS = 32
 var CF_DEFAULT_MAX_ITERATIONS = 20
 var CF_MIN_MAX_ITERATIONS = 1
 var CF_MAX_MAX_ITERATIONS = 65535
+
+var ACTIVE_EXPIRE_CYCLE_MS = 100                // Timer interval in milliseconds (eg: 10 times / second)
+var ACTIVE_EXPIRE_CYCLE_KEYS_PER_LOOP = 20      // Keys to sample per iteration
+var ACTIVE_EXPIRE_CYCLE_TIME_LIMIT_USAGE = 1000 // Time budget per cycle in microseconds (1ms)
+var ACTIVE_EXPIRE_CYCLE_THRESHOLD_PERCENT = 25 // Continue if > 25% expired

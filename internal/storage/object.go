@@ -134,6 +134,8 @@ type Store interface {
 	CMSInitByDim(key string, width, depth uint64) error
 	CMSInitByProb(key string, errorRate, probability float64) error
 	CMSQuery(key string, items []string) ([]uint64, error)
+
+	ActiveExpireCycle() int
 }
 
 type store struct {

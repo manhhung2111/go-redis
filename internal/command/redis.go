@@ -7,6 +7,7 @@ import (
 )
 
 type Redis interface {
+	ActiveExpireCycle() int
 	HandleCommand(cmd core.RedisCmd) []byte
 	Ping(cmd core.RedisCmd) []byte
 
@@ -225,4 +226,8 @@ func (r *redis) HandleCommand(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(util.InvalidCommand(cmd.Cmd), false)
 	}
 	return handler(cmd)
+}
+
+func (r *redis) ActiveExpireCycle() int {
+	return r.Store.ActiveExpireCycle()
 }

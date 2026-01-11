@@ -13,6 +13,8 @@ import (
 	"github.com/manhhung2111/go-redis/internal/core"
 )
 
+const activeExpireTimerIdent = 2003
+
 type Server struct {
 	redis    command.Redis
 	kQueueFd int
@@ -43,6 +45,10 @@ func (s *Server) Start(sigCh chan os.Signal) error {
 
 	if err := s.registerServerSocket(); err != nil {
 		return fmt.Errorf("failed to register server socket: %w", err)
+	}
+
+	if err := s.registerActiveExpireTime(); err != nil {
+		return fmt.Errorf("failed to register active expire cycle event: %w", err)
 	}
 
 	return s.eventLoop()
@@ -105,6 +111,19 @@ func (s *Server) registerServerSocket() error {
 	return nil
 }
 
+func (s *Server) registerActiveExpireTime() error {
+	timerEvent := syscall.Kevent_t{
+		Ident:  uint64(activeExpireTimerIdent),
+		Filter: syscall.EVFILT_TIMER,
+		Flags:  syscall.EV_ADD | syscall.EV_ENABLE | syscall.EV_CLEAR,
+		Fflags: syscall.NOTE_USECONDS, //
+		Data:   int64(config.ACTIVE_EXPIRE_CYCLE_MS) * 1000,
+	}
+
+	_, err := syscall.Kevent(s.kQueueFd, []syscall.Kevent_t{timerEvent}, nil, nil)
+	return err
+}
+
 func (s *Server) eventLoop() error {
 	events := make([]syscall.Kevent_t, config.MAX_CONNECTION)
 
@@ -131,6 +150,11 @@ func (s *Server) eventLoop() error {
 }
 
 func (s *Server) handleEvent(event syscall.Kevent_t) error {
+	if int(event.Ident) == activeExpireTimerIdent && event.Filter == syscall.EVFILT_TIMER {
+		s.redis.ActiveExpireCycle()
+		return nil
+	}
+
 	if int(event.Ident) == s.serverFd {
 		return s.acceptConnection()
 	}
