@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"math/rand/v2"
 	"time"
 
 	"github.com/manhhung2111/go-redis/internal/config"
@@ -20,11 +21,7 @@ func (s *store) ActiveExpireCycle() int {
 		sampled, expired := s.sampleAndExpire(config.ACTIVE_EXPIRE_CYCLE_KEYS_PER_LOOP)
 		totalExpired += expired
 
-		if sampled == 0 {
-			break
-		}
-
-		if expired*100/sampled < config.ACTIVE_EXPIRE_CYCLE_THRESHOLD_PERCENT {
+		if sampled == 0 || expired*100/sampled < config.ACTIVE_EXPIRE_CYCLE_THRESHOLD_PERCENT {
 			break
 		}
 	}
@@ -38,16 +35,18 @@ func (s *store) sampleAndExpire(sampleSize int) (int, int) {
 	nowMs := uint64(time.Now().UnixMilli())
 	expired := 0
 	sampled := 0
-	for key, expireAt := range s.expires {
-		if sampled >= sampleSize {
-			break
-		}
-		sampled++
 
+	for sampled < sampleSize && len(s.expireKeys) > 0 {
+		randomIdx := rand.IntN(len(s.expireKeys))
+		key := s.expireKeys[randomIdx]
+
+		expireAt := s.expires[key]
 		if expireAt <= nowMs {
 			expired++
 			s.delete(key)
 		}
+
+		sampled++
 	}
 
 	return sampled, expired

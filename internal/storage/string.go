@@ -28,9 +28,11 @@ func (s *store) Set(key string, value string) {
 }
 
 func (s *store) SetEx(key string, value string, ttlSeconds uint64) {
+	s.delete(key) // Clean up existing key if any
+
 	expireAt := uint64(time.Now().UnixMilli()) + ttlSeconds*1000
 	s.data[key] = newStringObject(value)
-	s.expires[key] = expireAt
+	s.setExpireKey(key, expireAt)
 }
 
 func (s *store) Get(key string) (*string, error) {

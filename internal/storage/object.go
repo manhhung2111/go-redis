@@ -139,14 +139,18 @@ type Store interface {
 }
 
 type store struct {
-	data    map[string]*RObj
-	expires map[string]uint64
+	data           map[string]*RObj
+	expires        map[string]uint64
+	expireKeys     []string
+	expireKeyIndex map[string]int
 }
 
 func NewStore() Store {
 	return &store{
-		data:    make(map[string]*RObj),
-		expires: make(map[string]uint64),
+		data:           make(map[string]*RObj),
+		expires:        make(map[string]uint64),
+		expireKeys:     make([]string, 0),
+		expireKeyIndex: make(map[string]int),
 	}
 }
 

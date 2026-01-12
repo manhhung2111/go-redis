@@ -39,6 +39,18 @@ func (s *store) delete(key string) bool {
 	if ok {
 		delete(s.data, key)
 		delete(s.expires, key)
+
+		if idx, exists := s.expireKeyIndex[key]; exists {
+			delete(s.expireKeyIndex, key)
+
+			lastIdx := len(s.expireKeys) - 1
+			if idx != lastIdx {
+				lastKey := s.expireKeys[lastIdx]
+				s.expireKeys[idx] = lastKey
+				s.expireKeyIndex[lastKey] = idx
+			}
+			s.expireKeys = s.expireKeys[:lastIdx]
+		}
 		return true
 	}
 	return false

@@ -60,6 +60,16 @@ func (s *store) Expire(key string, ttlSeconds int64, opt ExpireOptions) bool {
 		}
 	}
 
+	if !hasExpire {
+		s.setExpireKey(key, newExpireAt)
+	}
+
 	s.expires[key] = newExpireAt
 	return true
+}
+
+func (s *store) setExpireKey(key string, expireAtMs uint64) {
+	s.expireKeyIndex[key] = len(s.expireKeys)
+	s.expireKeys = append(s.expireKeys, key)
+	s.expires[key] = expireAtMs
 }

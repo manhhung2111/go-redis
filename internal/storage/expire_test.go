@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -233,4 +234,123 @@ func TestExpireIntegration_DifferentDataTypes(t *testing.T) {
 
 	result, _ := s.LRange("list_key", 0, -1)
 	assert.Len(t, result, 3)
+}
+
+// Active Expiration Cycle Tests
+
+func TestActiveExpireCycle_ExpiresKeys(t *testing.T) {
+	s := NewStore().(*store)
+
+	// Create keys with past expiration
+	for i := 0; i < 10; i++ {
+		key := fmt.Sprintf("key%d", i)
+		s.SetEx(key, "value", 0) // Expires immediately
+	}
+	time.Sleep(10 * time.Millisecond)
+
+	expired := s.ActiveExpireCycle()
+
+	assert.Equal(t, 10, expired)
+	assert.Empty(t, s.expireKeys)
+	assert.Empty(t, s.expireKeyIndex)
+	assert.Empty(t, s.expires)
+}
+
+func TestActiveExpireCycle_PartialExpiration(t *testing.T) {
+	s := NewStore().(*store)
+
+	// 5 expired keys
+	for i := 0; i < 5; i++ {
+		key := fmt.Sprintf("expired%d", i)
+		s.SetEx(key, "value", 0)
+	}
+	// 5 non-expired keys
+	for i := 0; i < 5; i++ {
+		key := fmt.Sprintf("valid%d", i)
+		s.SetEx(key, "value", 3600) // 1 hour
+	}
+	time.Sleep(10 * time.Millisecond)
+
+	// Run multiple cycles to ensure all expired keys are eventually sampled
+	totalExpired := 0
+	for i := 0; i < 10; i++ {
+		totalExpired += s.ActiveExpireCycle()
+	}
+
+	assert.Equal(t, 5, totalExpired)
+	assert.Len(t, s.expireKeys, 5)
+	assert.Len(t, s.expireKeyIndex, 5)
+	assert.Len(t, s.expires, 5)
+}
+
+func TestActiveExpireCycle_EmptyStore(t *testing.T) {
+	s := NewStore().(*store)
+
+	expired := s.ActiveExpireCycle()
+
+	assert.Equal(t, 0, expired)
+}
+
+func TestActiveExpireCycle_NoExpiredKeys(t *testing.T) {
+	s := NewStore().(*store)
+
+	for i := 0; i < 10; i++ {
+		key := fmt.Sprintf("key%d", i)
+		s.SetEx(key, "value", 3600)
+	}
+
+	expired := s.ActiveExpireCycle()
+
+	assert.Equal(t, 0, expired)
+	assert.Len(t, s.expireKeys, 10)
+}
+
+func TestActiveExpireCycle_DataStructureConsistency(t *testing.T) {
+	s := NewStore().(*store)
+
+	// Mix of expired and valid keys
+	for i := 0; i < 20; i++ {
+		key := fmt.Sprintf("key%d", i)
+		if i%2 == 0 {
+			s.SetEx(key, "value", 0) // Expired
+		} else {
+			s.SetEx(key, "value", 3600) // Valid
+		}
+	}
+	time.Sleep(10 * time.Millisecond)
+
+	s.ActiveExpireCycle()
+
+	// Verify consistency: every key in expireKeyIndex has correct index
+	for key, idx := range s.expireKeyIndex {
+		assert.Equal(t, key, s.expireKeys[idx], "Index mismatch for key %s", key)
+		_, hasExpire := s.expires[key]
+		assert.True(t, hasExpire, "Key %s in index but not in expires", key)
+	}
+
+	// Verify: every key in expireKeys is in expireKeyIndex
+	for idx, key := range s.expireKeys {
+		assert.Equal(t, idx, s.expireKeyIndex[key])
+	}
+}
+
+func TestDelete_MaintainsIndexConsistency(t *testing.T) {
+	s := NewStore().(*store)
+
+	// Create 5 keys with expiration
+	keys := []string{"a", "b", "c", "d", "e"}
+	for _, key := range keys {
+		s.SetEx(key, "value", 3600)
+	}
+
+	// Delete middle key - triggers swap-and-pop
+	s.Del("c")
+
+	// Verify consistency
+	assert.Len(t, s.expireKeys, 4)
+	assert.Len(t, s.expireKeyIndex, 4)
+
+	for key, idx := range s.expireKeyIndex {
+		assert.Equal(t, key, s.expireKeys[idx])
+	}
 }
