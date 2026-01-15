@@ -11,11 +11,11 @@ func (s *store) GeoAdd(key string, items []data_structure.GeoPoint, options data
 	if !result.exists {
 		zset := data_structure.NewZSet()
 		added := zset.GeoAdd(items, options)
-		s.data[key] = &RObj{
+		s.data.Set(key, &RObj{
 			Type:     ObjZSet,
 			Encoding: EncSortedSet,
 			Value:    zset,
-		}
+		})
 		return added, nil
 	}
 

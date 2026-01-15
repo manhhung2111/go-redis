@@ -13,7 +13,7 @@ type storageAccessResult struct {
 func (s *store) access(key string, expectedType ObjectType) storageAccessResult {
 	result := storageAccessResult{}
 
-	if exp, hasExpire := s.expires[key]; hasExpire {
+	if exp, hasExpire := s.expires.Get(key); hasExpire {
 		if exp <= uint64(time.Now().UnixMilli()) {
 			s.delete(key)
 			result.expired = true
@@ -21,7 +21,7 @@ func (s *store) access(key string, expectedType ObjectType) storageAccessResult 
 		}
 	}
 
-	obj, exists := s.data[key]
+	obj, exists := s.data.Get(key)
 	result.object = obj
 	result.exists = exists
 
@@ -35,22 +35,10 @@ func (s *store) access(key string, expectedType ObjectType) storageAccessResult 
 
 // Centralized function to delete key
 func (s *store) delete(key string) bool {
-	_, ok := s.data[key]
+	_, ok := s.data.Get(key)
 	if ok {
-		delete(s.data, key)
-		delete(s.expires, key)
-
-		if idx, exists := s.expireKeyIndex[key]; exists {
-			delete(s.expireKeyIndex, key)
-
-			lastIdx := len(s.expireKeys) - 1
-			if idx != lastIdx {
-				lastKey := s.expireKeys[lastIdx]
-				s.expireKeys[idx] = lastKey
-				s.expireKeyIndex[lastKey] = idx
-			}
-			s.expireKeys = s.expireKeys[:lastIdx]
-		}
+		s.data.Delete(key)
+		s.expires.Delete(key)
 		return true
 	}
 	return false

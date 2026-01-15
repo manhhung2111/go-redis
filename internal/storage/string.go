@@ -24,15 +24,15 @@ func newStringObject(s string) *RObj {
 
 func (s *store) Set(key string, value string) {
 	s.delete(key)
-	s.data[key] = newStringObject(value)
+	s.data.Set(key, newStringObject(value))
 }
 
 func (s *store) SetEx(key string, value string, ttlSeconds uint64) {
 	s.delete(key) // Clean up existing key if any
 
 	expireAt := uint64(time.Now().UnixMilli()) + ttlSeconds*1000
-	s.data[key] = newStringObject(value)
-	s.setExpireKey(key, expireAt)
+	s.data.Set(key, newStringObject(value))
+	s.expires.Set(key, expireAt)
 }
 
 func (s *store) Get(key string) (*string, error) {

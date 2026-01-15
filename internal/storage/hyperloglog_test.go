@@ -16,7 +16,7 @@ func TestPFAdd_NewKey(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify HyperLogLog was created
-	rObj, exists := s.data["hll"]
+	rObj, exists := s.data.Get("hll")
 	require.True(t, exists)
 	assert.Equal(t, ObjHyperLogLog, rObj.Type)
 	assert.Equal(t, EncHyperLogLog, rObj.Encoding)
@@ -31,7 +31,7 @@ func TestPFAdd_NewKeyNoItems(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify HyperLogLog was created
-	rObj, exists := s.data["hll"]
+	rObj, exists := s.data.Get("hll")
 	require.True(t, exists)
 	assert.Equal(t, ObjHyperLogLog, rObj.Type)
 }
@@ -99,7 +99,7 @@ func TestPFAdd_ExpiredKey(t *testing.T) {
 
 	// Create HLL and set it as expired
 	s.PFAdd("hll", []string{"old_item"})
-	s.expires["hll"] = 1 // expired timestamp
+	s.expires.Set("hll", 1) // expired timestamp
 
 	// Add new item - should create new HLL since old one expired
 	result, err := s.PFAdd("hll", []string{"new_item"})
@@ -217,7 +217,7 @@ func TestPFCount_ExpiredKey(t *testing.T) {
 	s := NewStore().(*store)
 
 	s.PFAdd("hll", []string{"item1"})
-	s.expires["hll"] = 1 // expired
+	s.expires.Set("hll", 1) // expired
 
 	count, err := s.PFCount([]string{"hll"})
 	require.NoError(t, err)
@@ -262,7 +262,7 @@ func TestPFMerge_NewDestKey(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify dest was created
-	rObj, exists := s.data["dest"]
+	rObj, exists := s.data.Get("dest")
 	require.True(t, exists)
 	assert.Equal(t, ObjHyperLogLog, rObj.Type)
 
@@ -300,7 +300,7 @@ func TestPFMerge_EmptySourceKeys(t *testing.T) {
 	require.NoError(t, err)
 
 	// Dest should exist but be empty
-	rObj, exists := s.data["dest"]
+	rObj, exists := s.data.Get("dest")
 	require.True(t, exists)
 	assert.Equal(t, ObjHyperLogLog, rObj.Type)
 
@@ -387,7 +387,7 @@ func TestPFMerge_ExpiredDestKey(t *testing.T) {
 
 	// Create dest and expire it
 	s.PFAdd("dest", []string{"old_item"})
-	s.expires["dest"] = 1 // expired
+	s.expires.Set("dest", 1) // expired
 
 	// Create source
 	s.PFAdd("src", []string{"new_item"})
@@ -405,7 +405,7 @@ func TestPFMerge_ExpiredSourceKey(t *testing.T) {
 
 	// Create and expire source
 	s.PFAdd("src", []string{"item1"})
-	s.expires["src"] = 1 // expired
+	s.expires.Set("src", 1) // expired
 
 	err := s.PFMerge("dest", []string{"src"})
 	require.NoError(t, err)
@@ -448,7 +448,7 @@ func TestGetHyperLogLog_ExpiredKey(t *testing.T) {
 	s := NewStore().(*store)
 
 	s.PFAdd("hll", []string{"item1"})
-	s.expires["hll"] = 1 // expired
+	s.expires.Set("hll", 1) // expired
 
 	hll, err := s.getHyperLogLog("hll")
 	require.NoError(t, err)

@@ -121,10 +121,12 @@ func TestSetClearsExpiration(t *testing.T) {
 	s := NewStore().(*store)
 
 	s.SetEx("key1", "value1", 10)
-	require.Contains(t, s.expires, "key1")
+	_, exists := s.expires.Get("key1")
+	require.True(t, exists)
 
 	s.Set("key1", "value2")
-	assert.NotContains(t, s.expires, "key1")
+	_, exists = s.expires.Get("key1")
+	assert.False(t, exists)
 }
 
 func TestSetEmptyString(t *testing.T) {
@@ -146,7 +148,8 @@ func TestSetExBasic(t *testing.T) {
 	require.Nil(t, err)
 	assert.Equal(t, "value1", *val)
 
-	assert.Contains(t, s.expires, "key1")
+	_, exists := s.expires.Get("key1")
+	assert.True(t, exists)
 }
 
 func TestSetExExpires(t *testing.T) {
@@ -164,12 +167,12 @@ func TestSetExOverwriteExpiration(t *testing.T) {
 	s := NewStore().(*store)
 
 	s.SetEx("key1", "value1", 5)
-	exp1 := s.expires["key1"]
+	exp1, _ := s.expires.Get("key1")
 
 	time.Sleep(10 * time.Millisecond)
 
 	s.SetEx("key1", "value2", 10)
-	exp2 := s.expires["key1"]
+	exp2, _ := s.expires.Get("key1")
 
 	assert.Greater(t, exp2, exp1)
 }
@@ -209,8 +212,10 @@ func TestGetDeletesExpiredKey(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 	s.Get("key1")
 
-	assert.NotContains(t, s.data, "key1")
-	assert.NotContains(t, s.expires, "key1")
+	_, exists := s.data.Get("key1")
+	assert.False(t, exists)
+	_, exists = s.expires.Get("key1")
+	assert.False(t, exists)
 }
 
 func TestDelExisting(t *testing.T) {

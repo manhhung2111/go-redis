@@ -18,11 +18,11 @@ func (s *store) LPush(key string, elements ...string) (uint32, error) {
 	quicklist := data_structure.NewQuickList()
 	res := quicklist.LPush(elements)
 
-	s.data[key] = &RObj{
+	s.data.Set(key, &RObj{
 		Type:     ObjList,
 		Encoding: EncQuickList,
 		Value:    quicklist,
-	}
+	})
 
 	return res, nil
 }
@@ -60,11 +60,11 @@ func (s *store) RPush(key string, elements ...string) (uint32, error) {
 	quicklist := data_structure.NewQuickList()
 	res := quicklist.RPush(elements)
 
-	s.data[key] = &RObj{
+	s.data.Set(key, &RObj{
 		Type:     ObjList,
 		Encoding: EncQuickList,
 		Value:    quicklist,
-	}
+	})
 
 	return res, nil
 }

@@ -109,7 +109,7 @@ func TestZAdd_CHOption(t *testing.T) {
 
 func TestZAdd_WrongType(t *testing.T) {
 	s := NewStore().(*store)
-	s.data["key1"] = &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"}
+	s.data.Set("key1", &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"})
 
 	added, err := s.ZAdd("key1", map[string]float64{"a": 1}, data_structure.ZAddOptions{})
 	assert.Error(t, err)
@@ -136,7 +136,7 @@ func TestZCard_NonExistentKey(t *testing.T) {
 
 func TestZCard_WrongType(t *testing.T) {
 	s := NewStore().(*store)
-	s.data["key1"] = &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"}
+	s.data.Set("key1", &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"})
 
 	card, err := s.ZCard("key1")
 	assert.Error(t, err)
@@ -172,7 +172,7 @@ func TestZCount_NonExistentKey(t *testing.T) {
 
 func TestZCount_WrongType(t *testing.T) {
 	s := NewStore().(*store)
-	s.data["key1"] = &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"}
+	s.data.Set("key1", &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"})
 
 	count, err := s.ZCount("key1", 0, 10)
 	assert.Error(t, err)
@@ -216,7 +216,7 @@ func TestZIncrBy_InfinityResult(t *testing.T) {
 
 func TestZIncrBy_WrongType(t *testing.T) {
 	s := NewStore().(*store)
-	s.data["key1"] = &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"}
+	s.data.Set("key1", &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"})
 
 	score, err := s.ZIncrBy("key1", "a", 5)
 	assert.Error(t, err)
@@ -253,7 +253,7 @@ func TestZScore_NonExistentKey(t *testing.T) {
 
 func TestZScore_WrongType(t *testing.T) {
 	s := NewStore().(*store)
-	s.data["key1"] = &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"}
+	s.data.Set("key1", &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"})
 
 	score, err := s.ZScore("key1", "a")
 	assert.Error(t, err)
@@ -297,7 +297,7 @@ func TestZMScore_NonExistentKey(t *testing.T) {
 
 func TestZMScore_WrongType(t *testing.T) {
 	s := NewStore().(*store)
-	s.data["key1"] = &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"}
+	s.data.Set("key1", &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"})
 
 	scores, err := s.ZMScore("key1", []string{"a", "b"})
 	assert.Error(t, err)
@@ -345,7 +345,7 @@ func TestZRem_NonExistentKey(t *testing.T) {
 
 func TestZRem_WrongType(t *testing.T) {
 	s := NewStore().(*store)
-	s.data["key1"] = &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"}
+	s.data.Set("key1", &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"})
 
 	removed, err := s.ZRem("key1", []string{"a"})
 	assert.Error(t, err)
@@ -392,7 +392,7 @@ func TestZRank_NonExistentKey(t *testing.T) {
 
 func TestZRank_WrongType(t *testing.T) {
 	s := NewStore().(*store)
-	s.data["key1"] = &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"}
+	s.data.Set("key1", &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"})
 
 	rank, err := s.ZRank("key1", "a", false)
 	assert.Error(t, err)
@@ -439,7 +439,7 @@ func TestZRevRank_NonExistentKey(t *testing.T) {
 
 func TestZRevRank_WrongType(t *testing.T) {
 	s := NewStore().(*store)
-	s.data["key1"] = &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"}
+	s.data.Set("key1", &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"})
 
 	rank, err := s.ZRevRank("key1", "a", false)
 	assert.Error(t, err)
@@ -484,7 +484,7 @@ func TestZRangeByRank_NonExistentKey(t *testing.T) {
 
 func TestZRangeByRank_WrongType(t *testing.T) {
 	s := NewStore().(*store)
-	s.data["key1"] = &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"}
+	s.data.Set("key1", &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"})
 
 	result, err := s.ZRangeByRank("key1", 0, -1, false)
 	assert.Error(t, err)
@@ -529,7 +529,7 @@ func TestZRangeByScore_NonExistentKey(t *testing.T) {
 
 func TestZRangeByScore_WrongType(t *testing.T) {
 	s := NewStore().(*store)
-	s.data["key1"] = &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"}
+	s.data.Set("key1", &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"})
 
 	result, err := s.ZRangeByScore("key1", 0, 10, false)
 	assert.Error(t, err)
@@ -565,7 +565,7 @@ func TestZRevRangeByRank_NonExistentKey(t *testing.T) {
 
 func TestZRevRangeByRank_WrongType(t *testing.T) {
 	s := NewStore().(*store)
-	s.data["key1"] = &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"}
+	s.data.Set("key1", &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"})
 
 	result, err := s.ZRevRangeByRank("key1", 0, -1, false)
 	assert.Error(t, err)
@@ -601,7 +601,7 @@ func TestZRevRangeByScore_NonExistentKey(t *testing.T) {
 
 func TestZRevRangeByScore_WrongType(t *testing.T) {
 	s := NewStore().(*store)
-	s.data["key1"] = &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"}
+	s.data.Set("key1", &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"})
 
 	result, err := s.ZRevRangeByScore("key1", 10, 0, false)
 	assert.Error(t, err)
@@ -652,7 +652,7 @@ func TestZPopMin_NonExistentKey(t *testing.T) {
 
 func TestZPopMin_WrongType(t *testing.T) {
 	s := NewStore().(*store)
-	s.data["key1"] = &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"}
+	s.data.Set("key1", &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"})
 
 	result, err := s.ZPopMin("key1", 1)
 	assert.Error(t, err)
@@ -694,7 +694,7 @@ func TestZPopMax_NonExistentKey(t *testing.T) {
 
 func TestZPopMax_WrongType(t *testing.T) {
 	s := NewStore().(*store)
-	s.data["key1"] = &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"}
+	s.data.Set("key1", &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"})
 
 	result, err := s.ZPopMax("key1", 1)
 	assert.Error(t, err)
@@ -739,7 +739,7 @@ func TestZRandMember_NonExistentKey(t *testing.T) {
 
 func TestZRandMember_WrongType(t *testing.T) {
 	s := NewStore().(*store)
-	s.data["key1"] = &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"}
+	s.data.Set("key1", &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"})
 
 	result, err := s.ZRandMember("key1", 1, false)
 	assert.Error(t, err)
@@ -775,7 +775,7 @@ func TestZLexCount_NonExistentKey(t *testing.T) {
 
 func TestZLexCount_WrongType(t *testing.T) {
 	s := NewStore().(*store)
-	s.data["key1"] = &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"}
+	s.data.Set("key1", &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"})
 
 	count, err := s.ZLexCount("key1", "a", "z")
 	assert.Error(t, err)
@@ -811,7 +811,7 @@ func TestZRangeByLex_NonExistentKey(t *testing.T) {
 
 func TestZRangeByLex_WrongType(t *testing.T) {
 	s := NewStore().(*store)
-	s.data["key1"] = &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"}
+	s.data.Set("key1", &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"})
 
 	result, err := s.ZRangeByLex("key1", "a", "z")
 	assert.Error(t, err)
@@ -847,7 +847,7 @@ func TestZRevRangeByLex_NonExistentKey(t *testing.T) {
 
 func TestZRevRangeByLex_WrongType(t *testing.T) {
 	s := NewStore().(*store)
-	s.data["key1"] = &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"}
+	s.data.Set("key1", &RObj{Type: ObjString, Encoding: EncRaw, Value: "string"})
 
 	result, err := s.ZRevRangeByLex("key1", "z", "a")
 	assert.Error(t, err)

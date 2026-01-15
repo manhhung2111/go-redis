@@ -19,7 +19,7 @@ func (s *store) TTL(key string) int64 {
 		return constant.KEY_NOT_EXISTS
 	}
 
-	if expireAt, ok := s.expires[key]; ok {
+	if expireAt, ok := s.expires.Get(key); ok {
 		now := uint64(time.Now().UnixMilli())
 		return int64((expireAt - now) / 1000)
 	}
@@ -36,7 +36,7 @@ func (s *store) Expire(key string, ttlSeconds int64, opt ExpireOptions) bool {
 	now := time.Now().UnixMilli()
 	newExpireAt := uint64(now + ttlSeconds*1000)
 
-	oldExpireAt, hasExpire := s.expires[key]
+	oldExpireAt, hasExpire := s.expires.Get(key)
 
 	// NX: set only if key has no expire
 	if opt.NX && hasExpire {
@@ -60,16 +60,6 @@ func (s *store) Expire(key string, ttlSeconds int64, opt ExpireOptions) bool {
 		}
 	}
 
-	if !hasExpire {
-		s.setExpireKey(key, newExpireAt)
-	}
-
-	s.expires[key] = newExpireAt
+	s.expires.Set(key, newExpireAt)
 	return true
-}
-
-func (s *store) setExpireKey(key string, expireAtMs uint64) {
-	s.expireKeyIndex[key] = len(s.expireKeys)
-	s.expireKeys = append(s.expireKeys, key)
-	s.expires[key] = expireAtMs
 }

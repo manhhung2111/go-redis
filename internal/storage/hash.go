@@ -63,11 +63,11 @@ func (s *store) HIncrBy(key string, field string, increment int64) (int64, error
 		if err != nil {
 			return 0, err
 		}
-		s.data[key] = &RObj{
+		s.data.Set(key, &RObj{
 			Type:     ObjHash,
 			Encoding: EncHashTable,
 			Value:    hash,
-		}
+		})
 		return res, nil
 	}
 
@@ -126,11 +126,11 @@ func (s *store) HSet(key string, fieldValue map[string]string) (int64, error) {
 	if !result.exists {
 		hash := data_structure.NewHash()
 		added := hash.Set(fieldValue)
-		s.data[key] = &RObj{
+		s.data.Set(key, &RObj{
 			Type:     ObjHash,
 			Encoding: EncHashTable,
 			Value:    hash,
-		}
+		})
 		return added, nil
 	}
 
@@ -147,11 +147,11 @@ func (s *store) HSetNx(key string, field string, value string) (int64, error) {
 	if !result.exists {
 		hash := data_structure.NewHash()
 		hash.SetNX(field, value)
-		s.data[key] = &RObj{
+		s.data.Set(key, &RObj{
 			Type:     ObjHash,
 			Encoding: EncHashTable,
 			Value:    hash,
-		}
+		})
 		return 1, nil
 	}
 

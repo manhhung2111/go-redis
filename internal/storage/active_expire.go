@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"math/rand/v2"
 	"time"
 
 	"github.com/manhhung2111/go-redis/internal/config"
@@ -36,11 +35,10 @@ func (s *store) sampleAndExpire(sampleSize int) (int, int) {
 	expired := 0
 	sampled := 0
 
-	for sampled < sampleSize && len(s.expireKeys) > 0 {
-		randomIdx := rand.IntN(len(s.expireKeys))
-		key := s.expireKeys[randomIdx]
+	for sampled < sampleSize && s.expires.Len() > 0 {
+		key := s.expires.GetRandomKey()
 
-		expireAt := s.expires[key]
+		expireAt, _ := s.expires.Get(key)
 		if expireAt <= nowMs {
 			expired++
 			s.delete(key)

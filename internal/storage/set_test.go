@@ -397,7 +397,7 @@ func TestSPop_EntireSet(t *testing.T) {
 	assert.Equal(t, len(popped), 3, "popped count")
 	assert.NoError(t, err)
 
-	_, exists := s.data["myset"]
+	_, exists := s.data.Get("myset")
 	assert.False(t, exists, "set deleted")
 }
 
@@ -531,7 +531,7 @@ func TestIntegration_MultipleOperations(t *testing.T) {
 func assertEncoding(t *testing.T, s *store, key string, expected ObjectEncoding) {
 	t.Helper()
 
-	rObj, exists := s.data[key]
+	rObj, exists := s.data.Get(key)
 	require.True(t, exists, "key %s does not exist", key)
 
 	assert.Equal(t, ObjectEncoding(expected), rObj.Encoding)

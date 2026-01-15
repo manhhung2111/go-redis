@@ -14,7 +14,7 @@ func TestCMSInitByDim_NewKey(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify CMS was created
-	rObj, exists := s.data["cms"]
+	rObj, exists := s.data.Get("cms")
 	require.True(t, exists)
 	assert.Equal(t, ObjCountMinSketch, rObj.Type)
 	assert.Equal(t, EncCountMinSketch, rObj.Encoding)
@@ -53,7 +53,7 @@ func TestCMSInitByDim_ExpiredKey(t *testing.T) {
 	// Create CMS and expire it
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
-	s.expires["cms"] = 1 // expired timestamp
+	s.expires.Set("cms", 1) // expired timestamp
 
 	// Should succeed since key expired
 	err = s.CMSInitByDim("cms", 200, 10)
@@ -73,7 +73,7 @@ func TestCMSInitByProb_NewKey(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify CMS was created
-	rObj, exists := s.data["cms"]
+	rObj, exists := s.data.Get("cms")
 	require.True(t, exists)
 	assert.Equal(t, ObjCountMinSketch, rObj.Type)
 	assert.Equal(t, EncCountMinSketch, rObj.Encoding)
@@ -104,7 +104,7 @@ func TestCMSInitByProb_ExpiredKey(t *testing.T) {
 
 	err := s.CMSInitByProb("cms", 0.01, 0.01)
 	require.NoError(t, err)
-	s.expires["cms"] = 1 // expired
+	s.expires.Set("cms", 1) // expired
 
 	// Should succeed since key expired
 	err = s.CMSInitByProb("cms", 0.1, 0.1)
@@ -191,7 +191,7 @@ func TestCMSIncrBy_ExpiredKey(t *testing.T) {
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
 	s.CMSIncrBy("cms", map[string]uint64{"item1": 10})
-	s.expires["cms"] = 1 // expired
+	s.expires.Set("cms", 1) // expired
 
 	// Should return nil since key expired
 	result, err := s.CMSIncrBy("cms", map[string]uint64{"item1": 5})
@@ -297,7 +297,7 @@ func TestCMSQuery_ExpiredKey(t *testing.T) {
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
 	s.CMSIncrBy("cms", map[string]uint64{"item1": 10})
-	s.expires["cms"] = 1 // expired
+	s.expires.Set("cms", 1) // expired
 
 	// Should return zeros since key expired
 	_, err = s.CMSQuery("cms", []string{"item1", "item2"})
@@ -357,7 +357,7 @@ func TestCMSInfo_ExpiredKey(t *testing.T) {
 
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
-	s.expires["cms"] = 1 // expired
+	s.expires.Set("cms", 1) // expired
 
 	info, err := s.CMSInfo("cms")
 	assert.Nil(t, info)
@@ -490,7 +490,7 @@ func TestGetCountMinSketch_ExpiredKey(t *testing.T) {
 
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
-	s.expires["cms"] = 1 // expired
+	s.expires.Set("cms", 1) // expired
 
 	cms, err := s.getCountMinSketch("cms")
 	assert.Error(t, err)

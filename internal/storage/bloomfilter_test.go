@@ -16,7 +16,7 @@ func TestBFAdd_NewKey(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 1, result)
 
-	rObj, exists := s.data["bf"]
+	rObj, exists := s.data.Get("bf")
 	require.True(t, exists)
 	assert.Equal(t, ObjBloomFilter, rObj.Type)
 	assert.Equal(t, EncBloomFilter, rObj.Encoding)
@@ -68,7 +68,7 @@ func TestBFAdd_ExpiredKey(t *testing.T) {
 	s := NewStore().(*store)
 
 	s.BFAdd("bf", "old_item")
-	s.expires["bf"] = 1
+	s.expires.Set("bf", 1)
 
 	result, err := s.BFAdd("bf", "new_item")
 	assert.NoError(t, err)
@@ -127,7 +127,7 @@ func TestBFCard_ExpiredKey(t *testing.T) {
 	s := NewStore().(*store)
 
 	s.BFAdd("bf", "item1")
-	s.expires["bf"] = 1
+	s.expires.Set("bf", 1)
 
 	result, err := s.BFCard("bf")
 	assert.NoError(t, err)
@@ -177,7 +177,7 @@ func TestBFExists_ExpiredKey(t *testing.T) {
 	s := NewStore().(*store)
 
 	s.BFAdd("bf", "item1")
-	s.expires["bf"] = 1
+	s.expires.Set("bf", 1)
 
 	result, err := s.BFExists("bf", "item1")
 	assert.NoError(t, err)
@@ -373,7 +373,7 @@ func TestBFMExists_ExpiredKey(t *testing.T) {
 	s := NewStore().(*store)
 
 	s.BFAdd("bf", "item1")
-	s.expires["bf"] = 1
+	s.expires.Set("bf", 1)
 
 	results, err := s.BFMExists("bf", []string{"item1", "item2"})
 	assert.NoError(t, err)
@@ -388,7 +388,7 @@ func TestBFReserve_NewKey(t *testing.T) {
 	err := s.BFReserve("bf", 0.001, 5000, 4)
 	require.NoError(t, err)
 
-	rObj, exists := s.data["bf"]
+	rObj, exists := s.data.Get("bf")
 	require.True(t, exists)
 	assert.Equal(t, ObjBloomFilter, rObj.Type)
 	assert.Equal(t, EncBloomFilter, rObj.Encoding)
@@ -438,7 +438,7 @@ func TestBFReserve_ExpiredKey(t *testing.T) {
 	s := NewStore().(*store)
 
 	s.BFAdd("bf", "item1")
-	s.expires["bf"] = 1
+	s.expires.Set("bf", 1)
 
 	err := s.BFReserve("bf", 0.01, 100, 2)
 	assert.NoError(t, err)
@@ -482,7 +482,7 @@ func TestGetOrCreateBloomFilter_Create(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, sbf)
 
-	rObj, exists := s.data["bf"]
+	rObj, exists := s.data.Get("bf")
 	require.True(t, exists)
 	assert.Equal(t, ObjBloomFilter, rObj.Type)
 }

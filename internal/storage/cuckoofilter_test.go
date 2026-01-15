@@ -15,7 +15,7 @@ func TestCFAdd_NewKey(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify cuckoo filter was created
-	rObj, exists := s.data["cf"]
+	rObj, exists := s.data.Get("cf")
 	require.True(t, exists)
 	assert.Equal(t, ObjCuckooFilter, rObj.Type)
 	assert.Equal(t, EncCuckooFilter, rObj.Encoding)
@@ -71,7 +71,7 @@ func TestCFAdd_ExpiredKey(t *testing.T) {
 
 	// Create cuckoo filter and set it as expired
 	s.CFAdd("cf", "old_item")
-	s.expires["cf"] = 1 // expired timestamp
+	s.expires.Set("cf", 1) // expired timestamp
 
 	// Add new item - should create new filter since old one expired
 	result, err := s.CFAdd("cf", "new_item")
@@ -94,7 +94,7 @@ func TestCFAddNx_NewKey(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify cuckoo filter was created
-	rObj, exists := s.data["cf"]
+	rObj, exists := s.data.Get("cf")
 	require.True(t, exists)
 	assert.Equal(t, ObjCuckooFilter, rObj.Type)
 }
@@ -150,7 +150,7 @@ func TestCFAddNx_ExpiredKey(t *testing.T) {
 	s := NewStore().(*store)
 
 	s.CFAdd("cf", "item1")
-	s.expires["cf"] = 1 // expired
+	s.expires.Set("cf", 1) // expired
 
 	// Should succeed since key expired
 	result, err := s.CFAddNx("cf", "item1")
@@ -204,7 +204,7 @@ func TestCFCount_ExpiredKey(t *testing.T) {
 
 	s.CFAdd("cf", "item1")
 	s.CFAdd("cf", "item1")
-	s.expires["cf"] = 1 // expired
+	s.expires.Set("cf", 1) // expired
 
 	result, err := s.CFCount("cf", "item1")
 	assert.Equal(t, 0, result, "expired key should return 0")
@@ -314,7 +314,7 @@ func TestCFDel_ExpiredKey(t *testing.T) {
 	s := NewStore().(*store)
 
 	s.CFAdd("cf", "item1")
-	s.expires["cf"] = 1 // expired
+	s.expires.Set("cf", 1) // expired
 
 	result, _ := s.CFDel("cf", "item1")
 	assert.Equal(t, 0, result, "expired key should return 0")
@@ -360,7 +360,7 @@ func TestCFExists_ExpiredKey(t *testing.T) {
 	s := NewStore().(*store)
 
 	s.CFAdd("cf", "item1")
-	s.expires["cf"] = 1 // expired
+	s.expires.Set("cf", 1) // expired
 
 	result, _ := s.CFExists("cf", "item1")
 	assert.Equal(t, 0, result, "expired key should return 0")
@@ -433,7 +433,7 @@ func TestCFInfo_ExpiredKey(t *testing.T) {
 	s := NewStore().(*store)
 
 	s.CFAdd("cf", "item1")
-	s.expires["cf"] = 1 // expired
+	s.expires.Set("cf", 1) // expired
 
 	result, err := s.CFInfo("cf")
 	assert.Nil(t, result, "expired key should return nil")
@@ -488,7 +488,7 @@ func TestCFMExists_ExpiredKey(t *testing.T) {
 	s := NewStore().(*store)
 
 	s.CFAdd("cf", "item1")
-	s.expires["cf"] = 1 // expired
+	s.expires.Set("cf", 1) // expired
 
 	results, err := s.CFMExists("cf", []string{"item1", "item2"})
 	expected := []int{0, 0}
@@ -503,7 +503,7 @@ func TestCFReserve_NewKey(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify cuckoo filter was created with correct settings
-	rObj, exists := s.data["cf"]
+	rObj, exists := s.data.Get("cf")
 	require.True(t, exists)
 	assert.Equal(t, ObjCuckooFilter, rObj.Type)
 	assert.Equal(t, EncCuckooFilter, rObj.Encoding)

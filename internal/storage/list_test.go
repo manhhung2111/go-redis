@@ -100,7 +100,7 @@ func TestLPop_DeleteKeyWhenEmpty(t *testing.T) {
 	s.RPush("mylist", "one", "two")
 
 	s.LPop("mylist", 2)
-	_, exists := s.(*store).data["mylist"]
+	_, exists := s.(*store).data.Get("mylist")
 	assert.False(t, exists)
 }
 
@@ -141,7 +141,7 @@ func TestRPop_DeleteKeyWhenEmpty(t *testing.T) {
 	s.RPush("mylist", "one", "two")
 
 	s.RPop("mylist", 2)
-	_, exists := s.(*store).data["mylist"]
+	_, exists := s.(*store).data.Get("mylist")
 	assert.False(t, exists)
 }
 
@@ -339,7 +339,7 @@ func TestLTrim_DeleteKeyWhenEmpty(t *testing.T) {
 	s.RPush("mylist", "one", "two", "three")
 
 	s.LTrim("mylist", 5, 10)
-	_, exists := s.(*store).data["mylist"]
+	_, exists := s.(*store).data.Get("mylist")
 	assert.False(t, exists)
 }
 

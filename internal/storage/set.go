@@ -49,11 +49,11 @@ func (s *store) SAdd(key string, members ...string) (int64, error) {
 		intset := data_structure.NewIntSet()
 		added, succeeded := intset.Add(members...)
 		if succeeded {
-			s.data[key] = &RObj{
+			s.data.Set(key, &RObj{
 				Type:     ObjSet,
 				Encoding: EncIntSet,
 				Value:    intset,
-			}
+			})
 			return added, nil
 		}
 		// If IntSet failed (capacity), fall through to SimpleSet
@@ -62,11 +62,11 @@ func (s *store) SAdd(key string, members ...string) (int64, error) {
 	simpleSet := data_structure.NewSimpleSet()
 	added, _ := simpleSet.Add(members...)
 
-	s.data[key] = &RObj{
+	s.data.Set(key, &RObj{
 		Type:     ObjSet,
 		Encoding: EncHashTable,
 		Value:    simpleSet,
-	}
+	})
 
 	return added, nil
 }

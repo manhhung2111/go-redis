@@ -30,11 +30,11 @@ func (s *store) CMSInitByDim(key string, width uint64, depth uint64) error {
 	}
 
 	cms := data_structure.NewCountMinSketchByDim(int(width), int(depth))
-	s.data[key] = &RObj{
+	s.data.Set(key, &RObj{
 		Type:     ObjCountMinSketch,
 		Encoding: EncCountMinSketch,
 		Value:    cms,
-	}
+	})
 
 	return nil
 }
@@ -47,11 +47,11 @@ func (s *store) CMSInitByProb(key string, errorRate float64, probability float64
 	}
 
 	cms := data_structure.NewCountMinSketchByProb(errorRate, probability)
-	s.data[key] = &RObj{
+	s.data.Set(key, &RObj{
 		Type:     ObjCountMinSketch,
 		Encoding: EncCountMinSketch,
 		Value:    cms,
-	}
+	})
 
 	return nil
 }

@@ -39,7 +39,7 @@ func TestTTL_RemainingSeconds(t *testing.T) {
 func TestTTL_DeletesExpiredKey(t *testing.T) {
 	s := NewStore().(*store)
 	s.Set("mykey", "value")
-	s.expires["mykey"] = uint64(time.Now().UnixMilli() - 1000)
+	s.expires.Set("mykey", uint64(time.Now().UnixMilli()-1000))
 
 	ttl := s.TTL("mykey")
 
@@ -167,7 +167,7 @@ func TestExpireLT_NewTTLLess(t *testing.T) {
 func TestExpire_AlreadyExpiredKey(t *testing.T) {
 	s := NewStore().(*store)
 	s.Set("mykey", "value")
-	s.expires["mykey"] = uint64(time.Now().UnixMilli() - 1000)
+	s.expires.Set("mykey", uint64(time.Now().UnixMilli()-1000))
 
 	ok := s.Expire("mykey", 10, ExpireOptions{})
 
@@ -251,9 +251,7 @@ func TestActiveExpireCycle_ExpiresKeys(t *testing.T) {
 	expired := s.ActiveExpireCycle()
 
 	assert.Equal(t, 10, expired)
-	assert.Empty(t, s.expireKeys)
-	assert.Empty(t, s.expireKeyIndex)
-	assert.Empty(t, s.expires)
+	assert.True(t, s.expires.Empty())
 }
 
 func TestActiveExpireCycle_PartialExpiration(t *testing.T) {
@@ -278,9 +276,7 @@ func TestActiveExpireCycle_PartialExpiration(t *testing.T) {
 	}
 
 	assert.Equal(t, 5, totalExpired)
-	assert.Len(t, s.expireKeys, 5)
-	assert.Len(t, s.expireKeyIndex, 5)
-	assert.Len(t, s.expires, 5)
+	assert.Equal(t, s.expires.Len(), 5)
 }
 
 func TestActiveExpireCycle_EmptyStore(t *testing.T) {
@@ -302,7 +298,7 @@ func TestActiveExpireCycle_NoExpiredKeys(t *testing.T) {
 	expired := s.ActiveExpireCycle()
 
 	assert.Equal(t, 0, expired)
-	assert.Len(t, s.expireKeys, 10)
+	assert.Equal(t, s.expires.Len(), 10)
 }
 
 func TestActiveExpireCycle_DataStructureConsistency(t *testing.T) {
@@ -319,18 +315,22 @@ func TestActiveExpireCycle_DataStructureConsistency(t *testing.T) {
 	}
 	time.Sleep(10 * time.Millisecond)
 
-	s.ActiveExpireCycle()
-
-	// Verify consistency: every key in expireKeyIndex has correct index
-	for key, idx := range s.expireKeyIndex {
-		assert.Equal(t, key, s.expireKeys[idx], "Index mismatch for key %s", key)
-		_, hasExpire := s.expires[key]
-		assert.True(t, hasExpire, "Key %s in index but not in expires", key)
+	// Run multiple cycles to ensure all expired keys are cleaned up
+	for i := 0; i < 10; i++ {
+		s.ActiveExpireCycle()
 	}
 
-	// Verify: every key in expireKeys is in expireKeyIndex
-	for idx, key := range s.expireKeys {
-		assert.Equal(t, idx, s.expireKeyIndex[key])
+	// Verify that only valid keys remain (10 odd-indexed keys)
+	assert.Equal(t, 10, s.expires.Len())
+	assert.Equal(t, 10, s.data.Len())
+
+	// Verify that each remaining key is accessible and has valid TTL
+	for i := 1; i < 20; i += 2 {
+		key := fmt.Sprintf("key%d", i)
+		_, exists := s.expires.Get(key)
+		assert.True(t, exists, "Valid key %s should still exist in expires", key)
+		_, exists = s.data.Get(key)
+		assert.True(t, exists, "Valid key %s should still exist in data", key)
 	}
 }
 
@@ -347,10 +347,20 @@ func TestDelete_MaintainsIndexConsistency(t *testing.T) {
 	s.Del("c")
 
 	// Verify consistency
-	assert.Len(t, s.expireKeys, 4)
-	assert.Len(t, s.expireKeyIndex, 4)
+	assert.Equal(t, 4, s.expires.Len())
+	assert.Equal(t, 4, s.data.Len())
 
-	for key, idx := range s.expireKeyIndex {
-		assert.Equal(t, key, s.expireKeys[idx])
+	// Verify deleted key is gone
+	_, exists := s.expires.Get("c")
+	assert.False(t, exists)
+	_, exists = s.data.Get("c")
+	assert.False(t, exists)
+
+	// Verify remaining keys still exist
+	for _, key := range []string{"a", "b", "d", "e"} {
+		_, exists := s.expires.Get(key)
+		assert.True(t, exists, "Key %s should exist in expires", key)
+		_, exists = s.data.Get(key)
+		assert.True(t, exists, "Key %s should exist in data", key)
 	}
 }

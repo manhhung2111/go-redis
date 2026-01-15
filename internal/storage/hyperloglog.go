@@ -26,11 +26,11 @@ func (s *store) PFAdd(key string, items []string) (int, error) {
 		hll.PFAdd(items)
 	}
 
-	s.data[key] = &RObj{
+	s.data.Set(key, &RObj{
 		Type:     ObjHyperLogLog,
 		Encoding: EncHyperLogLog,
 		Value:    hll,
-	}
+	})
 
 	return 1, nil
 }
@@ -63,11 +63,11 @@ func (s *store) PFMerge(destKey string, sourceKeys []string) error {
 
 	if destHll == nil {
 		destHll = data_structure.NewHyperLogLog()
-		s.data[destKey] = &RObj{
+		s.data.Set(destKey, &RObj{
 			Type:     ObjHyperLogLog,
 			Encoding: EncHyperLogLog,
 			Value:    destHll,
-		}
+		})
 	}
 
 	if len(sourceKeys) == 0 {
