@@ -4,6 +4,7 @@ import (
 	"math"
 	"math/bits"
 
+	"github.com/DmitriyVTitov/size"
 	"github.com/spaolacci/murmur3"
 )
 
@@ -18,6 +19,7 @@ type HyperLogLog interface {
 	PFAdd(items []string) int
 	PFCount(hyperLogLogs []HyperLogLog) int
 	PFMerge(hyperLogLogs []HyperLogLog)
+	MemoryUsage() int64
 }
 
 type hyperLogLog struct {
@@ -150,4 +152,8 @@ func (h *hyperLogLog) insert(item string) int {
 	}
 
 	return 0
+}
+
+func (h *hyperLogLog) MemoryUsage() int64 {
+	return int64(size.Of(h))
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math"
 	"strconv"
+	"github.com/DmitriyVTitov/size"
 )
 
 type Hash interface {
@@ -18,6 +19,7 @@ type Hash interface {
 	SetNX(key, value string) bool
 	Delete(keys ...string) int64
 	Exists(key string) bool
+	MemoryUsage() int64
 }
 
 type simpleHash struct {
@@ -163,4 +165,8 @@ func (s *simpleHash) Size() uint32 {
 func (s *simpleHash) Exists(key string) bool {
 	_, exists := s.contents[key]
 	return exists
+}
+
+func (s *simpleHash) MemoryUsage() int64 {
+	return int64(size.Of(s))
 }

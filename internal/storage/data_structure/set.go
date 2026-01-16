@@ -7,5 +7,6 @@ type Set interface {
 	Members() []string
 	MIsMember(members ...string) []bool
 	Delete(members ...string) int64
+	MemoryUsage() int64
 }
 

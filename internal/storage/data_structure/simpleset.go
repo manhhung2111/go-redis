@@ -1,5 +1,7 @@
 package data_structure
 
+import "github.com/DmitriyVTitov/size"
+
 type simpleSet struct {
 	contents map[string]struct{}
 }
@@ -60,4 +62,8 @@ func (s *simpleSet) Members() []string {
 
 func (s *simpleSet) Size() int64 {
 	return int64(len(s.contents))
+}
+
+func (s *simpleSet) MemoryUsage() int64 {
+	return int64(size.Of(s))
 }

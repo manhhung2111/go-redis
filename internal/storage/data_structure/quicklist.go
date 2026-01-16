@@ -1,6 +1,10 @@
 package data_structure
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/DmitriyVTitov/size"
+)
 
 type QuickList interface {
 	Size() uint32
@@ -14,6 +18,7 @@ type QuickList interface {
 	LRem(count int32, element string) uint32
 	LSet(index int32, element string) error
 	LTrim(start, end int32)
+	MemoryUsage() int64
 }
 
 type quickList struct {
@@ -308,12 +313,12 @@ func (q *quickList) LRem(count int32, element string) uint32 {
 		for node != q.tail {
 			nextNode := node.next
 			removed += q.removeFromNode(node, element, absCount, removed, count == 0)
-			
+
 			// Stop if we've removed enough (unless count is 0, meaning remove all)
 			if count != 0 && removed >= uint32(absCount) {
 				break
 			}
-			
+
 			node = nextNode
 		}
 	} else {
@@ -322,11 +327,11 @@ func (q *quickList) LRem(count int32, element string) uint32 {
 		for node != q.head {
 			prevNode := node.prev
 			removed += q.removeFromNodeReverse(node, element, absCount, removed)
-			
+
 			if removed >= uint32(absCount) {
 				break
 			}
-			
+
 			node = prevNode
 		}
 	}
@@ -360,7 +365,7 @@ func (q *quickList) LTrim(start, end int32) {
 	}
 
 	if start < 0 {
-		start = max(qSize + start, 0)
+		start = max(qSize+start, 0)
 	}
 
 	if end < 0 {
@@ -389,6 +394,10 @@ func (q *quickList) LTrim(start, end int32) {
 		toRemove := newSize - newEnd - 1
 		q.removeFromTail(uint32(toRemove))
 	}
+}
+
+func (q *quickList) MemoryUsage() int64 {
+	return int64(size.Of(q))
 }
 
 func (q *quickList) removeFromHead(count uint32) {
@@ -445,7 +454,7 @@ func (q *quickList) clear() {
 		node.next = nil
 		node = next
 	}
-	
+
 	q.head.next = q.tail
 	q.tail.prev = q.head
 	q.size = 0
@@ -516,13 +525,13 @@ func (q *quickList) removeNode(node *quickListNode) {
 func (q *quickList) removeFromNode(node *quickListNode, element string, limit int32, alreadyRemoved uint32, removeAll bool) uint32 {
 	removed := uint32(0)
 	i := int32(0)
-	
+
 	for i < int32(node.listPack.size()) {
 		if node.listPack.get(i) == element {
 			node.listPack.removeAt(i)
 			removed++
 			q.size--
-			
+
 			if !removeAll && alreadyRemoved+removed >= uint32(limit) {
 				break
 			}
@@ -530,36 +539,36 @@ func (q *quickList) removeFromNode(node *quickListNode, element string, limit in
 			i++
 		}
 	}
-	
+
 	// Remove node if empty
 	if node.listPack.empty() {
 		q.removeNode(node)
 	}
-	
+
 	return removed
 }
 
 func (q *quickList) removeFromNodeReverse(node *quickListNode, element string, limit int32, alreadyRemoved uint32) uint32 {
 	removed := uint32(0)
 	i := int32(node.listPack.size()) - 1
-	
+
 	for i >= 0 {
 		if node.listPack.get(i) == element {
 			node.listPack.removeAt(i)
 			removed++
 			q.size--
-			
+
 			if alreadyRemoved+removed >= uint32(limit) {
 				break
 			}
 		}
 		i--
 	}
-	
+
 	// Remove node if empty
 	if node.listPack.empty() {
 		q.removeNode(node)
 	}
-	
+
 	return removed
 }

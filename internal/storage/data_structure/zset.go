@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"strconv"
 
+	"github.com/DmitriyVTitov/size"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
 
@@ -35,6 +36,8 @@ type ZSet interface {
 	GeoHash(members []string) []*string
 	GeoPos(members []string) []*GeoPoint
 	GeoSearch(options GeoSearchOptions) []GeoResult
+
+	MemoryUsage() int64
 }
 
 type zSet struct {
@@ -338,6 +341,10 @@ func (zset *zSet) ZScore(member string) *float64 {
 	}
 
 	return &score
+}
+
+func (zset *zSet) MemoryUsage() int64 {
+	return int64(size.Of(zset))
 }
 
 func (zset *zSet) nodesToStringSlice(nodes []*skipListNode, withScores bool) []string {

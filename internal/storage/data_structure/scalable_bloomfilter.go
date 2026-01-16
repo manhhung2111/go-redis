@@ -3,6 +3,7 @@ package data_structure
 import (
 	"math"
 
+	"github.com/DmitriyVTitov/size"
 	"github.com/spaolacci/murmur3"
 )
 
@@ -34,6 +35,7 @@ type ScalableBloomFilter interface {
 	Info(option int) []any
 	MAdd(items []string) []int
 	MExists(items []string) []int
+	MemoryUsage() int64
 }
 
 // subFilter represents a single bloom filter in the chain
@@ -200,6 +202,10 @@ func (sbf *scalableBloomFilter) MExists(items []string) []int {
 		result[i] = sbf.Exists(item)
 	}
 	return result
+}
+
+func (sbf *scalableBloomFilter) MemoryUsage() int64 {
+	return int64(size.Of(sbf))
 }
 
 func (f *subFilter) getSubFilterHashIndexes(item string) []uint64 {

@@ -3,6 +3,7 @@ package data_structure
 import (
 	"math"
 
+	"github.com/DmitriyVTitov/size"
 	"github.com/spaolacci/murmur3"
 )
 
@@ -10,6 +11,7 @@ type CountMinSketch interface {
 	IncrBy(itemIncrementMap map[string]uint64) []uint64
 	Info() []any
 	Query(items []string) []uint64
+	MemoryUsage() int64
 }
 
 type countMinSketch struct {
@@ -37,7 +39,7 @@ func NewCountMinSketchByProb(errorRate, probability float64) CountMinSketch {
 	for i := range grid {
 		grid[i] = make([]uint64, width)
 	}
-	
+
 	return &countMinSketch{
 		grid:       grid,
 		totalCount: 0,
@@ -100,4 +102,8 @@ func (cms *countMinSketch) getIndexes(item string) []uint64 {
 	}
 
 	return indexes
+}
+
+func (cms *countMinSketch) MemoryUsage() int64 {
+	return int64(size.Of(cms))
 }

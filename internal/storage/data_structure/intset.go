@@ -4,6 +4,7 @@ import (
 	"math/bits"
 	"strconv"
 
+	"github.com/DmitriyVTitov/size"
 	"github.com/manhhung2111/go-redis/internal/config"
 )
 
@@ -31,7 +32,7 @@ func (set *intSet) Add(members ...string) (int64, bool) {
 
 		insertionIndex, exists := set.getInsertIndex(value)
 		if !exists {
-			if len(set.contents) + 1 > cap(set.contents) {
+			if len(set.contents)+1 > cap(set.contents) {
 				set.contents = oldContents
 				return 0, false
 			}
@@ -117,6 +118,10 @@ func (set *intSet) Delete(members ...string) int64 {
 	}
 
 	return int64(removed)
+}
+
+func (set *intSet) MemoryUsage() int64 {
+	return int64(size.Of(set))
 }
 
 func (set *intSet) binarySearch(target int64) int32 {

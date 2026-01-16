@@ -1,6 +1,7 @@
 package data_structure
 
 import (
+	"github.com/DmitriyVTitov/size"
 	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/spaolacci/murmur3"
 )
@@ -27,6 +28,7 @@ type CuckooFilter interface {
 	Exists(item string) int
 	Info() []any
 	MExists(items []string) []int
+	MemoryUsage() int64
 }
 
 type bucket struct {
@@ -420,4 +422,8 @@ func (scf *scalableCuckooFilter) MExists(items []string) []int {
 		result[i] = scf.Exists(item)
 	}
 	return result
+}
+
+func (scf *scalableCuckooFilter) MemoryUsage() int64 {
+	return int64(size.Of(scf))
 }
