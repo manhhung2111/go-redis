@@ -18,8 +18,8 @@ func TestBFAdd_NewKey(t *testing.T) {
 
 	rObj, exists := s.data.Get("bf")
 	require.True(t, exists)
-	assert.Equal(t, ObjBloomFilter, rObj.Type)
-	assert.Equal(t, EncBloomFilter, rObj.Encoding)
+	assert.Equal(t, ObjBloomFilter, rObj.objType)
+	assert.Equal(t, EncBloomFilter, rObj.encoding)
 }
 
 func TestBFAdd_ExistingKey(t *testing.T) {
@@ -390,8 +390,8 @@ func TestBFReserve_NewKey(t *testing.T) {
 
 	rObj, exists := s.data.Get("bf")
 	require.True(t, exists)
-	assert.Equal(t, ObjBloomFilter, rObj.Type)
-	assert.Equal(t, EncBloomFilter, rObj.Encoding)
+	assert.Equal(t, ObjBloomFilter, rObj.objType)
+	assert.Equal(t, EncBloomFilter, rObj.encoding)
 
 	info, _ := s.BFInfo("bf", data_structure.BloomFilterInfoCapacity)
 	assert.Equal(t, uint64(5000), info[0])
@@ -484,7 +484,7 @@ func TestGetOrCreateBloomFilter_Create(t *testing.T) {
 
 	rObj, exists := s.data.Get("bf")
 	require.True(t, exists)
-	assert.Equal(t, ObjBloomFilter, rObj.Type)
+	assert.Equal(t, ObjBloomFilter, rObj.objType)
 }
 
 func TestGetOrCreateBloomFilter_Existing(t *testing.T) {

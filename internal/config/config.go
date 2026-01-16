@@ -31,4 +31,19 @@ var CF_MAX_MAX_ITERATIONS = 65535
 var ACTIVE_EXPIRE_CYCLE_MS = 100                // Timer interval in milliseconds (eg: 10 times / second)
 var ACTIVE_EXPIRE_CYCLE_KEYS_PER_LOOP = 20      // Keys to sample per iteration
 var ACTIVE_EXPIRE_CYCLE_TIME_LIMIT_USAGE = 1000 // Time budget per cycle in microseconds (1ms)
-var ACTIVE_EXPIRE_CYCLE_THRESHOLD_PERCENT = 25 // Continue if > 25% expired
+var ACTIVE_EXPIRE_CYCLE_THRESHOLD_PERCENT = 25  // Continue if > 25% expired
+
+type EvictionPolicy string
+
+const (
+	NoEviction     EvictionPolicy = "noeviction"
+	AllKeysLRU     EvictionPolicy = "allkeys-lru"
+	AllKeysLFU     EvictionPolicy = "allkeys-lfu"
+	AllKeysRandom  EvictionPolicy = "allkeys-random"
+	VolatileLRU    EvictionPolicy = "volatile-lru"
+	VolatileLFU    EvictionPolicy = "volatile-lfu"
+	VolatileRandom EvictionPolicy = "volatile-random"
+	VolatileTTL    EvictionPolicy = "volatile-ttl"
+)
+
+var EVICTION_POLICY = AllKeysLRU

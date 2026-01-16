@@ -12,10 +12,10 @@ import (
 func TestNewStringObjectInteger(t *testing.T) {
 	obj := newStringObject("123")
 
-	assert.Equal(t, ObjString, obj.Type)
-	assert.Equal(t, EncInt, obj.Encoding)
+	assert.Equal(t, ObjString, obj.objType)
+	assert.Equal(t, EncInt, obj.encoding)
 
-	val, ok := obj.Value.(int64)
+	val, ok := obj.value.(int64)
 	require.True(t, ok)
 	assert.Equal(t, int64(123), val)
 }
@@ -23,57 +23,57 @@ func TestNewStringObjectInteger(t *testing.T) {
 func TestNewStringObjectNegativeInteger(t *testing.T) {
 	obj := newStringObject("-456")
 
-	assert.Equal(t, EncInt, obj.Encoding)
-	assert.Equal(t, int64(-456), obj.Value.(int64))
+	assert.Equal(t, EncInt, obj.encoding)
+	assert.Equal(t, int64(-456), obj.value.(int64))
 }
 
 func TestNewStringObjectZero(t *testing.T) {
 	obj := newStringObject("0")
 
-	assert.Equal(t, EncInt, obj.Encoding)
-	assert.Equal(t, int64(0), obj.Value.(int64))
+	assert.Equal(t, EncInt, obj.encoding)
+	assert.Equal(t, int64(0), obj.value.(int64))
 }
 
 func TestNewStringObjectMaxInt64(t *testing.T) {
 	obj := newStringObject("9223372036854775807")
 
-	assert.Equal(t, EncInt, obj.Encoding)
-	assert.Equal(t, int64(math.MaxInt64), obj.Value.(int64))
+	assert.Equal(t, EncInt, obj.encoding)
+	assert.Equal(t, int64(math.MaxInt64), obj.value.(int64))
 }
 
 func TestNewStringObjectMinInt64(t *testing.T) {
 	obj := newStringObject("-9223372036854775808")
 
-	assert.Equal(t, EncInt, obj.Encoding)
-	assert.Equal(t, int64(math.MinInt64), obj.Value.(int64))
+	assert.Equal(t, EncInt, obj.encoding)
+	assert.Equal(t, int64(math.MinInt64), obj.value.(int64))
 }
 
 func TestNewStringObjectRawString(t *testing.T) {
 	obj := newStringObject("hello")
 
-	assert.Equal(t, ObjString, obj.Type)
-	assert.Equal(t, EncRaw, obj.Encoding)
-	assert.Equal(t, "hello", obj.Value.(string))
+	assert.Equal(t, ObjString, obj.objType)
+	assert.Equal(t, EncRaw, obj.encoding)
+	assert.Equal(t, "hello", obj.value.(string))
 }
 
 func TestNewStringObjectEmptyString(t *testing.T) {
 	obj := newStringObject("")
 
-	assert.Equal(t, EncRaw, obj.Encoding)
-	assert.Equal(t, "", obj.Value.(string))
+	assert.Equal(t, EncRaw, obj.encoding)
+	assert.Equal(t, "", obj.value.(string))
 }
 
 func TestNewStringObjectFloat(t *testing.T) {
 	obj := newStringObject("3.14")
 
-	assert.Equal(t, EncRaw, obj.Encoding)
-	assert.Equal(t, "3.14", obj.Value.(string))
+	assert.Equal(t, EncRaw, obj.encoding)
+	assert.Equal(t, "3.14", obj.value.(string))
 }
 
 func TestNewStringObjectIntegerOverflow(t *testing.T) {
 	obj := newStringObject("9223372036854775808")
 
-	assert.Equal(t, EncRaw, obj.Encoding)
+	assert.Equal(t, EncRaw, obj.encoding)
 }
 
 func TestNewStringObjectMixedContent(t *testing.T) {
@@ -92,7 +92,7 @@ func TestNewStringObjectMixedContent(t *testing.T) {
 
 	for _, tt := range tests {
 		obj := newStringObject(tt.input)
-		assert.Equal(t, tt.encoding, obj.Encoding, "input=%q", tt.input)
+		assert.Equal(t, tt.encoding, obj.encoding, "input=%q", tt.input)
 	}
 }
 

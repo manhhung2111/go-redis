@@ -101,9 +101,9 @@ func (s *store) CFReserve(key string, capacity uint64, bucketSize uint64, maxIte
 	scf := data_structure.NewCuckooFilter(capacity, bucketSize, maxIterations, expansionRate)
 
 	s.data.Set(key, &RObj{
-		Type:     ObjCuckooFilter,
-		Encoding: EncCuckooFilter,
-		Value:    scf,
+		objType:     ObjCuckooFilter,
+		encoding: EncCuckooFilter,
+		value:    scf,
 	})
 
 	return nil
@@ -119,7 +119,7 @@ func (s *store) getCuckooFilter(key string) (data_structure.CuckooFilter, error)
 		return nil, nil
 	}
 
-	scf := result.object.Value.(data_structure.CuckooFilter)
+	scf := result.object.value.(data_structure.CuckooFilter)
 	return scf, nil
 }
 
@@ -130,7 +130,7 @@ func (s *store) getOrCreateCuckooFilter(key string) (data_structure.CuckooFilter
 	}
 
 	if result.exists {
-		return result.object.Value.(data_structure.CuckooFilter), nil
+		return result.object.value.(data_structure.CuckooFilter), nil
 	}
 
 	// Create new cuckoo filter with default settings
@@ -142,9 +142,9 @@ func (s *store) getOrCreateCuckooFilter(key string) (data_structure.CuckooFilter
 	)
 
 	s.data.Set(key, &RObj{
-		Type:     ObjCuckooFilter,
-		Encoding: EncCuckooFilter,
-		Value:    scf,
+		objType:     ObjCuckooFilter,
+		encoding: EncCuckooFilter,
+		value:    scf,
 	})
 
 	return scf, nil

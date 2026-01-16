@@ -12,7 +12,7 @@ func (s *store) HGet(key string, field string) (*string, error) {
 		return nil, nil
 	}
 
-	hash := result.object.Value.(data_structure.Hash)
+	hash := result.object.value.(data_structure.Hash)
 	val, ok := hash.Get(field)
 	if !ok {
 		return nil, nil
@@ -31,7 +31,7 @@ func (s *store) HGetAll(key string) ([]string, error) {
 		return []string{}, nil
 	}
 
-	hash := result.object.Value.(data_structure.Hash)
+	hash := result.object.value.(data_structure.Hash)
 	return hash.GetAll(), nil
 }
 
@@ -47,7 +47,7 @@ func (s *store) HMGet(key string, fields []string) ([]*string, error) {
 		return nilResult, nil
 	}
 
-	hash := result.object.Value.(data_structure.Hash)
+	hash := result.object.value.(data_structure.Hash)
 	return hash.MGet(fields...), nil
 }
 
@@ -64,14 +64,14 @@ func (s *store) HIncrBy(key string, field string, increment int64) (int64, error
 			return 0, err
 		}
 		s.data.Set(key, &RObj{
-			Type:     ObjHash,
-			Encoding: EncHashTable,
-			Value:    hash,
+			objType:     ObjHash,
+			encoding: EncHashTable,
+			value:    hash,
 		})
 		return res, nil
 	}
 
-	hash := result.object.Value.(data_structure.Hash)
+	hash := result.object.value.(data_structure.Hash)
 	return hash.IncBy(field, increment)
 }
 
@@ -85,7 +85,7 @@ func (s *store) HKeys(key string) ([]string, error) {
 		return []string{}, nil
 	}
 
-	hash := result.object.Value.(data_structure.Hash)
+	hash := result.object.value.(data_structure.Hash)
 	return hash.GetKeys(), nil
 }
 
@@ -99,7 +99,7 @@ func (s *store) HVals(key string) ([]string, error) {
 		return []string{}, nil
 	}
 
-	hash := result.object.Value.(data_structure.Hash)
+	hash := result.object.value.(data_structure.Hash)
 	return hash.GetValues(), nil
 }
 
@@ -113,7 +113,7 @@ func (s *store) HLen(key string) (uint32, error) {
 		return 0, nil
 	}
 
-	hash := result.object.Value.(data_structure.Hash)
+	hash := result.object.value.(data_structure.Hash)
 	return hash.Size(), nil
 }
 
@@ -127,14 +127,14 @@ func (s *store) HSet(key string, fieldValue map[string]string) (int64, error) {
 		hash := data_structure.NewHash()
 		added := hash.Set(fieldValue)
 		s.data.Set(key, &RObj{
-			Type:     ObjHash,
-			Encoding: EncHashTable,
-			Value:    hash,
+			objType:     ObjHash,
+			encoding: EncHashTable,
+			value:    hash,
 		})
 		return added, nil
 	}
 
-	hash := result.object.Value.(data_structure.Hash)
+	hash := result.object.value.(data_structure.Hash)
 	return hash.Set(fieldValue), nil
 }
 
@@ -148,14 +148,14 @@ func (s *store) HSetNx(key string, field string, value string) (int64, error) {
 		hash := data_structure.NewHash()
 		hash.SetNX(field, value)
 		s.data.Set(key, &RObj{
-			Type:     ObjHash,
-			Encoding: EncHashTable,
-			Value:    hash,
+			objType:     ObjHash,
+			encoding: EncHashTable,
+			value:    hash,
 		})
 		return 1, nil
 	}
 
-	hash := result.object.Value.(data_structure.Hash)
+	hash := result.object.value.(data_structure.Hash)
 	canSet := hash.SetNX(field, value)
 	if canSet {
 		return 1, nil
@@ -173,7 +173,7 @@ func (s *store) HDel(key string, fields []string) (int64, error) {
 		return 0, nil
 	}
 
-	hash := result.object.Value.(data_structure.Hash)
+	hash := result.object.value.(data_structure.Hash)
 	deleted := hash.Delete(fields...)
 	if hash.Size() == 0 {
 		s.delete(key)
@@ -191,7 +191,7 @@ func (s *store) HExists(key, field string) (int64, error) {
 		return 0, nil
 	}
 
-	hash := result.object.Value.(data_structure.Hash)
+	hash := result.object.value.(data_structure.Hash)
 	if hash.Exists(field) {
 		return 1, nil
 	}

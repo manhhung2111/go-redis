@@ -9,16 +9,16 @@ import (
 func newStringObject(s string) *RObj {
 	if v, err := strconv.ParseInt(s, 10, 64); err == nil {
 		return &RObj{
-			Type:     ObjString,
-			Encoding: EncInt,
-			Value:    v,
+			objType:     ObjString,
+			encoding: EncInt,
+			value:    v,
 		}
 	}
 
 	return &RObj{
-		Type:     ObjString,
-		Encoding: EncRaw,
-		Value:    s,
+		objType:     ObjString,
+		encoding: EncRaw,
+		value:    s,
 	}
 }
 
@@ -47,12 +47,12 @@ func (s *store) Get(key string) (*string, error) {
 
 	// Encoding must be raw or int
 	rObj := result.object
-	if rObj.Encoding == EncInt {
-		val := strconv.FormatInt(rObj.Value.(int64), 10)
+	if rObj.encoding == EncInt {
+		val := strconv.FormatInt(rObj.value.(int64), 10)
 		return &val, nil
 	}
 
-	val := rObj.Value.(string)
+	val := rObj.value.(string)
 	return &val, nil
 }
 
@@ -73,16 +73,16 @@ func (s *store) IncrBy(key string, increment int64) (*int64, error) {
 
 	// Encoding must be raw or int
 	rObj := result.object
-	if rObj.Encoding != EncInt {
+	if rObj.encoding != EncInt {
 		return nil, ErrValueIsNotIntegerOrOutOfRangeError
 	}
 
-	val := rObj.Value.(int64)
+	val := rObj.value.(int64)
 	if (increment > 0 && val > math.MaxInt64-increment) || (increment < 0 && val < math.MinInt64-increment) {
 		return nil, ErrValueIsNotIntegerOrOutOfRangeError
 	}
 
 	val += increment
-	rObj.Value = val
+	rObj.value = val
 	return &val, nil
 }

@@ -14,14 +14,14 @@ func (s *store) ZAdd(key string, scoreMember map[string]float64, options data_st
 		zset := data_structure.NewZSet()
 		added := zset.ZAdd(scoreMember, options)
 		s.data.Set(key, &RObj{
-			Type:     ObjZSet,
-			Encoding: EncSortedSet,
-			Value:    zset,
+			objType:     ObjZSet,
+			encoding: EncSortedSet,
+			value:    zset,
 		})
 		return added, nil
 	}
 
-	zset := result.object.Value.(data_structure.ZSet)
+	zset := result.object.value.(data_structure.ZSet)
 	return zset.ZAdd(scoreMember, options), nil
 }
 
@@ -66,15 +66,15 @@ func (s *store) ZIncrBy(key string, member string, increment float64) (float64, 
 		}
 
 		s.data.Set(key, &RObj{
-			Type:     ObjZSet,
-			Encoding: EncSortedSet,
-			Value:    zset,
+			objType:     ObjZSet,
+			encoding: EncSortedSet,
+			value:    zset,
 		})
 
 		return res, nil
 	}
 
-	zset := result.object.Value.(data_structure.ZSet)
+	zset := result.object.value.(data_structure.ZSet)
 	res, succeeded := zset.ZIncrBy(member, increment)
 
 	if !succeeded {
@@ -290,6 +290,6 @@ func (s *store) getZSet(key string) (data_structure.ZSet, error) {
 		return nil, nil
 	}
 
-	zset := result.object.Value.(data_structure.ZSet)
+	zset := result.object.value.(data_structure.ZSet)
 	return zset, nil
 }

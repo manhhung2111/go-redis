@@ -87,9 +87,9 @@ func (s *store) BFReserve(key string, errorRate float64, capacity uint32, expans
 
 	sbf := data_structure.NewScalableBloomFilter(errorRate, uint64(capacity), int(expansion))
 	s.data.Set(key, &RObj{
-		Type:     ObjBloomFilter,
-		Encoding: EncBloomFilter,
-		Value:    sbf,
+		objType:     ObjBloomFilter,
+		encoding: EncBloomFilter,
+		value:    sbf,
 	})
 
 	return nil
@@ -105,7 +105,7 @@ func (s *store) getBloomFilter(key string) (data_structure.ScalableBloomFilter, 
 		return nil, nil
 	}
 
-	sbf := result.object.Value.(data_structure.ScalableBloomFilter)
+	sbf := result.object.value.(data_structure.ScalableBloomFilter)
 	return sbf, nil
 }
 
@@ -117,7 +117,7 @@ func (s *store) getOrCreateBloomFilter(key string) (data_structure.ScalableBloom
 	}
 
 	if result.exists {
-		return result.object.Value.(data_structure.ScalableBloomFilter), nil
+		return result.object.value.(data_structure.ScalableBloomFilter), nil
 	}
 
 	// Create new bloom filter with default settings
@@ -128,9 +128,9 @@ func (s *store) getOrCreateBloomFilter(key string) (data_structure.ScalableBloom
 	)
 
 	s.data.Set(key, &RObj{
-		Type:     ObjBloomFilter,
-		Encoding: EncBloomFilter,
-		Value:    sbf,
+		objType:     ObjBloomFilter,
+		encoding: EncBloomFilter,
+		value:    sbf,
 	})
 
 	return sbf, nil

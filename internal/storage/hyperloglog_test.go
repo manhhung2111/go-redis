@@ -18,8 +18,8 @@ func TestPFAdd_NewKey(t *testing.T) {
 	// Verify HyperLogLog was created
 	rObj, exists := s.data.Get("hll")
 	require.True(t, exists)
-	assert.Equal(t, ObjHyperLogLog, rObj.Type)
-	assert.Equal(t, EncHyperLogLog, rObj.Encoding)
+	assert.Equal(t, ObjHyperLogLog, rObj.objType)
+	assert.Equal(t, EncHyperLogLog, rObj.encoding)
 }
 
 func TestPFAdd_NewKeyNoItems(t *testing.T) {
@@ -33,7 +33,7 @@ func TestPFAdd_NewKeyNoItems(t *testing.T) {
 	// Verify HyperLogLog was created
 	rObj, exists := s.data.Get("hll")
 	require.True(t, exists)
-	assert.Equal(t, ObjHyperLogLog, rObj.Type)
+	assert.Equal(t, ObjHyperLogLog, rObj.objType)
 }
 
 func TestPFAdd_ExistingKeyNoItems(t *testing.T) {
@@ -264,7 +264,7 @@ func TestPFMerge_NewDestKey(t *testing.T) {
 	// Verify dest was created
 	rObj, exists := s.data.Get("dest")
 	require.True(t, exists)
-	assert.Equal(t, ObjHyperLogLog, rObj.Type)
+	assert.Equal(t, ObjHyperLogLog, rObj.objType)
 
 	// Verify count
 	count, _ := s.PFCount([]string{"dest"})
@@ -302,7 +302,7 @@ func TestPFMerge_EmptySourceKeys(t *testing.T) {
 	// Dest should exist but be empty
 	rObj, exists := s.data.Get("dest")
 	require.True(t, exists)
-	assert.Equal(t, ObjHyperLogLog, rObj.Type)
+	assert.Equal(t, ObjHyperLogLog, rObj.objType)
 
 	count, _ := s.PFCount([]string{"dest"})
 	assert.Equal(t, 0, count)

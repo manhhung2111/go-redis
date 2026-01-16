@@ -17,11 +17,11 @@ func (s *store) SAdd(key string, members ...string) (int64, error) {
 
 	if result.exists {
 		rObj := result.object
-		if rObj.Encoding == EncIntSet {
+		if rObj.encoding == EncIntSet {
 			// Upgrade to SimpleSet if one of the following condition holds:
 			// members contain an element can not be converted to int64
 			// adding members resulting in exceeding the config.SET_MAX_INTSET_ENTRIES
-			intset := rObj.Value.(data_structure.Set)
+			intset := rObj.value.(data_structure.Set)
 			added, succeeded := intset.Add(members...)
 			if !succeeded {
 				// Upgrade to SimpleSet
@@ -30,8 +30,8 @@ func (s *store) SAdd(key string, members ...string) (int64, error) {
 				added, _ := simpleSet.Add(members...)
 
 				// Update existing RObj
-				rObj.Encoding = EncHashTable
-				rObj.Value = simpleSet
+				rObj.encoding = EncHashTable
+				rObj.value = simpleSet
 
 				return added, nil
 			} else {
@@ -39,7 +39,7 @@ func (s *store) SAdd(key string, members ...string) (int64, error) {
 			}
 		}
 
-		simpleSet := rObj.Value.(data_structure.Set)
+		simpleSet := rObj.value.(data_structure.Set)
 		added, _ := simpleSet.Add(members...)
 		return added, nil
 	}
@@ -50,9 +50,9 @@ func (s *store) SAdd(key string, members ...string) (int64, error) {
 		added, succeeded := intset.Add(members...)
 		if succeeded {
 			s.data.Set(key, &RObj{
-				Type:     ObjSet,
-				Encoding: EncIntSet,
-				Value:    intset,
+				objType:     ObjSet,
+				encoding: EncIntSet,
+				value:    intset,
 			})
 			return added, nil
 		}
@@ -63,9 +63,9 @@ func (s *store) SAdd(key string, members ...string) (int64, error) {
 	added, _ := simpleSet.Add(members...)
 
 	s.data.Set(key, &RObj{
-		Type:     ObjSet,
-		Encoding: EncHashTable,
-		Value:    simpleSet,
+		objType:     ObjSet,
+		encoding: EncHashTable,
+		value:    simpleSet,
 	})
 
 	return added, nil
@@ -81,7 +81,7 @@ func (s *store) SCard(key string) (int64, error) {
 		return 0, result.typeErr
 	}
 
-	set := result.object.Value.(data_structure.Set)
+	set := result.object.value.(data_structure.Set)
 	return set.Size(), nil
 }
 
@@ -95,7 +95,7 @@ func (s *store) SIsMember(key string, member string) (bool, error) {
 		return false, result.typeErr
 	}
 
-	set := result.object.Value.(data_structure.Set)
+	set := result.object.value.(data_structure.Set)
 	return set.IsMember(member), nil
 }
 
@@ -109,7 +109,7 @@ func (s *store) SMembers(key string) ([]string, error) {
 		return []string{}, result.typeErr
 	}
 
-	set := result.object.Value.(data_structure.Set)
+	set := result.object.value.(data_structure.Set)
 	return set.Members(), nil
 }
 
@@ -125,7 +125,7 @@ func (s *store) SMIsMember(key string, members ...string) ([]bool, error) {
 		return nil, accessResult.typeErr
 	}
 
-	set := accessResult.object.Value.(data_structure.Set)
+	set := accessResult.object.value.(data_structure.Set)
 	return set.MIsMember(members...), nil
 }
 
@@ -139,7 +139,7 @@ func (s *store) SRem(key string, members ...string) (int64, error) {
 		return 0, result.typeErr
 	}
 
-	set := result.object.Value.(data_structure.Set)
+	set := result.object.value.(data_structure.Set)
 	return set.Delete(members...), nil
 }
 
@@ -153,7 +153,7 @@ func (s *store) SPop(key string, count int) ([]string, error) {
 		return []string{}, result.typeErr
 	}
 
-	set := result.object.Value.(data_structure.Set)
+	set := result.object.value.(data_structure.Set)
 	setLen := int(set.Size())
 
 	if setLen == 0 {
@@ -196,7 +196,7 @@ func (s *store) SRandMember(key string, count int) ([]string, error) {
 		return []string{}, nil
 	}
 
-	set := result.object.Value.(data_structure.Set)
+	set := result.object.value.(data_structure.Set)
 	setLen := int(set.Size())
 	if setLen == 0 {
 		return []string{}, nil

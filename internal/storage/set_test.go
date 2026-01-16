@@ -534,5 +534,5 @@ func assertEncoding(t *testing.T, s *store, key string, expected ObjectEncoding)
 	rObj, exists := s.data.Get(key)
 	require.True(t, exists, "key %s does not exist", key)
 
-	assert.Equal(t, ObjectEncoding(expected), rObj.Encoding)
+	assert.Equal(t, ObjectEncoding(expected), rObj.encoding)
 }

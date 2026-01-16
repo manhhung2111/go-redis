@@ -17,8 +17,8 @@ func TestCFAdd_NewKey(t *testing.T) {
 	// Verify cuckoo filter was created
 	rObj, exists := s.data.Get("cf")
 	require.True(t, exists)
-	assert.Equal(t, ObjCuckooFilter, rObj.Type)
-	assert.Equal(t, EncCuckooFilter, rObj.Encoding)
+	assert.Equal(t, ObjCuckooFilter, rObj.objType)
+	assert.Equal(t, EncCuckooFilter, rObj.encoding)
 }
 
 func TestCFAdd_ExistingKey(t *testing.T) {
@@ -96,7 +96,7 @@ func TestCFAddNx_NewKey(t *testing.T) {
 	// Verify cuckoo filter was created
 	rObj, exists := s.data.Get("cf")
 	require.True(t, exists)
-	assert.Equal(t, ObjCuckooFilter, rObj.Type)
+	assert.Equal(t, ObjCuckooFilter, rObj.objType)
 }
 
 func TestCFAddNx_ExistingItem(t *testing.T) {
@@ -505,8 +505,8 @@ func TestCFReserve_NewKey(t *testing.T) {
 	// Verify cuckoo filter was created with correct settings
 	rObj, exists := s.data.Get("cf")
 	require.True(t, exists)
-	assert.Equal(t, ObjCuckooFilter, rObj.Type)
-	assert.Equal(t, EncCuckooFilter, rObj.Encoding)
+	assert.Equal(t, ObjCuckooFilter, rObj.objType)
+	assert.Equal(t, EncCuckooFilter, rObj.encoding)
 
 	// Verify settings via Info
 	info, err := s.CFInfo("cf")

@@ -12,14 +12,14 @@ func (s *store) GeoAdd(key string, items []data_structure.GeoPoint, options data
 		zset := data_structure.NewZSet()
 		added := zset.GeoAdd(items, options)
 		s.data.Set(key, &RObj{
-			Type:     ObjZSet,
-			Encoding: EncSortedSet,
-			Value:    zset,
+			objType:     ObjZSet,
+			encoding: EncSortedSet,
+			value:    zset,
 		})
 		return added, nil
 	}
 
-	zset := result.object.Value.(data_structure.ZSet)
+	zset := result.object.value.(data_structure.ZSet)
 	return zset.GeoAdd(items, options), nil
 }
 

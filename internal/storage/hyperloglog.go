@@ -11,7 +11,7 @@ func (s *store) PFAdd(key string, items []string) (int, error) {
 	}
 
 	if result.exists {
-		hll := result.object.Value.(data_structure.HyperLogLog)
+		hll := result.object.value.(data_structure.HyperLogLog)
 
 		if len(items) == 0 {
 			return 0, nil
@@ -27,9 +27,9 @@ func (s *store) PFAdd(key string, items []string) (int, error) {
 	}
 
 	s.data.Set(key, &RObj{
-		Type:     ObjHyperLogLog,
-		Encoding: EncHyperLogLog,
-		Value:    hll,
+		objType:     ObjHyperLogLog,
+		encoding: EncHyperLogLog,
+		value:    hll,
 	})
 
 	return 1, nil
@@ -64,9 +64,9 @@ func (s *store) PFMerge(destKey string, sourceKeys []string) error {
 	if destHll == nil {
 		destHll = data_structure.NewHyperLogLog()
 		s.data.Set(destKey, &RObj{
-			Type:     ObjHyperLogLog,
-			Encoding: EncHyperLogLog,
-			Value:    destHll,
+			objType:     ObjHyperLogLog,
+			encoding: EncHyperLogLog,
+			value:    destHll,
 		})
 	}
 
@@ -102,6 +102,6 @@ func (s *store) getHyperLogLog(key string) (data_structure.HyperLogLog, error) {
 		return nil, nil
 	}
 
-	hll := result.object.Value.(data_structure.HyperLogLog)
+	hll := result.object.value.(data_structure.HyperLogLog)
 	return hll, nil
 }

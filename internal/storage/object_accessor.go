@@ -1,6 +1,10 @@
 package storage
 
-import "time"
+import (
+	"time"
+
+	"github.com/manhhung2111/go-redis/internal/config"
+)
 
 type storageAccessResult struct {
 	object  *RObj
@@ -22,11 +26,17 @@ func (s *store) access(key string, expectedType ObjectType) storageAccessResult 
 	}
 
 	obj, exists := s.data.Get(key)
+	if exists {
+		if config.EVICTION_POLICY == config.AllKeysLRU || config.EVICTION_POLICY == config.VolatileLRU {
+			obj.lru = uint32(time.Now().Unix())
+		}
+	}
+
 	result.object = obj
 	result.exists = exists
 
 	// Skip type check if expectedType is ObjAny
-	if exists && expectedType != ObjAny && obj.Type != expectedType {
+	if exists && expectedType != ObjAny && obj.objType != expectedType {
 		result.typeErr = ErrWrongTypeError
 	}
 

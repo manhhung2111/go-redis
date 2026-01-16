@@ -34,9 +34,10 @@ const (
 )
 
 type RObj struct {
-	Type     ObjectType
-	Encoding ObjectEncoding
-	Value    any
+	objType  ObjectType
+	encoding ObjectEncoding
+	value    any
+	lru      uint32
 }
 
 type Store interface {

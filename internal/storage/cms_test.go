@@ -16,8 +16,8 @@ func TestCMSInitByDim_NewKey(t *testing.T) {
 	// Verify CMS was created
 	rObj, exists := s.data.Get("cms")
 	require.True(t, exists)
-	assert.Equal(t, ObjCountMinSketch, rObj.Type)
-	assert.Equal(t, EncCountMinSketch, rObj.Encoding)
+	assert.Equal(t, ObjCountMinSketch, rObj.objType)
+	assert.Equal(t, EncCountMinSketch, rObj.encoding)
 
 	// Verify dimensions via Info
 	info, err := s.CMSInfo("cms")
@@ -75,8 +75,8 @@ func TestCMSInitByProb_NewKey(t *testing.T) {
 	// Verify CMS was created
 	rObj, exists := s.data.Get("cms")
 	require.True(t, exists)
-	assert.Equal(t, ObjCountMinSketch, rObj.Type)
-	assert.Equal(t, EncCountMinSketch, rObj.Encoding)
+	assert.Equal(t, ObjCountMinSketch, rObj.objType)
+	assert.Equal(t, EncCountMinSketch, rObj.encoding)
 
 	// Verify dimensions via Info
 	// errorRate = 0.01 -> width = ceil(e / 0.01) = 272
