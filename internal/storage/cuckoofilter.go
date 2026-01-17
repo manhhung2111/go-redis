@@ -13,7 +13,8 @@ func (s *store) CFAdd(key string, item string) (int, error) {
 		return 0, err
 	}
 
-	result, _ := scf.Add(item)
+	result, delta := scf.Add(item)
+	s.usedMemory += delta
 	return result, nil
 }
 
@@ -23,7 +24,8 @@ func (s *store) CFAddNx(key string, item string) (int, error) {
 		return 0, err
 	}
 
-	result, _ := scf.AddNx(item)
+	result, delta := scf.AddNx(item)
+	s.usedMemory += delta
 	return result, nil
 }
 
@@ -50,7 +52,8 @@ func (s *store) CFDel(key string, item string) (int, error) {
 		return 0, ErrKeyNotFoundError
 	}
 
-	result, _ := scf.Del(item)
+	result, delta := scf.Del(item)
+	s.usedMemory += delta
 	return result, nil
 }
 
@@ -103,11 +106,12 @@ func (s *store) CFReserve(key string, capacity uint64, bucketSize uint64, maxIte
 
 	scf := data_structure.NewCuckooFilter(capacity, bucketSize, maxIterations, expansionRate)
 
-	s.data.Set(key, &RObj{
-		objType:     ObjCuckooFilter,
+	delta := s.data.Set(key, &RObj{
+		objType:  ObjCuckooFilter,
 		encoding: EncCuckooFilter,
 		value:    scf,
 	})
+	s.usedMemory += delta
 
 	return nil
 }
@@ -144,11 +148,12 @@ func (s *store) getOrCreateCuckooFilter(key string) (data_structure.CuckooFilter
 		config.CF_DEFAULT_EXPANSION_FACTOR,
 	)
 
-	s.data.Set(key, &RObj{
-		objType:     ObjCuckooFilter,
+	delta := s.data.Set(key, &RObj{
+		objType:  ObjCuckooFilter,
 		encoding: EncCuckooFilter,
 		value:    scf,
 	})
+	s.usedMemory += delta
 
 	return scf, nil
 }

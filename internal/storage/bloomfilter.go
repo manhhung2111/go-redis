@@ -13,7 +13,8 @@ func (s *store) BFAdd(key string, item string) (int, error) {
 		return 0, err
 	}
 
-	result, _ := sbf.Add(item)
+	result, delta := sbf.Add(item)
+	s.usedMemory += delta
 	return result, nil
 }
 
@@ -62,7 +63,8 @@ func (s *store) BFMAdd(key string, items []string) ([]int, error) {
 		return nil, err
 	}
 
-	result, _ := sbf.MAdd(items)
+	result, delta := sbf.MAdd(items)
+	s.usedMemory += delta
 	return result, nil
 }
 
@@ -88,12 +90,14 @@ func (s *store) BFReserve(key string, errorRate float64, capacity uint32, expans
 	}
 
 	sbf := data_structure.NewScalableBloomFilter(errorRate, uint64(capacity), int(expansion))
-	s.data.Set(key, &RObj{
-		objType:     ObjBloomFilter,
+
+	delta := s.data.Set(key, &RObj{
+		objType:  ObjBloomFilter,
 		encoding: EncBloomFilter,
 		value:    sbf,
 	})
 
+	s.usedMemory += delta
 	return nil
 }
 
@@ -129,11 +133,12 @@ func (s *store) getOrCreateBloomFilter(key string) (data_structure.ScalableBloom
 		config.BF_DEFAULT_EXPANSION,
 	)
 
-	s.data.Set(key, &RObj{
-		objType:     ObjBloomFilter,
+	delta := s.data.Set(key, &RObj{
+		objType:  ObjBloomFilter,
 		encoding: EncBloomFilter,
 		value:    sbf,
 	})
 
+	s.usedMemory += delta
 	return sbf, nil
 }

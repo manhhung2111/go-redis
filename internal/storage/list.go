@@ -12,18 +12,20 @@ func (s *store) LPush(key string, elements ...string) (uint32, error) {
 
 	if result.exists {
 		quickList := result.object.value.(data_structure.QuickList)
-		res, _ := quickList.LPush(elements)
+		res, delta := quickList.LPush(elements)
+		s.usedMemory += delta
 		return res, nil
 	}
 
 	quicklist := data_structure.NewQuickList()
 	res, _ := quicklist.LPush(elements)
 
-	s.data.Set(key, &RObj{
-		objType:     ObjList,
+	delta := s.data.Set(key, &RObj{
+		objType:  ObjList,
 		encoding: EncQuickList,
 		value:    quicklist,
 	})
+	s.usedMemory += delta
 
 	return res, nil
 }
@@ -39,7 +41,8 @@ func (s *store) LPop(key string, count uint32) ([]string, error) {
 	}
 
 	quickList := result.object.value.(data_structure.QuickList)
-	poppedElements, _ := quickList.LPop(count)
+	poppedElements, delta := quickList.LPop(count)
+	s.usedMemory -= delta
 	if quickList.Size() == 0 {
 		s.delete(key)
 	}
@@ -55,18 +58,20 @@ func (s *store) RPush(key string, elements ...string) (uint32, error) {
 
 	if result.exists {
 		quickList := result.object.value.(data_structure.QuickList)
-		res, _ :=  quickList.RPush(elements)
+		res, delta := quickList.RPush(elements)
+		s.usedMemory += delta
 		return res, nil
 	}
 
 	quicklist := data_structure.NewQuickList()
 	res, _ := quicklist.RPush(elements)
 
-	s.data.Set(key, &RObj{
-		objType:     ObjList,
+	delta := s.data.Set(key, &RObj{
+		objType:  ObjList,
 		encoding: EncQuickList,
 		value:    quicklist,
 	})
+	s.usedMemory += delta
 
 	return res, nil
 }
@@ -82,7 +87,8 @@ func (s *store) RPop(key string, count uint32) ([]string, error) {
 	}
 
 	quickList := result.object.value.(data_structure.QuickList)
-	poppedElements, _ := quickList.RPop(count)
+	poppedElements, delta := quickList.RPop(count)
+	s.usedMemory -= delta
 	if quickList.Size() == 0 {
 		s.delete(key)
 	}
@@ -148,7 +154,8 @@ func (s *store) LRem(key string, count int32, element string) (uint32, error) {
 	}
 
 	quickList := result.object.value.(data_structure.QuickList)
-	removedElements, _ := quickList.LRem(count, element)
+	removedElements, delta := quickList.LRem(count, element)
+	s.usedMemory += delta
 	if quickList.Size() == 0 {
 		s.delete(key)
 	}
@@ -167,7 +174,8 @@ func (s *store) LSet(key string, index int32, element string) error {
 	}
 
 	quickList := result.object.value.(data_structure.QuickList)
-	err, _ := quickList.LSet(index, element)
+	err, delta := quickList.LSet(index, element)
+	s.usedMemory += delta
 	return err
 }
 
@@ -182,7 +190,8 @@ func (s *store) LTrim(key string, start, end int32) error {
 	}
 
 	quickList := result.object.value.(data_structure.QuickList)
-	quickList.LTrim(start, end)
+	delta := quickList.LTrim(start, end)
+	s.usedMemory += delta
 	if quickList.Size() == 0 {
 		s.delete(key)
 	}

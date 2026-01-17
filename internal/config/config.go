@@ -47,3 +47,5 @@ const (
 )
 
 var EVICTION_POLICY = AllKeysLRU
+var EVICTION_POOL_SIZE = 16
+var MAXMEMORY_SAMPLES = 10

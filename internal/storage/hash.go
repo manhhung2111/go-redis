@@ -63,16 +63,20 @@ func (s *store) HIncrBy(key string, field string, increment int64) (int64, error
 		if err != nil {
 			return 0, err
 		}
-		s.data.Set(key, &RObj{
+
+		delta := s.data.Set(key, &RObj{
 			objType:  ObjHash,
 			encoding: EncHashTable,
 			value:    hash,
 		})
+
+		s.usedMemory += delta
 		return res, nil
 	}
 
 	hash := result.object.value.(data_structure.Hash)
-	res, _, err := hash.IncBy(field, increment)
+	res, delta, err := hash.IncBy(field, increment)
+	s.usedMemory += delta
 	return res, err
 }
 
@@ -127,16 +131,19 @@ func (s *store) HSet(key string, fieldValue map[string]string) (int64, error) {
 	if !result.exists {
 		hash := data_structure.NewHash()
 		added, _ := hash.Set(fieldValue)
-		s.data.Set(key, &RObj{
+		delta := s.data.Set(key, &RObj{
 			objType:  ObjHash,
 			encoding: EncHashTable,
 			value:    hash,
 		})
+
+		s.usedMemory += delta
 		return added, nil
 	}
 
 	hash := result.object.value.(data_structure.Hash)
-	added, _ := hash.Set(fieldValue)
+	added, delta := hash.Set(fieldValue)
+	s.usedMemory += delta
 	return added, nil
 }
 
@@ -149,17 +156,20 @@ func (s *store) HSetNx(key string, field string, value string) (int64, error) {
 	if !result.exists {
 		hash := data_structure.NewHash()
 		hash.SetNX(field, value)
-		s.data.Set(key, &RObj{
+		delta := s.data.Set(key, &RObj{
 			objType:  ObjHash,
 			encoding: EncHashTable,
 			value:    hash,
 		})
+
+		s.usedMemory += delta
 		return 1, nil
 	}
 
 	hash := result.object.value.(data_structure.Hash)
-	canSet, _ := hash.SetNX(field, value)
+	canSet, delta := hash.SetNX(field, value)
 	if canSet {
+		s.usedMemory += delta
 		return 1, nil
 	}
 	return 0, nil
@@ -176,7 +186,8 @@ func (s *store) HDel(key string, fields []string) (int64, error) {
 	}
 
 	hash := result.object.value.(data_structure.Hash)
-	deleted, _ := hash.Delete(fields...)
+	deleted, delta := hash.Delete(fields...)
+	s.usedMemory += delta
 	if hash.Size() == 0 {
 		s.delete(key)
 	}

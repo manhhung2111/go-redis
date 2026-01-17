@@ -22,25 +22,28 @@ func (s *store) SAdd(key string, members ...string) (int64, error) {
 			// members contain an element can not be converted to int64
 			// adding members resulting in exceeding the config.SET_MAX_INTSET_ENTRIES
 			intset := rObj.value.(data_structure.Set)
-			added, succeeded, _ := intset.Add(members...)
+			added, succeeded, delta := intset.Add(members...)
 			if !succeeded {
 				// Upgrade to SimpleSet
 				simpleSet := data_structure.NewSimpleSet()
 				simpleSet.Add(intset.Members()...)
-				added, _, _ := simpleSet.Add(members...)
+				added, _, delta := simpleSet.Add(members...)
 
 				// Update existing RObj
 				rObj.encoding = EncHashTable
 				rObj.value = simpleSet
+				s.usedMemory += delta
 
 				return added, nil
 			} else {
+				s.usedMemory += delta
 				return added, nil
 			}
 		}
 
 		simpleSet := rObj.value.(data_structure.Set)
-		added, _, _ := simpleSet.Add(members...)
+		added, _, delta := simpleSet.Add(members...)
+		s.usedMemory += delta
 		return added, nil
 	}
 
@@ -49,11 +52,12 @@ func (s *store) SAdd(key string, members ...string) (int64, error) {
 		intset := data_structure.NewIntSet()
 		added, succeeded, _ := intset.Add(members...)
 		if succeeded {
-			s.data.Set(key, &RObj{
+			delta := s.data.Set(key, &RObj{
 				objType:  ObjSet,
 				encoding: EncIntSet,
 				value:    intset,
 			})
+			s.usedMemory += delta
 			return added, nil
 		}
 		// If IntSet failed (capacity), fall through to SimpleSet
@@ -62,11 +66,12 @@ func (s *store) SAdd(key string, members ...string) (int64, error) {
 	simpleSet := data_structure.NewSimpleSet()
 	added, _, _ := simpleSet.Add(members...)
 
-	s.data.Set(key, &RObj{
-		objType:     ObjSet,
+	delta := s.data.Set(key, &RObj{
+		objType:  ObjSet,
 		encoding: EncHashTable,
 		value:    simpleSet,
 	})
+	s.usedMemory += delta
 
 	return added, nil
 }
@@ -140,7 +145,8 @@ func (s *store) SRem(key string, members ...string) (int64, error) {
 	}
 
 	set := result.object.value.(data_structure.Set)
-	removed, _ := set.Delete(members...)
+	removed, delta := set.Delete(members...)
+	s.usedMemory += delta
 	return removed, nil
 }
 
@@ -178,7 +184,8 @@ func (s *store) SPop(key string, count int) ([]string, error) {
 		}
 	}
 
-	set.Delete(popped...)
+	_, delta := set.Delete(popped...)
+	s.usedMemory += delta
 
 	return popped, nil
 }

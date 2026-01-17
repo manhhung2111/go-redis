@@ -17,7 +17,8 @@ func (s *store) PFAdd(key string, items []string) (int, error) {
 			return 0, nil
 		}
 
-		res, _ := hll.PFAdd(items)
+		res, delta := hll.PFAdd(items)
+		s.usedMemory += delta
 		return res, nil
 	}
 
@@ -27,11 +28,12 @@ func (s *store) PFAdd(key string, items []string) (int, error) {
 		hll.PFAdd(items)
 	}
 
-	s.data.Set(key, &RObj{
-		objType:     ObjHyperLogLog,
+	delta := s.data.Set(key, &RObj{
+		objType:  ObjHyperLogLog,
 		encoding: EncHyperLogLog,
 		value:    hll,
 	})
+	s.usedMemory += delta
 
 	return 1, nil
 }
@@ -64,11 +66,12 @@ func (s *store) PFMerge(destKey string, sourceKeys []string) error {
 
 	if destHll == nil {
 		destHll = data_structure.NewHyperLogLog()
-		s.data.Set(destKey, &RObj{
-			objType:     ObjHyperLogLog,
+		delta := s.data.Set(destKey, &RObj{
+			objType:  ObjHyperLogLog,
 			encoding: EncHyperLogLog,
 			value:    destHll,
 		})
+		s.usedMemory += delta
 	}
 
 	if len(sourceKeys) == 0 {
@@ -87,7 +90,8 @@ func (s *store) PFMerge(destKey string, sourceKeys []string) error {
 	}
 
 	if len(sourceHlls) > 0 {
-		destHll.PFMerge(sourceHlls)
+		delta := destHll.PFMerge(sourceHlls)
+		s.usedMemory += delta
 	}
 
 	return nil

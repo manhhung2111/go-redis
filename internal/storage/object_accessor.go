@@ -45,11 +45,12 @@ func (s *store) access(key string, expectedType ObjectType) storageAccessResult 
 
 // Centralized function to delete key
 func (s *store) delete(key string) bool {
-	_, ok := s.data.Get(key)
-	if ok {
-		s.data.Delete(key)
-		s.expires.Delete(key)
-		return true
+	ok, delta1 := s.data.Delete(key)
+	if !ok {
+		return false
 	}
-	return false
+
+	_, delta2 := s.expires.Delete(key)
+	s.usedMemory -= delta1 + delta2
+	return true
 }

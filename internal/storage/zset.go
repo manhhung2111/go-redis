@@ -13,16 +13,18 @@ func (s *store) ZAdd(key string, scoreMember map[string]float64, options data_st
 	if !result.exists {
 		zset := data_structure.NewZSet()
 		added, _ := zset.ZAdd(scoreMember, options)
-		s.data.Set(key, &RObj{
-			objType:     ObjZSet,
+		delta := s.data.Set(key, &RObj{
+			objType:  ObjZSet,
 			encoding: EncSortedSet,
 			value:    zset,
 		})
+		s.usedMemory += delta
 		return added, nil
 	}
 
 	zset := result.object.value.(data_structure.ZSet)
-	added, _ := zset.ZAdd(scoreMember, options)
+	added, delta := zset.ZAdd(scoreMember, options)
+	s.usedMemory += delta
 	return added, nil
 }
 
@@ -66,21 +68,23 @@ func (s *store) ZIncrBy(key string, member string, increment float64) (float64, 
 			return 0, ErrValueIsNotValidFloatError
 		}
 
-		s.data.Set(key, &RObj{
-			objType:     ObjZSet,
+		delta := s.data.Set(key, &RObj{
+			objType:  ObjZSet,
 			encoding: EncSortedSet,
 			value:    zset,
 		})
+		s.usedMemory += delta
 
 		return res, nil
 	}
 
 	zset := result.object.value.(data_structure.ZSet)
-	res, succeeded, _ := zset.ZIncrBy(member, increment)
+	res, succeeded, delta := zset.ZIncrBy(member, increment)
 
 	if !succeeded {
 		return 0, ErrValueIsNotValidFloatError
 	}
+	s.usedMemory += delta
 
 	return res, nil
 }
@@ -121,7 +125,8 @@ func (s *store) ZPopMax(key string, count int) ([]string, error) {
 		return []string{}, nil
 	}
 
-	res, _ := zset.ZPopMax(count)
+	res, delta := zset.ZPopMax(count)
+	s.usedMemory += delta
 	return res, nil
 }
 
@@ -135,7 +140,8 @@ func (s *store) ZPopMin(key string, count int) ([]string, error) {
 		return []string{}, nil
 	}
 
-	res, _ := zset.ZPopMin(count)
+	res, delta := zset.ZPopMin(count)
+	s.usedMemory += delta
 	return res, nil
 }
 
@@ -214,7 +220,8 @@ func (s *store) ZRem(key string, members []string) (uint32, error) {
 		return 0, nil
 	}
 
-	res, _ := zset.ZRem(members)
+	res, delta := zset.ZRem(members)
+	s.usedMemory += delta
 	return uint32(res), nil
 }
 

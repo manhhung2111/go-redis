@@ -1,6 +1,9 @@
 package storage
 
-import "github.com/manhhung2111/go-redis/internal/storage/data_structure"
+import (
+	"github.com/manhhung2111/go-redis/internal/config"
+	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
+)
 
 type ObjectType uint8
 type ObjectEncoding uint8
@@ -38,6 +41,11 @@ type RObj struct {
 	encoding ObjectEncoding
 	value    any
 	lru      uint32
+}
+
+type evictionPoolEntry struct {
+	key  string
+	idle uint32
 }
 
 type Store interface {
@@ -140,14 +148,20 @@ type Store interface {
 }
 
 type store struct {
-	data    Dict[string, *RObj]
-	expires Dict[string, uint64]
+	data         Dict[string, *RObj]
+	expires      Dict[string, uint64]
+	evictionPool []*evictionPoolEntry
+	usedMemory   int64 // Memory usage in bytes, accounting only for data and expires dictionaries (excludes eviction pool)
 }
 
 func NewStore() Store {
+	data, delta1 := newDict[string, *RObj]()
+	expires, delta2 := newDict[string, uint64]()
 	return &store{
-		data:    newDict[string, *RObj](),
-		expires: newDict[string, uint64](),
+		data:         data,
+		expires:      expires,
+		evictionPool: make([]*evictionPoolEntry, config.EVICTION_POOL_SIZE),
+		usedMemory:   delta1 + delta2,
 	}
 }
 

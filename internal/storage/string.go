@@ -9,14 +9,14 @@ import (
 func newStringObject(s string) *RObj {
 	if v, err := strconv.ParseInt(s, 10, 64); err == nil {
 		return &RObj{
-			objType:     ObjString,
+			objType:  ObjString,
 			encoding: EncInt,
 			value:    v,
 		}
 	}
 
 	return &RObj{
-		objType:     ObjString,
+		objType:  ObjString,
 		encoding: EncRaw,
 		value:    s,
 	}
@@ -24,15 +24,17 @@ func newStringObject(s string) *RObj {
 
 func (s *store) Set(key string, value string) {
 	s.delete(key)
-	s.data.Set(key, newStringObject(value))
+	delta := s.data.Set(key, newStringObject(value))
+	s.usedMemory += delta
 }
 
 func (s *store) SetEx(key string, value string, ttlSeconds uint64) {
 	s.delete(key) // Clean up existing key if any
 
 	expireAt := uint64(time.Now().UnixMilli()) + ttlSeconds*1000
-	s.data.Set(key, newStringObject(value))
-	s.expires.Set(key, expireAt)
+	delta1 := s.data.Set(key, newStringObject(value))
+	delta2 := s.expires.Set(key, expireAt)
+	s.usedMemory += delta1 + delta2
 }
 
 func (s *store) Get(key string) (*string, error) {
