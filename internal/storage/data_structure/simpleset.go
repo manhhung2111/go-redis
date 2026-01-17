@@ -12,27 +12,31 @@ func NewSimpleSet() Set {
 	}
 }
 
-func (s *simpleSet) Add(members ...string) (int64, bool) {
+func (s *simpleSet) Add(members ...string) (int64, bool, int64) {
 	var added int64 = 0
+	var delta int64 = 0
 	for _, m := range members {
 		if _, ok := s.contents[m]; !ok {
 			s.contents[m] = struct{}{}
 			added++
+			delta += StringMapEntrySize(m)
 		}
 	}
-	return added, true
+	return added, true, delta
 }
 
-func (s *simpleSet) Delete(members ...string) int64 {
+func (s *simpleSet) Delete(members ...string) (int64, int64) {
 	var removedMembers int64 = 0
+	var delta int64 = 0
 	for i := range members {
 		if _, ok := s.contents[members[i]]; ok {
+			delta -= StringMapEntrySize(members[i])
 			delete(s.contents, members[i])
 			removedMembers++
 		}
 	}
 
-	return removedMembers
+	return removedMembers, delta
 }
 
 func (s *simpleSet) IsMember(member string) bool {

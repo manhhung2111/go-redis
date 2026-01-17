@@ -18,7 +18,7 @@ func NewIntSet() Set {
 	}
 }
 
-func (set *intSet) Add(members ...string) (int64, bool) {
+func (set *intSet) Add(members ...string) (int64, bool, int64) {
 	added := 0
 	oldContents := make([]int64, len(set.contents))
 	copy(oldContents, set.contents)
@@ -27,14 +27,14 @@ func (set *intSet) Add(members ...string) (int64, bool) {
 		value, err := strconv.ParseInt(members[i], 10, 64)
 		if err != nil {
 			set.contents = oldContents
-			return 0, false
+			return 0, false, 0
 		}
 
 		insertionIndex, exists := set.getInsertIndex(value)
 		if !exists {
 			if len(set.contents)+1 > cap(set.contents) {
 				set.contents = oldContents
-				return 0, false
+				return 0, false, 0
 			}
 
 			set.contents = append(set.contents, 0)
@@ -44,7 +44,8 @@ func (set *intSet) Add(members ...string) (int64, bool) {
 		}
 	}
 
-	return int64(added), true
+	delta := int64(added) * Int64Size
+	return int64(added), true, delta
 }
 
 func (set *intSet) Size() int64 {
@@ -101,7 +102,7 @@ func (set *intSet) Members() []string {
 	return result
 }
 
-func (set *intSet) Delete(members ...string) int64 {
+func (set *intSet) Delete(members ...string) (int64, int64) {
 	removed := 0
 	for i := range members {
 		value, err := strconv.ParseInt(members[i], 10, 64)
@@ -117,7 +118,8 @@ func (set *intSet) Delete(members ...string) int64 {
 		}
 	}
 
-	return int64(removed)
+	delta := -int64(removed) * Int64Size
+	return int64(removed), delta
 }
 
 func (set *intSet) MemoryUsage() int64 {

@@ -12,22 +12,22 @@ func TestSimpleSetAdd(t *testing.T) {
 	s := NewSimpleSet()
 
 	// Add single member
-	added, ok := s.Add("a")
+	added, ok, _ := s.Add("a")
 	assert.True(t, ok)
 	assert.Equal(t, int64(1), added)
 
 	// Add duplicate member
-	added, ok = s.Add("a")
+	added, ok, _ = s.Add("a")
 	assert.True(t, ok)
 	assert.Equal(t, int64(0), added)
 
 	// Add multiple members
-	added, ok = s.Add("b", "c", "d")
+	added, ok, _ = s.Add("b", "c", "d")
 	assert.True(t, ok)
 	assert.Equal(t, int64(3), added)
 
 	// Add mix of new and duplicate
-	added, ok = s.Add("d", "e", "f")
+	added, ok, _ = s.Add("d", "e", "f")
 	assert.True(t, ok)
 	assert.Equal(t, int64(2), added, "d is duplicate")
 }
@@ -35,7 +35,7 @@ func TestSimpleSetAdd(t *testing.T) {
 func TestSimpleSetAddEmpty(t *testing.T) {
 	s := NewSimpleSet()
 
-	added, ok := s.Add()
+	added, ok, _ := s.Add()
 	assert.True(t, ok)
 	assert.Equal(t, int64(0), added)
 }
@@ -121,20 +121,20 @@ func TestSimpleSetDelete(t *testing.T) {
 	s.Add("a", "b", "c", "d")
 
 	// Delete existing member
-	removed := s.Delete("a")
+	removed, _ := s.Delete("a")
 	assert.Equal(t, int64(1), removed)
 	assert.False(t, s.IsMember("a"))
 
 	// Delete non-existing member
-	removed = s.Delete("z")
+	removed, _ = s.Delete("z")
 	assert.Equal(t, int64(0), removed)
 
 	// Delete multiple members
-	removed = s.Delete("b", "c")
+	removed, _ = s.Delete("b", "c")
 	assert.Equal(t, int64(2), removed)
 
 	// Delete mix of existing and non-existing
-	removed = s.Delete("d", "x", "y")
+	removed, _ = s.Delete("d", "x", "y")
 	assert.Equal(t, int64(1), removed)
 }
 
@@ -142,14 +142,14 @@ func TestSimpleSetDeleteEmpty(t *testing.T) {
 	s := NewSimpleSet()
 	s.Add("a")
 
-	removed := s.Delete()
+	removed, _ := s.Delete()
 	assert.Equal(t, int64(0), removed)
 }
 
 func TestSimpleSetDeleteFromEmpty(t *testing.T) {
 	s := NewSimpleSet()
 
-	removed := s.Delete("a", "b")
+	removed, _ := s.Delete("a", "b")
 	assert.Equal(t, int64(0), removed)
 }
 
@@ -157,17 +157,17 @@ func TestIntSetAdd(t *testing.T) {
 	s := NewIntSet()
 
 	// Add single member
-	added, ok := s.Add("1")
+	added, ok, _ := s.Add("1")
 	assert.True(t, ok)
 	assert.Equal(t, int64(1), added)
 
 	// Add duplicate
-	added, ok = s.Add("1")
+	added, ok, _ = s.Add("1")
 	assert.True(t, ok)
 	assert.Equal(t, int64(0), added)
 
 	// Add multiple members
-	added, ok = s.Add("5", "3", "7")
+	added, ok, _ = s.Add("5", "3", "7")
 	assert.True(t, ok)
 	assert.Equal(t, int64(3), added)
 
@@ -179,7 +179,7 @@ func TestIntSetAdd(t *testing.T) {
 func TestIntSetAddNegativeNumbers(t *testing.T) {
 	s := NewIntSet()
 
-	added, ok := s.Add("-5", "-1", "0", "3")
+	added, ok, _ := s.Add("-5", "-1", "0", "3")
 	assert.True(t, ok)
 	assert.Equal(t, int64(4), added)
 
@@ -293,7 +293,7 @@ func TestIntSetDelete(t *testing.T) {
 	s.Add("1", "2", "3", "4", "5")
 
 	// Delete existing member
-	removed := s.Delete("3")
+	removed, _ := s.Delete("3")
 	assert.Equal(t, int64(1), removed)
 	assert.False(t, s.IsMember("3"))
 
@@ -306,7 +306,7 @@ func TestIntSetDeleteNonExisting(t *testing.T) {
 	s := NewIntSet()
 	s.Add("1", "2", "3")
 
-	removed := s.Delete("10")
+	removed, _ := s.Delete("10")
 	assert.Equal(t, int64(0), removed)
 	assert.Equal(t, int64(3), s.Size())
 }
@@ -315,7 +315,7 @@ func TestIntSetDeleteMultiple(t *testing.T) {
 	s := NewIntSet()
 	s.Add("1", "2", "3", "4", "5")
 
-	removed := s.Delete("2", "4")
+	removed, _ := s.Delete("2", "4")
 	assert.Equal(t, int64(2), removed)
 
 	members := s.Members()
@@ -327,7 +327,7 @@ func TestIntSetDeleteMixed(t *testing.T) {
 	s.Add("1", "2", "3")
 
 	// Mix of existing and non-existing
-	removed := s.Delete("1", "10", "2", "20")
+	removed, _ := s.Delete("1", "10", "2", "20")
 	assert.Equal(t, int64(2), removed)
 	assert.Equal(t, int64(1), s.Size())
 }
@@ -336,14 +336,14 @@ func TestIntSetDeleteEmpty(t *testing.T) {
 	s := NewIntSet()
 	s.Add("1")
 
-	removed := s.Delete()
+	removed, _ := s.Delete()
 	assert.Equal(t, int64(0), removed)
 }
 
 func TestIntSetDeleteFromEmpty(t *testing.T) {
 	s := NewIntSet()
 
-	removed := s.Delete("1", "2")
+	removed, _ := s.Delete("1", "2")
 	assert.Equal(t, int64(0), removed)
 }
 
@@ -351,7 +351,7 @@ func TestIntSetDeleteFirst(t *testing.T) {
 	s := NewIntSet()
 	s.Add("1", "2", "3")
 
-	removed := s.Delete("1")
+	removed, _ := s.Delete("1")
 	assert.Equal(t, int64(1), removed)
 
 	members := s.Members()
@@ -362,7 +362,7 @@ func TestIntSetDeleteLast(t *testing.T) {
 	s := NewIntSet()
 	s.Add("1", "2", "3")
 
-	removed := s.Delete("3")
+	removed, _ := s.Delete("3")
 	assert.Equal(t, int64(1), removed)
 
 	members := s.Members()
@@ -373,7 +373,7 @@ func TestIntSetAddInvalidString(t *testing.T) {
 	s := NewIntSet()
 
 	// Try to add invalid integer string
-	added, ok := s.Add("abc")
+	added, ok, _ := s.Add("abc")
 	assert.False(t, ok)
 	assert.Equal(t, int64(0), added)
 	assert.Equal(t, int64(0), s.Size())
@@ -383,7 +383,7 @@ func TestIntSetAddPartialFailure(t *testing.T) {
 	s := NewIntSet()
 
 	// Add mix of valid and invalid
-	_, ok := s.Add("1", "abc", "2")
+	_, ok, _ := s.Add("1", "abc", "2")
 	assert.False(t, ok)
 
 	// Should not add any members on partial failure
@@ -396,13 +396,13 @@ func TestIntSetAddCapacityExceeded(t *testing.T) {
 	// Fill to capacity
 	capacity := cap(s.contents)
 	for i := 0; i < capacity; i++ {
-		added, ok := s.Add(strconv.Itoa(i))
+		added, ok, _ := s.Add(strconv.Itoa(i))
 		require.True(t, ok, "Failed to add element %d", i)
 		require.Equal(t, int64(1), added, "Failed to add element %d", i)
 	}
 
 	// Try to add one more (should fail)
-	added, ok := s.Add(strconv.Itoa(capacity))
+	added, ok, _ := s.Add(strconv.Itoa(capacity))
 	assert.False(t, ok)
 	assert.Equal(t, int64(0), added)
 	assert.Equal(t, int64(capacity), s.Size())
@@ -421,7 +421,7 @@ func TestIntSetDeleteInvalidString(t *testing.T) {
 	s.Add("1", "2", "3")
 
 	// Try to delete invalid string (should be skipped)
-	removed := s.Delete("abc", "2", "xyz")
+	removed, _ := s.Delete("abc", "2", "xyz")
 	assert.Equal(t, int64(1), removed, "only '2' should be removed")
 
 	// Verify '2' was deleted but others remain
@@ -434,9 +434,9 @@ func TestSimpleSetAlwaysReturnsTrue(t *testing.T) {
 	s := NewSimpleSet()
 
 	// SimpleSet should always return true for ok
-	_, ok := s.Add("a", "b", "c")
+	_, ok, _ := s.Add("a", "b", "c")
 	assert.True(t, ok, "SimpleSet Add should always return true")
 
-	_, ok = s.Add()
+	_, ok, _ = s.Add()
 	assert.True(t, ok, "SimpleSet Add should always return true, even for empty")
 }
