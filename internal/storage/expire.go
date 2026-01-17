@@ -14,7 +14,7 @@ type ExpireOptions struct {
 }
 
 func (s *store) TTL(key string) int64 {
-	result := s.access(key, ObjAny)
+	result := s.access(key, ObjAny, false)
 	if result.expired || !result.exists {
 		return constant.KEY_NOT_EXISTS
 	}
@@ -28,7 +28,7 @@ func (s *store) TTL(key string) int64 {
 }
 
 func (s *store) Expire(key string, ttlSeconds int64, opt ExpireOptions) bool {
-	result := s.access(key, ObjAny)
+	result := s.access(key, ObjAny, true)
 	if result.expired || !result.exists {
 		return false
 	}

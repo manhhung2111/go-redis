@@ -3,9 +3,9 @@ package storage
 import "github.com/manhhung2111/go-redis/internal/storage/data_structure"
 
 func (s *store) GeoAdd(key string, items []data_structure.GeoPoint, options data_structure.ZAddOptions) (*uint32, error) {
-	result := s.access(key, ObjZSet)
-	if result.typeErr != nil {
-		return nil, result.typeErr
+	result := s.access(key, ObjZSet, true)
+	if result.err != nil {
+		return nil, result.err
 	}
 
 	if !result.exists {
@@ -28,7 +28,7 @@ func (s *store) GeoAdd(key string, items []data_structure.GeoPoint, options data
 }
 
 func (s *store) GeoDist(key, member1, member2, unit string) (*float64, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, false)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func (s *store) GeoDist(key, member1, member2, unit string) (*float64, error) {
 }
 
 func (s *store) GeoHash(key string, members []string) ([]*string, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, false)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (s *store) GeoHash(key string, members []string) ([]*string, error) {
 }
 
 func (s *store) GeoPos(key string, members []string) ([]*data_structure.GeoPoint, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, false)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (s *store) GeoPos(key string, members []string) ([]*data_structure.GeoPoint
 }
 
 func (s *store) GeoSearch(key string, options data_structure.GeoSearchOptions) ([]data_structure.GeoResult, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, false)
 	if err != nil {
 		return nil, err
 	}

@@ -30,7 +30,7 @@ func (s *store) CFAddNx(key string, item string) (int, error) {
 }
 
 func (s *store) CFCount(key string, item string) (int, error) {
-	scf, err := s.getCuckooFilter(key)
+	scf, err := s.getCuckooFilter(key, false)
 	if err != nil {
 		return 0, err
 	}
@@ -43,7 +43,7 @@ func (s *store) CFCount(key string, item string) (int, error) {
 }
 
 func (s *store) CFDel(key string, item string) (int, error) {
-	scf, err := s.getCuckooFilter(key)
+	scf, err := s.getCuckooFilter(key, true)
 	if err != nil {
 		return 0, err
 	}
@@ -58,7 +58,7 @@ func (s *store) CFDel(key string, item string) (int, error) {
 }
 
 func (s *store) CFExists(key string, item string) (int, error) {
-	scf, err := s.getCuckooFilter(key)
+	scf, err := s.getCuckooFilter(key, false)
 	if err != nil {
 		return 0, err
 	}
@@ -71,7 +71,7 @@ func (s *store) CFExists(key string, item string) (int, error) {
 }
 
 func (s *store) CFInfo(key string) ([]any, error) {
-	scf, err := s.getCuckooFilter(key)
+	scf, err := s.getCuckooFilter(key, false)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (s *store) CFInfo(key string) ([]any, error) {
 }
 
 func (s *store) CFMExists(key string, items []string) ([]int, error) {
-	scf, err := s.getCuckooFilter(key)
+	scf, err := s.getCuckooFilter(key, false)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (s *store) CFMExists(key string, items []string) ([]int, error) {
 }
 
 func (s *store) CFReserve(key string, capacity uint64, bucketSize uint64, maxIterations uint64, expansionRate int) error {
-	result := s.access(key, ObjAny)
+	result := s.access(key, ObjAny, true)
 
 	// Check if key exists (any type) - CF.RESERVE should fail if key already exists
 	if result.exists {
@@ -116,10 +116,10 @@ func (s *store) CFReserve(key string, capacity uint64, bucketSize uint64, maxIte
 	return nil
 }
 
-func (s *store) getCuckooFilter(key string) (data_structure.CuckooFilter, error) {
-	result := s.access(key, ObjCuckooFilter)
-	if result.typeErr != nil {
-		return nil, result.typeErr
+func (s *store) getCuckooFilter(key string, isWrite bool) (data_structure.CuckooFilter, error) {
+	result := s.access(key, ObjCuckooFilter, isWrite)
+	if result.err != nil {
+		return nil, result.err
 	}
 
 	if result.expired || !result.exists {
@@ -131,9 +131,9 @@ func (s *store) getCuckooFilter(key string) (data_structure.CuckooFilter, error)
 }
 
 func (s *store) getOrCreateCuckooFilter(key string) (data_structure.CuckooFilter, error) {
-	result := s.access(key, ObjCuckooFilter)
-	if result.typeErr != nil {
-		return nil, result.typeErr
+	result := s.access(key, ObjCuckooFilter, true)
+	if result.err != nil {
+		return nil, result.err
 	}
 
 	if result.exists {

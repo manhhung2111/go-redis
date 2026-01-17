@@ -418,7 +418,7 @@ func TestPFMerge_ExpiredSourceKey(t *testing.T) {
 func TestGetHyperLogLog_NonExisting(t *testing.T) {
 	s := NewStore().(*store)
 
-	hll, err := s.getHyperLogLog("nonexistent")
+	hll, err := s.getHyperLogLog("nonexistent", false)
 	require.NoError(t, err)
 	assert.Nil(t, hll)
 }
@@ -428,7 +428,7 @@ func TestGetHyperLogLog_Existing(t *testing.T) {
 
 	s.PFAdd("hll", []string{"item1"})
 
-	hll, err := s.getHyperLogLog("hll")
+	hll, err := s.getHyperLogLog("hll", false)
 	require.NoError(t, err)
 	require.NotNil(t, hll)
 }
@@ -438,7 +438,7 @@ func TestGetHyperLogLog_WrongType(t *testing.T) {
 
 	s.Set("mykey", "value")
 
-	hll, err := s.getHyperLogLog("mykey")
+	hll, err := s.getHyperLogLog("mykey", false)
 	assert.Error(t, err)
 	assert.Nil(t, hll)
 	assert.Contains(t, err.Error(), "WRONGTYPE")
@@ -450,7 +450,7 @@ func TestGetHyperLogLog_ExpiredKey(t *testing.T) {
 	s.PFAdd("hll", []string{"item1"})
 	s.expires.Set("hll", 1) // expired
 
-	hll, err := s.getHyperLogLog("hll")
+	hll, err := s.getHyperLogLog("hll", false)
 	require.NoError(t, err)
 	assert.Nil(t, hll, "expired key should return nil")
 }

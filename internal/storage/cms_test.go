@@ -463,7 +463,7 @@ func TestGetCountMinSketch_ValidKey(t *testing.T) {
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
 
-	cms, err := s.getCountMinSketch("cms")
+	cms, err := s.getCountMinSketch("cms", false)
 	assert.NoError(t, err)
 	assert.NotNil(t, cms)
 }
@@ -471,7 +471,7 @@ func TestGetCountMinSketch_ValidKey(t *testing.T) {
 func TestGetCountMinSketch_NonExistingKey(t *testing.T) {
 	s := NewStore().(*store)
 
-	cms, err := s.getCountMinSketch("nonexistent")
+	cms, err := s.getCountMinSketch("nonexistent", false)
 	assert.Error(t, err)
 	assert.Nil(t, cms)
 }
@@ -481,7 +481,7 @@ func TestGetCountMinSketch_WrongType(t *testing.T) {
 
 	s.Set("mykey", "value")
 
-	_, err := s.getCountMinSketch("mykey")
+	_, err := s.getCountMinSketch("mykey", false)
 	assert.Error(t, err)
 }
 
@@ -492,7 +492,7 @@ func TestGetCountMinSketch_ExpiredKey(t *testing.T) {
 	require.NoError(t, err)
 	s.expires.Set("cms", 1) // expired
 
-	cms, err := s.getCountMinSketch("cms")
+	cms, err := s.getCountMinSketch("cms", false)
 	assert.Error(t, err)
 	assert.Nil(t, cms)
 }

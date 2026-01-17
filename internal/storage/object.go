@@ -160,12 +160,12 @@ func NewStore() Store {
 	return &store{
 		data:         data,
 		expires:      expires,
-		evictionPool: make([]*evictionPoolEntry, config.EVICTION_POOL_SIZE),
+		evictionPool: make([]*evictionPoolEntry, 0, config.EVICTION_POOL_SIZE),
 		usedMemory:   delta1 + delta2,
 	}
 }
 
 func (s *store) Exists(key string) bool {
-	result := s.access(key, ObjAny)
+	result := s.access(key, ObjAny, false)
 	return result.object != nil
 }

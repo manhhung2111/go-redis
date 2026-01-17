@@ -82,7 +82,7 @@ func (s *store) BFMExists(key string, items []string) ([]int, error) {
 }
 
 func (s *store) BFReserve(key string, errorRate float64, capacity uint32, expansion uint32) error {
-	result := s.access(key, ObjAny)
+	result := s.access(key, ObjAny, true)
 
 	// Check if key exists (any type) - BF.RESERVE should fail if key already exists
 	if result.exists {
@@ -102,9 +102,9 @@ func (s *store) BFReserve(key string, errorRate float64, capacity uint32, expans
 }
 
 func (s *store) getBloomFilter(key string) (data_structure.ScalableBloomFilter, error) {
-	result := s.access(key, ObjBloomFilter)
-	if result.typeErr != nil {
-		return nil, result.typeErr
+	result := s.access(key, ObjBloomFilter, false)
+	if result.err != nil {
+		return nil, result.err
 	}
 
 	if result.expired || !result.exists {
@@ -117,9 +117,9 @@ func (s *store) getBloomFilter(key string) (data_structure.ScalableBloomFilter, 
 
 // getOrCreateBloomFilter returns the bloom filter for the key, creating one with default settings if it doesn't exist.
 func (s *store) getOrCreateBloomFilter(key string) (data_structure.ScalableBloomFilter, error) {
-	result := s.access(key, ObjBloomFilter)
-	if result.typeErr != nil {
-		return nil, result.typeErr
+	result := s.access(key, ObjBloomFilter, true)
+	if result.err != nil {
+		return nil, result.err
 	}
 
 	if result.exists {

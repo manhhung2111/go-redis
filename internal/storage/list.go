@@ -5,9 +5,9 @@ import (
 )
 
 func (s *store) LPush(key string, elements ...string) (uint32, error) {
-	result := s.access(key, ObjList)
-	if result.typeErr != nil {
-		return 0, result.typeErr
+	result := s.access(key, ObjList, true)
+	if result.err != nil {
+		return 0, result.err
 	}
 
 	if result.exists {
@@ -31,9 +31,9 @@ func (s *store) LPush(key string, elements ...string) (uint32, error) {
 }
 
 func (s *store) LPop(key string, count uint32) ([]string, error) {
-	result := s.access(key, ObjList)
-	if result.typeErr != nil {
-		return nil, result.typeErr
+	result := s.access(key, ObjList, true)
+	if result.err != nil {
+		return nil, result.err
 	}
 
 	if result.expired || !result.exists {
@@ -51,9 +51,9 @@ func (s *store) LPop(key string, count uint32) ([]string, error) {
 }
 
 func (s *store) RPush(key string, elements ...string) (uint32, error) {
-	result := s.access(key, ObjList)
-	if result.typeErr != nil {
-		return 0, result.typeErr
+	result := s.access(key, ObjList, true)
+	if result.err != nil {
+		return 0, result.err
 	}
 
 	if result.exists {
@@ -77,9 +77,9 @@ func (s *store) RPush(key string, elements ...string) (uint32, error) {
 }
 
 func (s *store) RPop(key string, count uint32) ([]string, error) {
-	result := s.access(key, ObjList)
-	if result.typeErr != nil {
-		return nil, result.typeErr
+	result := s.access(key, ObjList, true)
+	if result.err != nil {
+		return nil, result.err
 	}
 
 	if result.expired || !result.exists {
@@ -97,9 +97,9 @@ func (s *store) RPop(key string, count uint32) ([]string, error) {
 }
 
 func (s *store) LRange(key string, start int32, end int32) ([]string, error) {
-	result := s.access(key, ObjList)
-	if result.typeErr != nil {
-		return nil, result.typeErr
+	result := s.access(key, ObjList, false)
+	if result.err != nil {
+		return nil, result.err
 	}
 
 	if result.expired || !result.exists {
@@ -111,9 +111,9 @@ func (s *store) LRange(key string, start int32, end int32) ([]string, error) {
 }
 
 func (s *store) LIndex(key string, index int32) (*string, error) {
-	result := s.access(key, ObjList)
-	if result.typeErr != nil {
-		return nil, result.typeErr
+	result := s.access(key, ObjList, false)
+	if result.err != nil {
+		return nil, result.err
 	}
 
 	if result.expired || !result.exists {
@@ -130,9 +130,9 @@ func (s *store) LIndex(key string, index int32) (*string, error) {
 }
 
 func (s *store) LLen(key string) (uint32, error) {
-	result := s.access(key, ObjList)
-	if result.typeErr != nil {
-		return 0, result.typeErr
+	result := s.access(key, ObjList, false)
+	if result.err != nil {
+		return 0, result.err
 	}
 
 	if result.expired || !result.exists {
@@ -144,9 +144,9 @@ func (s *store) LLen(key string) (uint32, error) {
 }
 
 func (s *store) LRem(key string, count int32, element string) (uint32, error) {
-	result := s.access(key, ObjList)
-	if result.typeErr != nil {
-		return 0, result.typeErr
+	result := s.access(key, ObjList, true)
+	if result.err != nil {
+		return 0, result.err
 	}
 
 	if result.expired || !result.exists {
@@ -164,9 +164,9 @@ func (s *store) LRem(key string, count int32, element string) (uint32, error) {
 }
 
 func (s *store) LSet(key string, index int32, element string) error {
-	result := s.access(key, ObjList)
-	if result.typeErr != nil {
-		return result.typeErr
+	result := s.access(key, ObjList, true)
+	if result.err != nil {
+		return result.err
 	}
 
 	if result.expired || !result.exists {
@@ -180,9 +180,9 @@ func (s *store) LSet(key string, index int32, element string) error {
 }
 
 func (s *store) LTrim(key string, start, end int32) error {
-	result := s.access(key, ObjList)
-	if result.typeErr != nil {
-		return result.typeErr
+	result := s.access(key, ObjList, true)
+	if result.err != nil {
+		return result.err
 	}
 
 	if result.expired || !result.exists {

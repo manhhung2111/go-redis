@@ -5,9 +5,9 @@ import (
 )
 
 func (s *store) ZAdd(key string, scoreMember map[string]float64, options data_structure.ZAddOptions) (*uint32, error) {
-	result := s.access(key, ObjZSet)
-	if result.typeErr != nil {
-		return nil, result.typeErr
+	result := s.access(key, ObjZSet, true)
+	if result.err != nil {
+		return nil, result.err
 	}
 
 	if !result.exists {
@@ -29,7 +29,7 @@ func (s *store) ZAdd(key string, scoreMember map[string]float64, options data_st
 }
 
 func (s *store) ZCard(key string) (uint32, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, false)
 	if err != nil {
 		return 0, err
 	}
@@ -42,7 +42,7 @@ func (s *store) ZCard(key string) (uint32, error) {
 }
 
 func (s *store) ZCount(key string, minScore float64, maxScore float64) (uint32, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, false)
 	if err != nil {
 		return 0, err
 	}
@@ -55,9 +55,9 @@ func (s *store) ZCount(key string, minScore float64, maxScore float64) (uint32, 
 }
 
 func (s *store) ZIncrBy(key string, member string, increment float64) (float64, error) {
-	result := s.access(key, ObjZSet)
-	if result.typeErr != nil {
-		return 0, result.typeErr
+	result := s.access(key, ObjZSet, true)
+	if result.err != nil {
+		return 0, result.err
 	}
 
 	if !result.exists {
@@ -90,7 +90,7 @@ func (s *store) ZIncrBy(key string, member string, increment float64) (float64, 
 }
 
 func (s *store) ZLexCount(key string, minValue string, maxValue string) (uint32, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, false)
 	if err != nil {
 		return 0, err
 	}
@@ -103,7 +103,7 @@ func (s *store) ZLexCount(key string, minValue string, maxValue string) (uint32,
 }
 
 func (s *store) ZMScore(key string, members []string) ([]*float64, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, false)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func (s *store) ZMScore(key string, members []string) ([]*float64, error) {
 }
 
 func (s *store) ZPopMax(key string, count int) ([]string, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, true)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func (s *store) ZPopMax(key string, count int) ([]string, error) {
 }
 
 func (s *store) ZPopMin(key string, count int) ([]string, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, true)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (s *store) ZPopMin(key string, count int) ([]string, error) {
 }
 
 func (s *store) ZRandMember(key string, count int, withScores bool) ([]string, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, false)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +159,7 @@ func (s *store) ZRandMember(key string, count int, withScores bool) ([]string, e
 }
 
 func (s *store) ZRangeByLex(key string, start string, stop string) ([]string, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, false)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +172,7 @@ func (s *store) ZRangeByLex(key string, start string, stop string) ([]string, er
 }
 
 func (s *store) ZRangeByRank(key string, start int, stop int, withScores bool) ([]string, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, false)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func (s *store) ZRangeByRank(key string, start int, stop int, withScores bool) (
 }
 
 func (s *store) ZRangeByScore(key string, start float64, stop float64, withScores bool) ([]string, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, false)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +198,7 @@ func (s *store) ZRangeByScore(key string, start float64, stop float64, withScore
 }
 
 func (s *store) ZRank(key string, member string, withScore bool) ([]any, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, false)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +211,7 @@ func (s *store) ZRank(key string, member string, withScore bool) ([]any, error) 
 }
 
 func (s *store) ZRem(key string, members []string) (uint32, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, true)
 	if err != nil {
 		return 0, err
 	}
@@ -226,7 +226,7 @@ func (s *store) ZRem(key string, members []string) (uint32, error) {
 }
 
 func (s *store) ZRevRangeByLex(key string, start string, stop string) ([]string, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, false)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +239,7 @@ func (s *store) ZRevRangeByLex(key string, start string, stop string) ([]string,
 }
 
 func (s *store) ZRevRangeByRank(key string, start int, stop int, withScores bool) ([]string, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, false)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +252,7 @@ func (s *store) ZRevRangeByRank(key string, start int, stop int, withScores bool
 }
 
 func (s *store) ZRevRangeByScore(key string, start float64, stop float64, withScores bool) ([]string, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, false)
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +265,7 @@ func (s *store) ZRevRangeByScore(key string, start float64, stop float64, withSc
 }
 
 func (s *store) ZRevRank(key string, member string, withScore bool) ([]any, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, false)
 	if err != nil {
 		return nil, err
 	}
@@ -278,7 +278,7 @@ func (s *store) ZRevRank(key string, member string, withScore bool) ([]any, erro
 }
 
 func (s *store) ZScore(key string, member string) (*float64, error) {
-	zset, err := s.getZSet(key)
+	zset, err := s.getZSet(key, false)
 	if err != nil {
 		return nil, err
 	}
@@ -291,10 +291,10 @@ func (s *store) ZScore(key string, member string) (*float64, error) {
 }
 
 // getZSet is a helper that uses centralized access for expiration and type checking
-func (s *store) getZSet(key string) (data_structure.ZSet, error) {
-	result := s.access(key, ObjZSet)
-	if result.typeErr != nil {
-		return nil, result.typeErr
+func (s *store) getZSet(key string, isWrite bool) (data_structure.ZSet, error) {
+	result := s.access(key, ObjZSet, isWrite)
+	if result.err != nil {
+		return nil, result.err
 	}
 
 	if result.expired || !result.exists {

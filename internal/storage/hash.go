@@ -3,9 +3,9 @@ package storage
 import "github.com/manhhung2111/go-redis/internal/storage/data_structure"
 
 func (s *store) HGet(key string, field string) (*string, error) {
-	result := s.access(key, ObjHash)
-	if result.typeErr != nil {
-		return nil, result.typeErr
+	result := s.access(key, ObjHash, false)
+	if result.err != nil {
+		return nil, result.err
 	}
 
 	if result.expired || !result.exists {
@@ -22,9 +22,9 @@ func (s *store) HGet(key string, field string) (*string, error) {
 }
 
 func (s *store) HGetAll(key string) ([]string, error) {
-	result := s.access(key, ObjHash)
-	if result.typeErr != nil {
-		return nil, result.typeErr
+	result := s.access(key, ObjHash, false)
+	if result.err != nil {
+		return nil, result.err
 	}
 
 	if result.expired || !result.exists {
@@ -38,9 +38,9 @@ func (s *store) HGetAll(key string) ([]string, error) {
 func (s *store) HMGet(key string, fields []string) ([]*string, error) {
 	nilResult := make([]*string, len(fields))
 
-	result := s.access(key, ObjHash)
-	if result.typeErr != nil {
-		return nil, result.typeErr
+	result := s.access(key, ObjHash, false)
+	if result.err != nil {
+		return nil, result.err
 	}
 
 	if result.expired || !result.exists {
@@ -52,9 +52,9 @@ func (s *store) HMGet(key string, fields []string) ([]*string, error) {
 }
 
 func (s *store) HIncrBy(key string, field string, increment int64) (int64, error) {
-	result := s.access(key, ObjHash)
-	if result.typeErr != nil {
-		return 0, result.typeErr
+	result := s.access(key, ObjHash, true)
+	if result.err != nil {
+		return 0, result.err
 	}
 
 	if !result.exists {
@@ -81,9 +81,9 @@ func (s *store) HIncrBy(key string, field string, increment int64) (int64, error
 }
 
 func (s *store) HKeys(key string) ([]string, error) {
-	result := s.access(key, ObjHash)
-	if result.typeErr != nil {
-		return nil, result.typeErr
+	result := s.access(key, ObjHash, false)
+	if result.err != nil {
+		return nil, result.err
 	}
 
 	if result.expired || !result.exists {
@@ -95,9 +95,9 @@ func (s *store) HKeys(key string) ([]string, error) {
 }
 
 func (s *store) HVals(key string) ([]string, error) {
-	result := s.access(key, ObjHash)
-	if result.typeErr != nil {
-		return nil, result.typeErr
+	result := s.access(key, ObjHash, false)
+	if result.err != nil {
+		return nil, result.err
 	}
 
 	if result.expired || !result.exists {
@@ -109,9 +109,9 @@ func (s *store) HVals(key string) ([]string, error) {
 }
 
 func (s *store) HLen(key string) (uint32, error) {
-	result := s.access(key, ObjHash)
-	if result.typeErr != nil {
-		return 0, result.typeErr
+	result := s.access(key, ObjHash, false)
+	if result.err != nil {
+		return 0, result.err
 	}
 
 	if result.expired || !result.exists {
@@ -123,9 +123,9 @@ func (s *store) HLen(key string) (uint32, error) {
 }
 
 func (s *store) HSet(key string, fieldValue map[string]string) (int64, error) {
-	result := s.access(key, ObjHash)
-	if result.typeErr != nil {
-		return 0, result.typeErr
+	result := s.access(key, ObjHash, true)
+	if result.err != nil {
+		return 0, result.err
 	}
 
 	if !result.exists {
@@ -148,9 +148,9 @@ func (s *store) HSet(key string, fieldValue map[string]string) (int64, error) {
 }
 
 func (s *store) HSetNx(key string, field string, value string) (int64, error) {
-	result := s.access(key, ObjHash)
-	if result.typeErr != nil {
-		return 0, result.typeErr
+	result := s.access(key, ObjHash, true)
+	if result.err != nil {
+		return 0, result.err
 	}
 
 	if !result.exists {
@@ -176,9 +176,9 @@ func (s *store) HSetNx(key string, field string, value string) (int64, error) {
 }
 
 func (s *store) HDel(key string, fields []string) (int64, error) {
-	result := s.access(key, ObjHash)
-	if result.typeErr != nil {
-		return 0, result.typeErr
+	result := s.access(key, ObjHash, true)
+	if result.err != nil {
+		return 0, result.err
 	}
 
 	if result.expired || !result.exists {
@@ -195,9 +195,9 @@ func (s *store) HDel(key string, fields []string) (int64, error) {
 }
 
 func (s *store) HExists(key, field string) (int64, error) {
-	result := s.access(key, ObjHash)
-	if result.typeErr != nil {
-		return 0, result.typeErr
+	result := s.access(key, ObjHash, false)
+	if result.err != nil {
+		return 0, result.err
 	}
 
 	if result.expired || !result.exists {

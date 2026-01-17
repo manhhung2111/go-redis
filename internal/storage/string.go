@@ -38,9 +38,9 @@ func (s *store) SetEx(key string, value string, ttlSeconds uint64) {
 }
 
 func (s *store) Get(key string) (*string, error) {
-	result := s.access(key, ObjString)
-	if result.typeErr != nil {
-		return nil, result.typeErr
+	result := s.access(key, ObjString, false)
+	if result.err != nil {
+		return nil, result.err
 	}
 
 	if result.expired || !result.exists {
@@ -63,9 +63,9 @@ func (s *store) Del(key string) bool {
 }
 
 func (s *store) IncrBy(key string, increment int64) (*int64, error) {
-	result := s.access(key, ObjString)
-	if result.typeErr != nil {
-		return nil, result.typeErr
+	result := s.access(key, ObjString, true)
+	if result.err != nil {
+		return nil, result.err
 	}
 
 	if result.expired || !result.exists {

@@ -5,7 +5,7 @@ import (
 )
 
 func (s *store) CMSIncrBy(key string, itemIncrement map[string]uint64) ([]uint64, error) {
-	cms, err := s.getCountMinSketch(key)
+	cms, err := s.getCountMinSketch(key, true)
 	if err != nil {
 		return nil, err
 	}
@@ -14,7 +14,7 @@ func (s *store) CMSIncrBy(key string, itemIncrement map[string]uint64) ([]uint64
 }
 
 func (s *store) CMSInfo(key string) ([]any, error) {
-	cms, err := s.getCountMinSketch(key)
+	cms, err := s.getCountMinSketch(key, false)
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +23,7 @@ func (s *store) CMSInfo(key string) ([]any, error) {
 }
 
 func (s *store) CMSInitByDim(key string, width uint64, depth uint64) error {
-	result := s.access(key, ObjAny)
+	result := s.access(key, ObjAny, true)
 
 	if result.exists {
 		return ErrCmSKeyAlreadyExistsError
@@ -41,7 +41,7 @@ func (s *store) CMSInitByDim(key string, width uint64, depth uint64) error {
 }
 
 func (s *store) CMSInitByProb(key string, errorRate float64, probability float64) error {
-	result := s.access(key, ObjAny)
+	result := s.access(key, ObjAny, true)
 
 	if result.exists {
 		return ErrCmSKeyAlreadyExistsError
@@ -59,7 +59,7 @@ func (s *store) CMSInitByProb(key string, errorRate float64, probability float64
 }
 
 func (s *store) CMSQuery(key string, items []string) ([]uint64, error) {
-	cms, err := s.getCountMinSketch(key)
+	cms, err := s.getCountMinSketch(key, false)
 	if err != nil {
 		return nil, err
 	}
@@ -67,10 +67,10 @@ func (s *store) CMSQuery(key string, items []string) ([]uint64, error) {
 	return cms.Query(items), nil
 }
 
-func (s *store) getCountMinSketch(key string) (data_structure.CountMinSketch, error) {
-	result := s.access(key, ObjCountMinSketch)
-	if result.typeErr != nil {
-		return nil, result.typeErr
+func (s *store) getCountMinSketch(key string, isWrite bool) (data_structure.CountMinSketch, error) {
+	result := s.access(key, ObjCountMinSketch, isWrite)
+	if result.err != nil {
+		return nil, result.err
 	}
 
 	if result.expired || !result.exists {

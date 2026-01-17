@@ -5,9 +5,9 @@ import (
 )
 
 func (s *store) PFAdd(key string, items []string) (int, error) {
-	result := s.access(key, ObjHyperLogLog)
-	if result.typeErr != nil {
-		return 0, result.typeErr
+	result := s.access(key, ObjHyperLogLog, true)
+	if result.err != nil {
+		return 0, result.err
 	}
 
 	if result.exists {
@@ -42,7 +42,7 @@ func (s *store) PFCount(keys []string) (int, error) {
 	hlls := make([]data_structure.HyperLogLog, 0, len(keys))
 
 	for i := range keys {
-		hll, err := s.getHyperLogLog(keys[i])
+		hll, err := s.getHyperLogLog(keys[i], false)
 		if err != nil {
 			return 0, err
 		}
@@ -59,7 +59,7 @@ func (s *store) PFCount(keys []string) (int, error) {
 }
 
 func (s *store) PFMerge(destKey string, sourceKeys []string) error {
-	destHll, err := s.getHyperLogLog(destKey)
+	destHll, err := s.getHyperLogLog(destKey, true)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func (s *store) PFMerge(destKey string, sourceKeys []string) error {
 
 	sourceHlls := make([]data_structure.HyperLogLog, 0, len(sourceKeys))
 	for i := range sourceKeys {
-		sourceHll, err := s.getHyperLogLog(sourceKeys[i])
+		sourceHll, err := s.getHyperLogLog(sourceKeys[i], false)
 		if err != nil {
 			return err
 		}
@@ -97,10 +97,10 @@ func (s *store) PFMerge(destKey string, sourceKeys []string) error {
 	return nil
 }
 
-func (s *store) getHyperLogLog(key string) (data_structure.HyperLogLog, error) {
-	result := s.access(key, ObjHyperLogLog)
-	if result.typeErr != nil {
-		return nil, result.typeErr
+func (s *store) getHyperLogLog(key string, isWrite bool) (data_structure.HyperLogLog, error) {
+	result := s.access(key, ObjHyperLogLog, isWrite)
+	if result.err != nil {
+		return nil, result.err
 	}
 
 	if result.expired || !result.exists {

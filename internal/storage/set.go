@@ -10,9 +10,9 @@ import (
 )
 
 func (s *store) SAdd(key string, members ...string) (int64, error) {
-	result := s.access(key, ObjSet)
-	if result.typeErr != nil {
-		return 0, result.typeErr
+	result := s.access(key, ObjSet, true)
+	if result.err != nil {
+		return 0, result.err
 	}
 
 	if result.exists {
@@ -77,13 +77,13 @@ func (s *store) SAdd(key string, members ...string) (int64, error) {
 }
 
 func (s *store) SCard(key string) (int64, error) {
-	result := s.access(key, ObjSet)
+	result := s.access(key, ObjSet, false)
 	if result.expired || !result.exists {
 		return 0, nil
 	}
 
-	if result.typeErr != nil {
-		return 0, result.typeErr
+	if result.err != nil {
+		return 0, result.err
 	}
 
 	set := result.object.value.(data_structure.Set)
@@ -91,13 +91,13 @@ func (s *store) SCard(key string) (int64, error) {
 }
 
 func (s *store) SIsMember(key string, member string) (bool, error) {
-	result := s.access(key, ObjSet)
+	result := s.access(key, ObjSet, false)
 	if result.expired || !result.exists {
 		return false, nil
 	}
 
-	if result.typeErr != nil {
-		return false, result.typeErr
+	if result.err != nil {
+		return false, result.err
 	}
 
 	set := result.object.value.(data_structure.Set)
@@ -105,13 +105,13 @@ func (s *store) SIsMember(key string, member string) (bool, error) {
 }
 
 func (s *store) SMembers(key string) ([]string, error) {
-	result := s.access(key, ObjSet)
+	result := s.access(key, ObjSet, false)
 	if result.expired || !result.exists {
 		return []string{}, nil
 	}
 
-	if result.typeErr != nil {
-		return []string{}, result.typeErr
+	if result.err != nil {
+		return []string{}, result.err
 	}
 
 	set := result.object.value.(data_structure.Set)
@@ -121,13 +121,13 @@ func (s *store) SMembers(key string) ([]string, error) {
 func (s *store) SMIsMember(key string, members ...string) ([]bool, error) {
 	defaultResult := make([]bool, len(members))
 
-	accessResult := s.access(key, ObjSet)
+	accessResult := s.access(key, ObjSet, false)
 	if accessResult.expired || !accessResult.exists {
 		return defaultResult, nil
 	}
 
-	if accessResult.typeErr != nil {
-		return nil, accessResult.typeErr
+	if accessResult.err != nil {
+		return nil, accessResult.err
 	}
 
 	set := accessResult.object.value.(data_structure.Set)
@@ -135,13 +135,13 @@ func (s *store) SMIsMember(key string, members ...string) ([]bool, error) {
 }
 
 func (s *store) SRem(key string, members ...string) (int64, error) {
-	result := s.access(key, ObjSet)
+	result := s.access(key, ObjSet, true)
 	if result.expired || !result.exists {
 		return 0, nil
 	}
 
-	if result.typeErr != nil {
-		return 0, result.typeErr
+	if result.err != nil {
+		return 0, result.err
 	}
 
 	set := result.object.value.(data_structure.Set)
@@ -151,13 +151,13 @@ func (s *store) SRem(key string, members ...string) (int64, error) {
 }
 
 func (s *store) SPop(key string, count int) ([]string, error) {
-	result := s.access(key, ObjSet)
+	result := s.access(key, ObjSet, true)
 	if result.expired || !result.exists {
 		return []string{}, nil
 	}
 
-	if result.typeErr != nil {
-		return []string{}, result.typeErr
+	if result.err != nil {
+		return []string{}, result.err
 	}
 
 	set := result.object.value.(data_structure.Set)
@@ -191,13 +191,13 @@ func (s *store) SPop(key string, count int) ([]string, error) {
 }
 
 func (s *store) SRandMember(key string, count int) ([]string, error) {
-	result := s.access(key, ObjSet)
+	result := s.access(key, ObjSet, false)
 	if result.expired || !result.exists {
 		return []string{}, nil
 	}
 
-	if result.typeErr != nil {
-		return []string{}, result.typeErr
+	if result.err != nil {
+		return []string{}, result.err
 	}
 
 	if count == 0 {
