@@ -97,6 +97,21 @@ func (s *store) performEvictions() {
 // selectKeyToEvict selects the best key to evict from the eviction pool.
 // Returns nil if no suitable key is found.
 func (s *store) selectKeyToEvict() *string {
+	switch config.EVICTION_POLICY {
+	case config.AllKeysRandom:
+		if s.data.Empty() {
+			return nil
+		}
+		key := s.data.GetRandomKey()
+		return &key
+	case config.VolatileRandom:
+		if s.expires.Empty() {
+			return nil
+		}
+		key := s.expires.GetRandomKey()
+		return &key
+	}
+
 	// Keep trying until we find a valid key or exhaust options
 	for {
 		// If pool is empty or low, populate it
