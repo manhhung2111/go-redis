@@ -29,11 +29,11 @@ const (
 // a target false positive rate by adding new sub-filters as capacity is reached.
 // https://gsd.di.uminho.pt/members/cbm/ps/dbloom.pdf
 type ScalableBloomFilter interface {
-	Add(item string) int
+	Add(item string) (int, int64)
 	Card() int
 	Exists(item string) int
 	Info(option int) []any
-	MAdd(items []string) []int
+	MAdd(items []string) ([]int, int64)
 	MExists(items []string) []int
 	MemoryUsage() int64
 }
@@ -118,19 +118,22 @@ func (sbf *scalableBloomFilter) addNewFilter() {
 	sbf.filters = append(sbf.filters, filter)
 }
 
-func (sbf *scalableBloomFilter) Add(item string) int {
+func (sbf *scalableBloomFilter) Add(item string) (int, int64) {
 	// First check if item already exists in any filter
 	if sbf.Exists(item) == 1 {
-		return 0
+		return 0, 0
 	}
 
 	// Get the current (last) filter
 	currentFilter := sbf.filters[len(sbf.filters)-1]
 
+	delta := int64(0)
 	// Check if current filter is at capacity
 	if currentFilter.insertedItems >= currentFilter.capacity {
 		sbf.addNewFilter()
 		currentFilter = sbf.filters[len(sbf.filters)-1]
+		// New filter was added, add its memory to delta
+		delta += BloomFilterBitsSize(currentFilter.numBits)
 	}
 
 	// Add to the current filter
@@ -142,7 +145,7 @@ func (sbf *scalableBloomFilter) Add(item string) int {
 	currentFilter.insertedItems++
 	sbf.totalItems++
 
-	return 1
+	return 1, delta
 }
 
 func (sbf *scalableBloomFilter) Card() int {
@@ -188,12 +191,15 @@ func (sbf *scalableBloomFilter) Info(option int) []any {
 	}
 }
 
-func (sbf *scalableBloomFilter) MAdd(items []string) []int {
+func (sbf *scalableBloomFilter) MAdd(items []string) ([]int, int64) {
 	result := make([]int, len(items))
+	totalDelta := int64(0)
 	for i, item := range items {
-		result[i] = sbf.Add(item)
+		added, delta := sbf.Add(item)
+		result[i] = added
+		totalDelta += delta
 	}
-	return result
+	return result, totalDelta
 }
 
 func (sbf *scalableBloomFilter) MExists(items []string) []int {

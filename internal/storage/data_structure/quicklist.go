@@ -9,15 +9,15 @@ import (
 type QuickList interface {
 	Size() uint32
 
-	LPush(elements []string) uint32
-	LPop(count uint32) []string
-	RPush(elements []string) uint32
-	RPop(count uint32) []string
+	LPush(elements []string) (uint32, int64)
+	LPop(count uint32) ([]string, int64)
+	RPush(elements []string) (uint32, int64)
+	RPop(count uint32) ([]string, int64)
 	LRange(start, end int32) []string
 	LIndex(index int32) (string, bool)
-	LRem(count int32, element string) uint32
-	LSet(index int32, element string) error
-	LTrim(start, end int32)
+	LRem(count int32, element string) (uint32, int64)
+	LSet(index int32, element string) (error, int64)
+	LTrim(start, end int32) int64
 	MemoryUsage() int64
 }
 
@@ -57,11 +57,12 @@ func (q *quickList) Size() uint32 {
 	return q.size
 }
 
-func (q *quickList) LPush(elements []string) uint32 {
+func (q *quickList) LPush(elements []string) (uint32, int64) {
 	if len(elements) == 0 {
-		return q.size
+		return q.size, 0
 	}
 
+	delta := int64(0)
 	first := q.head.next
 
 	// Create first node if list is empty
@@ -90,6 +91,9 @@ func (q *quickList) LPush(elements []string) uint32 {
 
 		if canFit > 0 {
 			// Insert batch into current node
+			for i := 0; i < canFit; i++ {
+				delta += QuickListElementSize(remaining[i])
+			}
 			first.listPack.lPush(remaining[:canFit])
 			q.size += uint32(canFit)
 			remaining = remaining[canFit:]
@@ -105,12 +109,12 @@ func (q *quickList) LPush(elements []string) uint32 {
 		}
 	}
 
-	return q.size
+	return q.size, delta
 }
 
-func (q *quickList) LPop(count uint32) []string {
+func (q *quickList) LPop(count uint32) ([]string, int64) {
 	if count == 0 || q.size == 0 {
-		return []string{}
+		return []string{}, 0
 	}
 
 	if count >= q.size {
@@ -118,6 +122,7 @@ func (q *quickList) LPop(count uint32) []string {
 	}
 
 	result := make([]string, 0, count)
+	delta := int64(0)
 
 	for count > 0 && q.size > 0 {
 		first := q.head.next
@@ -138,7 +143,9 @@ func (q *quickList) LPop(count uint32) []string {
 
 		// Pop multiple elements at once
 		for range popCount {
-			result = append(result, first.listPack.lPop())
+			elem := first.listPack.lPop()
+			delta -= QuickListElementSize(elem)
+			result = append(result, elem)
 			q.size--
 			count--
 		}
@@ -148,14 +155,15 @@ func (q *quickList) LPop(count uint32) []string {
 		}
 	}
 
-	return result
+	return result, delta
 }
 
-func (q *quickList) RPush(elements []string) uint32 {
+func (q *quickList) RPush(elements []string) (uint32, int64) {
 	if len(elements) == 0 {
-		return q.size
+		return q.size, 0
 	}
 
+	delta := int64(0)
 	last := q.tail.prev
 	if last == q.head {
 		last = newQuickListNode()
@@ -180,6 +188,9 @@ func (q *quickList) RPush(elements []string) uint32 {
 		}
 
 		if canFit > 0 {
+			for i := 0; i < canFit; i++ {
+				delta += QuickListElementSize(remaining[i])
+			}
 			last.listPack.rPush(remaining[:canFit])
 			q.size += uint32(canFit)
 			remaining = remaining[canFit:]
@@ -195,12 +206,12 @@ func (q *quickList) RPush(elements []string) uint32 {
 		}
 	}
 
-	return q.size
+	return q.size, delta
 }
 
-func (q *quickList) RPop(count uint32) []string {
+func (q *quickList) RPop(count uint32) ([]string, int64) {
 	if count == 0 || q.size == 0 {
-		return []string{}
+		return []string{}, 0
 	}
 
 	if count >= q.size {
@@ -208,6 +219,7 @@ func (q *quickList) RPop(count uint32) []string {
 	}
 
 	result := make([]string, 0, int(count))
+	delta := int64(0)
 	for count > 0 && q.size > 0 {
 		last := q.tail.prev
 
@@ -224,7 +236,9 @@ func (q *quickList) RPop(count uint32) []string {
 		popCount := min(count, nodeSize)
 
 		for range popCount {
-			result = append(result, last.listPack.rPop())
+			elem := last.listPack.rPop()
+			delta -= QuickListElementSize(elem)
+			result = append(result, elem)
 			count--
 			q.size--
 		}
@@ -234,7 +248,7 @@ func (q *quickList) RPop(count uint32) []string {
 		}
 	}
 
-	return result
+	return result, delta
 }
 
 func (q *quickList) LRange(start, end int32) []string {
@@ -296,12 +310,14 @@ func (q *quickList) LIndex(index int32) (string, bool) {
 	return node.listPack.get(index), true
 }
 
-func (q *quickList) LRem(count int32, element string) uint32 {
+func (q *quickList) LRem(count int32, element string) (uint32, int64) {
 	if q.size == 0 {
-		return 0
+		return 0, 0
 	}
 
 	var removed uint32 = 0
+	delta := int64(0)
+	elemDelta := QuickListElementSize(element)
 	absCount := count
 	if absCount < 0 {
 		absCount = -absCount
@@ -312,7 +328,9 @@ func (q *quickList) LRem(count int32, element string) uint32 {
 		node := q.head.next
 		for node != q.tail {
 			nextNode := node.next
-			removed += q.removeFromNode(node, element, absCount, removed, count == 0)
+			nodeRemoved := q.removeFromNode(node, element, absCount, removed, count == 0)
+			removed += nodeRemoved
+			delta -= int64(nodeRemoved) * elemDelta
 
 			// Stop if we've removed enough (unless count is 0, meaning remove all)
 			if count != 0 && removed >= uint32(absCount) {
@@ -326,7 +344,9 @@ func (q *quickList) LRem(count int32, element string) uint32 {
 		node := q.tail.prev
 		for node != q.head {
 			prevNode := node.prev
-			removed += q.removeFromNodeReverse(node, element, absCount, removed)
+			nodeRemoved := q.removeFromNodeReverse(node, element, absCount, removed)
+			removed += nodeRemoved
+			delta -= int64(nodeRemoved) * elemDelta
 
 			if removed >= uint32(absCount) {
 				break
@@ -336,13 +356,13 @@ func (q *quickList) LRem(count int32, element string) uint32 {
 		}
 	}
 
-	return removed
+	return removed, delta
 }
 
-func (q *quickList) LSet(index int32, element string) error {
+func (q *quickList) LSet(index int32, element string) (error, int64) {
 	qSize := int32(q.size)
 	if qSize == 0 {
-		return nil
+		return nil, 0
 	}
 
 	if index < 0 {
@@ -350,18 +370,20 @@ func (q *quickList) LSet(index int32, element string) error {
 	}
 
 	if index < 0 || index >= qSize {
-		return errors.New("index out of range")
+		return errors.New("index out of range"), 0
 	}
 
 	node, localIndex := q.findPosition(uint32(index))
+	oldElement := node.listPack.get(localIndex)
 	node.listPack.set(localIndex, element)
-	return nil
+	delta := QuickListElementSize(element) - QuickListElementSize(oldElement)
+	return nil, delta
 }
 
-func (q *quickList) LTrim(start, end int32) {
+func (q *quickList) LTrim(start, end int32) int64 {
 	qSize := int32(q.size)
 	if qSize == 0 {
-		return
+		return 0
 	}
 
 	if start < 0 {
@@ -378,13 +400,15 @@ func (q *quickList) LTrim(start, end int32) {
 
 	// If range is invalid, clear the entire list
 	if start > end || start >= qSize {
-		q.clear()
-		return
+		delta := q.clearWithDelta()
+		return delta
 	}
+
+	delta := int64(0)
 
 	// Remove elements before start
 	if start > 0 {
-		q.removeFromHead(uint32(start))
+		delta += q.removeFromHeadWithDelta(uint32(start))
 	}
 
 	// Remove elements after end
@@ -392,8 +416,10 @@ func (q *quickList) LTrim(start, end int32) {
 	newSize := int32(q.size)
 	if newEnd < newSize-1 {
 		toRemove := newSize - newEnd - 1
-		q.removeFromTail(uint32(toRemove))
+		delta += q.removeFromTailWithDelta(uint32(toRemove))
 	}
+
+	return delta
 }
 
 func (q *quickList) MemoryUsage() int64 {
@@ -458,6 +484,78 @@ func (q *quickList) clear() {
 	q.head.next = q.tail
 	q.tail.prev = q.head
 	q.size = 0
+}
+
+func (q *quickList) clearWithDelta() int64 {
+	delta := int64(0)
+	node := q.head.next
+	for node != q.tail {
+		// Calculate delta for all elements in this node
+		for i := uint32(0); i < node.listPack.size(); i++ {
+			delta -= QuickListElementSize(node.listPack.get(int32(i)))
+		}
+		next := node.next
+		node.prev = nil
+		node.next = nil
+		node = next
+	}
+
+	q.head.next = q.tail
+	q.tail.prev = q.head
+	q.size = 0
+	return delta
+}
+
+func (q *quickList) removeFromHeadWithDelta(count uint32) int64 {
+	delta := int64(0)
+	for count > 0 && q.size > 0 {
+		first := q.head.next
+		if first == q.tail {
+			break
+		}
+
+		nodeSize := first.listPack.size()
+		removeCount := min(count, nodeSize)
+
+		for i := uint32(0); i < removeCount; i++ {
+			elem := first.listPack.lPop()
+			delta -= QuickListElementSize(elem)
+			q.size--
+			count--
+		}
+
+		// Remove node if empty
+		if first.listPack.empty() {
+			q.removeNode(first)
+		}
+	}
+	return delta
+}
+
+func (q *quickList) removeFromTailWithDelta(count uint32) int64 {
+	delta := int64(0)
+	for count > 0 && q.size > 0 {
+		last := q.tail.prev
+		if last == q.head {
+			break
+		}
+
+		nodeSize := last.listPack.size()
+		removeCount := min(count, nodeSize)
+
+		for i := uint32(0); i < removeCount; i++ {
+			elem := last.listPack.rPop()
+			delta -= QuickListElementSize(elem)
+			q.size--
+			count--
+		}
+
+		// Remove node if empty
+		if last.listPack.empty() {
+			q.removeNode(last)
+		}
+	}
+	return delta
 }
 
 func (q *quickList) findPosition(index uint32) (*quickListNode, int32) {

@@ -18,7 +18,7 @@ func TestNewHash(t *testing.T) {
 func TestHashSetSingle(t *testing.T) {
 	h := NewHash()
 
-	added := h.Set(map[string]string{"key1": "value1"})
+	added, _ := h.Set(map[string]string{"key1": "value1"})
 	assert.Equal(t, int64(1), added)
 	assert.Equal(t, uint32(1), h.Size())
 }
@@ -26,7 +26,7 @@ func TestHashSetSingle(t *testing.T) {
 func TestHashSetMultiple(t *testing.T) {
 	h := NewHash()
 
-	added := h.Set(map[string]string{
+	added, _ := h.Set(map[string]string{
 		"name":  "Alice",
 		"age":   "30",
 		"city":  "NYC",
@@ -40,11 +40,11 @@ func TestHashSetUpdate(t *testing.T) {
 	h := NewHash()
 
 	// Initial set
-	added := h.Set(map[string]string{"key1": "value1", "key2": "value2"})
+	added, _ := h.Set(map[string]string{"key1": "value1", "key2": "value2"})
 	assert.Equal(t, int64(2), added)
 
 	// Update existing and add new
-	added = h.Set(map[string]string{"key1": "newvalue1", "key3": "value3"})
+	added, _ = h.Set(map[string]string{"key1": "newvalue1", "key3": "value3"})
 	assert.Equal(t, int64(1), added, "only key3 should be counted as new")
 	assert.Equal(t, uint32(3), h.Size())
 
@@ -57,7 +57,7 @@ func TestHashSetUpdate(t *testing.T) {
 func TestHashSetEmpty(t *testing.T) {
 	h := NewHash()
 
-	added := h.Set(map[string]string{})
+	added, _ := h.Set(map[string]string{})
 	assert.Equal(t, int64(0), added)
 	assert.Equal(t, uint32(0), h.Size())
 }
@@ -218,7 +218,7 @@ func TestHashSetNX(t *testing.T) {
 	h := NewHash()
 
 	// Set new field
-	set := h.SetNX("key1", "value1")
+	set, _ := h.SetNX("key1", "value1")
 	assert.True(t, set)
 	assert.Equal(t, uint32(1), h.Size())
 
@@ -227,7 +227,7 @@ func TestHashSetNX(t *testing.T) {
 	assert.Equal(t, "value1", val)
 
 	// Try to set existing field
-	set = h.SetNX("key1", "value2")
+	set, _ = h.SetNX("key1", "value2")
 	assert.False(t, set)
 
 	// Verify value didn't change
@@ -239,9 +239,12 @@ func TestHashSetNX(t *testing.T) {
 func TestHashSetNXMultiple(t *testing.T) {
 	h := NewHash()
 
-	assert.True(t, h.SetNX("key1", "value1"))
-	assert.True(t, h.SetNX("key2", "value2"))
-	assert.False(t, h.SetNX("key1", "newvalue"))
+	set1, _ := h.SetNX("key1", "value1")
+	set2, _ := h.SetNX("key2", "value2")
+	set3, _ := h.SetNX("key1", "newvalue")
+	assert.True(t, set1)
+	assert.True(t, set2)
+	assert.False(t, set3)
 	assert.Equal(t, uint32(2), h.Size())
 }
 
@@ -250,13 +253,13 @@ func TestHashDelete(t *testing.T) {
 	h.Set(map[string]string{"key1": "value1", "key2": "value2", "key3": "value3"})
 
 	// Delete existing key
-	deleted := h.Delete("key1")
+	deleted, _ := h.Delete("key1")
 	assert.Equal(t, int64(1), deleted)
 	assert.Equal(t, uint32(2), h.Size())
 	assert.False(t, h.Exists("key1"))
 
 	// Delete non-existing key
-	deleted = h.Delete("nonexistent")
+	deleted, _ = h.Delete("nonexistent")
 	assert.Equal(t, int64(0), deleted)
 	assert.Equal(t, uint32(2), h.Size())
 }
@@ -265,7 +268,7 @@ func TestHashDeleteMultiple(t *testing.T) {
 	h := NewHash()
 	h.Set(map[string]string{"key1": "value1", "key2": "value2", "key3": "value3", "key4": "value4"})
 
-	deleted := h.Delete("key1", "key3")
+	deleted, _ := h.Delete("key1", "key3")
 	assert.Equal(t, int64(2), deleted)
 	assert.Equal(t, uint32(2), h.Size())
 	assert.False(t, h.Exists("key1"))
@@ -279,7 +282,7 @@ func TestHashDeleteMixed(t *testing.T) {
 	h.Set(map[string]string{"key1": "value1", "key2": "value2"})
 
 	// Mix of existing and non-existing
-	deleted := h.Delete("key1", "nonexistent", "key2", "missing")
+	deleted, _ := h.Delete("key1", "nonexistent", "key2", "missing")
 	assert.Equal(t, int64(2), deleted)
 	assert.Equal(t, uint32(0), h.Size())
 }
@@ -288,7 +291,7 @@ func TestHashDeleteEmpty(t *testing.T) {
 	h := NewHash()
 	h.Set(map[string]string{"key1": "value1"})
 
-	deleted := h.Delete()
+	deleted, _ := h.Delete()
 	assert.Equal(t, int64(0), deleted)
 	assert.Equal(t, uint32(1), h.Size())
 }
@@ -296,7 +299,7 @@ func TestHashDeleteEmpty(t *testing.T) {
 func TestHashDeleteFromEmpty(t *testing.T) {
 	h := NewHash()
 
-	deleted := h.Delete("key1", "key2")
+	deleted, _ := h.Delete("key1", "key2")
 	assert.Equal(t, int64(0), deleted)
 }
 
@@ -304,17 +307,17 @@ func TestHashIncBy(t *testing.T) {
 	h := NewHash()
 
 	// Increment non-existing field (should initialize to increment)
-	val, err := h.IncBy("counter", 5)
+	val, _, err := h.IncBy("counter", 5)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(5), val)
 
 	// Increment existing field
-	val, err = h.IncBy("counter", 3)
+	val, _, err = h.IncBy("counter", 3)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(8), val)
 
 	// Decrement
-	val, err = h.IncBy("counter", -10)
+	val, _, err = h.IncBy("counter", -10)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(-2), val)
 }
@@ -323,17 +326,17 @@ func TestHashIncByNegativeNumbers(t *testing.T) {
 	h := NewHash()
 
 	// Start with negative
-	val, err := h.IncBy("counter", -10)
+	val, _, err := h.IncBy("counter", -10)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(-10), val)
 
 	// Increment by negative
-	val, err = h.IncBy("counter", -5)
+	val, _, err = h.IncBy("counter", -5)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(-15), val)
 
 	// Increment by positive
-	val, err = h.IncBy("counter", 20)
+	val, _, err = h.IncBy("counter", 20)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(5), val)
 }
@@ -342,7 +345,7 @@ func TestHashIncByZero(t *testing.T) {
 	h := NewHash()
 	h.Set(map[string]string{"counter": "10"})
 
-	val, err := h.IncBy("counter", 0)
+	val, _, err := h.IncBy("counter", 0)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(10), val)
 }
@@ -351,7 +354,7 @@ func TestHashIncByNonInteger(t *testing.T) {
 	h := NewHash()
 	h.Set(map[string]string{"name": "Alice"})
 
-	val, err := h.IncBy("name", 5)
+	val, _, err := h.IncBy("name", 5)
 	assert.Error(t, err)
 	assert.Equal(t, int64(0), val)
 	assert.Contains(t, err.Error(), "not an integer")
@@ -362,7 +365,7 @@ func TestHashIncByOverflow(t *testing.T) {
 	h.Set(map[string]string{"counter": "9223372036854775807"}) // math.MaxInt64
 
 	// Should overflow
-	val, err := h.IncBy("counter", 1)
+	val, _, err := h.IncBy("counter", 1)
 	assert.Error(t, err)
 	assert.Equal(t, int64(0), val)
 	assert.Contains(t, err.Error(), "out of range")
@@ -373,7 +376,7 @@ func TestHashIncByUnderflow(t *testing.T) {
 	h.Set(map[string]string{"counter": "-9223372036854775808"}) // math.MinInt64
 
 	// Should underflow
-	val, err := h.IncBy("counter", -1)
+	val, _, err := h.IncBy("counter", -1)
 	assert.Error(t, err)
 	assert.Equal(t, int64(0), val)
 	assert.Contains(t, err.Error(), "out of range")
@@ -383,12 +386,12 @@ func TestHashIncByLargeNumbers(t *testing.T) {
 	h := NewHash()
 
 	// Test with large positive number
-	val, err := h.IncBy("counter", math.MaxInt64/2)
+	val, _, err := h.IncBy("counter", math.MaxInt64/2)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(math.MaxInt64/2), val)
 
 	// Should still work
-	val, err = h.IncBy("counter", 100)
+	val, _, err = h.IncBy("counter", 100)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(math.MaxInt64/2+100), val)
 }
@@ -415,7 +418,7 @@ func TestHashComplexWorkflow(t *testing.T) {
 	h := NewHash()
 
 	// Setup initial data
-	added := h.Set(map[string]string{
+	added, _ := h.Set(map[string]string{
 		"user:1:name":  "Alice",
 		"user:1:age":   "30",
 		"user:1:email": "alice@example.com",
@@ -435,16 +438,16 @@ func TestHashComplexWorkflow(t *testing.T) {
 	assert.Nil(t, results[2])
 
 	// Increment age
-	newAge, err := h.IncBy("user:1:age", 1)
+	newAge, _, err := h.IncBy("user:1:age", 1)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(31), newAge)
 
 	// Try to set existing with SetNX (should fail)
-	set := h.SetNX("user:1:name", "Bob")
+	set, _ := h.SetNX("user:1:name", "Bob")
 	assert.False(t, set)
 
 	// Set new field with SetNX (should succeed)
-	set = h.SetNX("user:1:phone", "555-1234")
+	set, _ = h.SetNX("user:1:phone", "555-1234")
 	assert.True(t, set)
 
 	// Verify size
@@ -455,14 +458,14 @@ func TestHashComplexWorkflow(t *testing.T) {
 	assert.ElementsMatch(t, []string{"user:1:name", "user:1:age", "user:1:email", "user:1:phone"}, keys)
 
 	// Update existing fields
-	added = h.Set(map[string]string{
-		"user:1:name":  "Alice Smith",
-		"user:1:city":  "NYC",
+	added, _ = h.Set(map[string]string{
+		"user:1:name": "Alice Smith",
+		"user:1:city": "NYC",
 	})
 	assert.Equal(t, int64(1), added, "only city is new")
 
 	// Delete some fields
-	deleted := h.Delete("user:1:email", "user:1:phone")
+	deleted, _ := h.Delete("user:1:email", "user:1:phone")
 	assert.Equal(t, int64(2), deleted)
 	assert.Equal(t, uint32(3), h.Size())
 
@@ -501,7 +504,7 @@ func TestHashIncByStringZero(t *testing.T) {
 	h := NewHash()
 	h.Set(map[string]string{"counter": "0"})
 
-	val, err := h.IncBy("counter", 5)
+	val, _, err := h.IncBy("counter", 5)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(5), val)
 }
@@ -510,7 +513,7 @@ func TestHashIncByFloatString(t *testing.T) {
 	h := NewHash()
 	h.Set(map[string]string{"counter": "3.14"})
 
-	val, err := h.IncBy("counter", 1)
+	val, _, err := h.IncBy("counter", 1)
 	assert.Error(t, err)
 	assert.Equal(t, int64(0), val)
 }
@@ -523,7 +526,7 @@ func TestHashMultipleOperations(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		fields[fmt.Sprintf("key%d", i)] = fmt.Sprintf("value%d", i)
 	}
-	added := h.Set(fields)
+	added, _ := h.Set(fields)
 	assert.Equal(t, int64(100), added)
 	assert.Equal(t, uint32(100), h.Size())
 
@@ -532,7 +535,7 @@ func TestHashMultipleOperations(t *testing.T) {
 	for i := 0; i < 50; i++ {
 		keysToDelete[i] = fmt.Sprintf("key%d", i)
 	}
-	deleted := h.Delete(keysToDelete...)
+	deleted, _ := h.Delete(keysToDelete...)
 	assert.Equal(t, int64(50), deleted)
 	assert.Equal(t, uint32(50), h.Size())
 

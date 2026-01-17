@@ -43,15 +43,15 @@ func TestScalableBloomFilterAdd(t *testing.T) {
 	sbf := NewScalableBloomFilter(0.01, 100, 2)
 
 	// Add new item
-	result := sbf.Add("item1")
+	result, _ := sbf.Add("item1")
 	assert.Equal(t, 1, result, "should return 1 for new item")
 
 	// Add duplicate item
-	result = sbf.Add("item1")
+	result, _ = sbf.Add("item1")
 	assert.Equal(t, 0, result, "should return 0 for existing item")
 
 	// Add another new item
-	result = sbf.Add("item2")
+	result, _ = sbf.Add("item2")
 	assert.Equal(t, 1, result, "should return 1 for new item")
 }
 
@@ -60,7 +60,7 @@ func TestScalableBloomFilterAddMultipleItems(t *testing.T) {
 
 	items := []string{"apple", "banana", "cherry", "date", "elderberry"}
 	for _, item := range items {
-		result := sbf.Add(item)
+		result, _ := sbf.Add(item)
 		assert.Equal(t, 1, result, "should return 1 for new item: %s", item)
 	}
 
@@ -124,7 +124,7 @@ func TestScalableBloomFilterMAdd(t *testing.T) {
 	sbf := NewScalableBloomFilter(0.01, 100, 2)
 
 	items := []string{"a", "b", "c", "d"}
-	results := sbf.MAdd(items)
+	results, _ := sbf.MAdd(items)
 
 	assert.Len(t, results, len(items))
 	for i, result := range results {
@@ -132,7 +132,7 @@ func TestScalableBloomFilterMAdd(t *testing.T) {
 	}
 
 	// Add again - all should return 0
-	results = sbf.MAdd(items)
+	results, _ = sbf.MAdd(items)
 	for i, result := range results {
 		assert.Equal(t, 0, result, "item %s should already exist", items[i])
 	}
@@ -147,7 +147,7 @@ func TestScalableBloomFilterMAddMixed(t *testing.T) {
 
 	// MAdd with mix of new and existing
 	items := []string{"existing1", "new1", "existing2", "new2"}
-	results := sbf.MAdd(items)
+	results, _ := sbf.MAdd(items)
 
 	expected := []int{0, 1, 0, 1}
 	assert.Equal(t, expected, results)
@@ -156,7 +156,7 @@ func TestScalableBloomFilterMAddMixed(t *testing.T) {
 func TestScalableBloomFilterMAddEmpty(t *testing.T) {
 	sbf := NewScalableBloomFilter(0.01, 100, 2)
 
-	results := sbf.MAdd([]string{})
+	results, _ := sbf.MAdd([]string{})
 	assert.Empty(t, results)
 }
 
@@ -358,14 +358,14 @@ func TestScalableBloomFilterEmptyString(t *testing.T) {
 	sbf := NewScalableBloomFilter(0.01, 100, 2)
 
 	// Empty string should work
-	result := sbf.Add("")
+	result, _ := sbf.Add("")
 	assert.Equal(t, 1, result)
 
 	assert.Equal(t, 1, sbf.Exists(""))
 	assert.Equal(t, 1, sbf.Card())
 
 	// Adding again should return 0
-	result = sbf.Add("")
+	result, _ = sbf.Add("")
 	assert.Equal(t, 0, result)
 }
 
@@ -382,7 +382,7 @@ func TestScalableBloomFilterSpecialCharacters(t *testing.T) {
 	}
 
 	for _, item := range specialItems {
-		result := sbf.Add(item)
+		result, _ := sbf.Add(item)
 		assert.Equal(t, 1, result, "should add: %q", item)
 	}
 
@@ -400,7 +400,7 @@ func TestScalableBloomFilterLongStrings(t *testing.T) {
 		longString += "a"
 	}
 
-	result := sbf.Add(longString)
+	result, _ := sbf.Add(longString)
 	assert.Equal(t, 1, result)
 
 	assert.Equal(t, 1, sbf.Exists(longString))

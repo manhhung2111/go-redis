@@ -59,12 +59,12 @@ func (s *store) HIncrBy(key string, field string, increment int64) (int64, error
 
 	if !result.exists {
 		hash := data_structure.NewHash()
-		res, err := hash.IncBy(field, increment)
+		res, _, err := hash.IncBy(field, increment)
 		if err != nil {
 			return 0, err
 		}
 		s.data.Set(key, &RObj{
-			objType:     ObjHash,
+			objType:  ObjHash,
 			encoding: EncHashTable,
 			value:    hash,
 		})
@@ -72,7 +72,8 @@ func (s *store) HIncrBy(key string, field string, increment int64) (int64, error
 	}
 
 	hash := result.object.value.(data_structure.Hash)
-	return hash.IncBy(field, increment)
+	res, _, err := hash.IncBy(field, increment)
+	return res, err
 }
 
 func (s *store) HKeys(key string) ([]string, error) {
@@ -125,9 +126,9 @@ func (s *store) HSet(key string, fieldValue map[string]string) (int64, error) {
 
 	if !result.exists {
 		hash := data_structure.NewHash()
-		added := hash.Set(fieldValue)
+		added, _ := hash.Set(fieldValue)
 		s.data.Set(key, &RObj{
-			objType:     ObjHash,
+			objType:  ObjHash,
 			encoding: EncHashTable,
 			value:    hash,
 		})
@@ -135,7 +136,8 @@ func (s *store) HSet(key string, fieldValue map[string]string) (int64, error) {
 	}
 
 	hash := result.object.value.(data_structure.Hash)
-	return hash.Set(fieldValue), nil
+	added, _ := hash.Set(fieldValue)
+	return added, nil
 }
 
 func (s *store) HSetNx(key string, field string, value string) (int64, error) {
@@ -148,7 +150,7 @@ func (s *store) HSetNx(key string, field string, value string) (int64, error) {
 		hash := data_structure.NewHash()
 		hash.SetNX(field, value)
 		s.data.Set(key, &RObj{
-			objType:     ObjHash,
+			objType:  ObjHash,
 			encoding: EncHashTable,
 			value:    hash,
 		})
@@ -156,7 +158,7 @@ func (s *store) HSetNx(key string, field string, value string) (int64, error) {
 	}
 
 	hash := result.object.value.(data_structure.Hash)
-	canSet := hash.SetNX(field, value)
+	canSet, _ := hash.SetNX(field, value)
 	if canSet {
 		return 1, nil
 	}
@@ -174,7 +176,7 @@ func (s *store) HDel(key string, fields []string) (int64, error) {
 	}
 
 	hash := result.object.value.(data_structure.Hash)
-	deleted := hash.Delete(fields...)
+	deleted, _ := hash.Delete(fields...)
 	if hash.Size() == 0 {
 		s.delete(key)
 	}

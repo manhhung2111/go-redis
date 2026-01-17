@@ -320,7 +320,7 @@ func TestGeoAdd_Basic(t *testing.T) {
 		{Longitude: -118.2437, Latitude: 34.0522, Member: "los angeles"},
 	}
 
-	result := z.GeoAdd(items, ZAddOptions{})
+	result, _ := z.GeoAdd(items, ZAddOptions{})
 	require.NotNil(t, result)
 	assert.Equal(t, uint32(2), *result)
 	assert.Equal(t, uint32(2), z.ZCard())
@@ -339,7 +339,7 @@ func TestGeoAdd_Update(t *testing.T) {
 	items[0].Longitude = -74.0100
 	items[0].Latitude = 40.7200
 
-	result := z.GeoAdd(items, ZAddOptions{})
+	result, _ := z.GeoAdd(items, ZAddOptions{})
 	require.NotNil(t, result)
 	assert.Equal(t, uint32(0), *result) // No new members added
 	assert.Equal(t, uint32(1), z.ZCard())
@@ -355,7 +355,7 @@ func TestGeoAdd_WithNX(t *testing.T) {
 	z.GeoAdd(items, ZAddOptions{})
 
 	// Try to add same member with NX
-	result := z.GeoAdd(items, ZAddOptions{NX: true})
+	result, _ := z.GeoAdd(items, ZAddOptions{NX: true})
 	require.NotNil(t, result)
 	assert.Equal(t, uint32(0), *result)
 }
@@ -368,7 +368,7 @@ func TestGeoAdd_WithXX(t *testing.T) {
 	}
 
 	// Try to add with XX when member doesn't exist
-	result := z.GeoAdd(items, ZAddOptions{XX: true})
+	result, _ := z.GeoAdd(items, ZAddOptions{XX: true})
 	require.NotNil(t, result)
 	assert.Equal(t, uint32(0), *result)
 	assert.Equal(t, uint32(0), z.ZCard())
@@ -378,7 +378,7 @@ func TestGeoAdd_WithXX(t *testing.T) {
 
 	// Now update with XX should work
 	items[0].Latitude = 40.8000
-	result = z.GeoAdd(items, ZAddOptions{XX: true})
+	result, _ = z.GeoAdd(items, ZAddOptions{XX: true})
 	require.NotNil(t, result)
 	assert.Equal(t, uint32(0), *result) // XX doesn't count as added
 }
@@ -393,7 +393,7 @@ func TestGeoAdd_MultipleItems(t *testing.T) {
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "san francisco"},
 	}
 
-	result := z.GeoAdd(items, ZAddOptions{})
+	result, _ := z.GeoAdd(items, ZAddOptions{})
 	require.NotNil(t, result)
 	assert.Equal(t, uint32(4), *result)
 }
@@ -945,7 +945,7 @@ func TestGeoSearch_ByBoxWithCount(t *testing.T) {
 func TestGeoAdd_EmptyItems(t *testing.T) {
 	z := NewZSet()
 
-	result := z.GeoAdd([]GeoPoint{}, ZAddOptions{})
+	result, _ := z.GeoAdd([]GeoPoint{}, ZAddOptions{})
 	require.NotNil(t, result)
 	assert.Equal(t, uint32(0), *result)
 }

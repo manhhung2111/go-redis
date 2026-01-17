@@ -12,7 +12,7 @@ func (s *store) ZAdd(key string, scoreMember map[string]float64, options data_st
 
 	if !result.exists {
 		zset := data_structure.NewZSet()
-		added := zset.ZAdd(scoreMember, options)
+		added, _ := zset.ZAdd(scoreMember, options)
 		s.data.Set(key, &RObj{
 			objType:     ObjZSet,
 			encoding: EncSortedSet,
@@ -22,7 +22,8 @@ func (s *store) ZAdd(key string, scoreMember map[string]float64, options data_st
 	}
 
 	zset := result.object.value.(data_structure.ZSet)
-	return zset.ZAdd(scoreMember, options), nil
+	added, _ := zset.ZAdd(scoreMember, options)
+	return added, nil
 }
 
 func (s *store) ZCard(key string) (uint32, error) {
@@ -59,7 +60,7 @@ func (s *store) ZIncrBy(key string, member string, increment float64) (float64, 
 
 	if !result.exists {
 		zset := data_structure.NewZSet()
-		res, succeeded := zset.ZIncrBy(member, increment)
+		res, succeeded, _ := zset.ZIncrBy(member, increment)
 
 		if !succeeded {
 			return 0, ErrValueIsNotValidFloatError
@@ -75,7 +76,7 @@ func (s *store) ZIncrBy(key string, member string, increment float64) (float64, 
 	}
 
 	zset := result.object.value.(data_structure.ZSet)
-	res, succeeded := zset.ZIncrBy(member, increment)
+	res, succeeded, _ := zset.ZIncrBy(member, increment)
 
 	if !succeeded {
 		return 0, ErrValueIsNotValidFloatError
@@ -120,7 +121,8 @@ func (s *store) ZPopMax(key string, count int) ([]string, error) {
 		return []string{}, nil
 	}
 
-	return zset.ZPopMax(count), nil
+	res, _ := zset.ZPopMax(count)
+	return res, nil
 }
 
 func (s *store) ZPopMin(key string, count int) ([]string, error) {
@@ -133,7 +135,8 @@ func (s *store) ZPopMin(key string, count int) ([]string, error) {
 		return []string{}, nil
 	}
 
-	return zset.ZPopMin(count), nil
+	res, _ := zset.ZPopMin(count)
+	return res, nil
 }
 
 func (s *store) ZRandMember(key string, count int, withScores bool) ([]string, error) {
@@ -211,7 +214,8 @@ func (s *store) ZRem(key string, members []string) (uint32, error) {
 		return 0, nil
 	}
 
-	return uint32(zset.ZRem(members)), nil
+	res, _ := zset.ZRem(members)
+	return uint32(res), nil
 }
 
 func (s *store) ZRevRangeByLex(key string, start string, stop string) ([]string, error) {

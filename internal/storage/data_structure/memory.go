@@ -35,3 +35,39 @@ func StringStringMapEntrySize(key, value string) int64 {
 func StringFloat64MapEntrySize(key string) int64 {
 	return StringSize(key) + Float64Size + MapOverheadPerKey
 }
+
+// SkipListNodeSize returns the estimated memory for a skip list node
+// node struct: value (string header) + score (8) + backward pointer (8) + levels slice header (24)
+// each level: forward pointer (8) + span (8) = 16 bytes
+func SkipListNodeSize(value string, numLevels int) int64 {
+	baseSize := StringSize(value) + Float64Size + PointerSize + SliceHeaderSize
+	levelSize := int64(numLevels) * (PointerSize + Int64Size) // forward + span per level
+	return baseSize + levelSize
+}
+
+// SkipListNodeSizeAvg returns the estimated memory for a skip list node with average levels
+// Average level in skip list with p=0.25 is approximately 1.33
+func SkipListNodeSizeAvg(value string) int64 {
+	return SkipListNodeSize(value, 2) // Use 2 as a conservative estimate
+}
+
+// QuickListElementSize returns memory for a string element in a quicklist
+func QuickListElementSize(element string) int64 {
+	return StringHeaderSize + int64(len(element))
+}
+
+// BloomFilterBitsSize returns memory for bloom filter bit allocation
+func BloomFilterBitsSize(numBits uint64) int64 {
+	numWords := (numBits + 63) / 64 // 64 bits per uint64
+	return int64(numWords) * Uint64Size
+}
+
+// CuckooFilterBucketSize returns memory for a cuckoo filter bucket
+func CuckooFilterBucketSize(bucketSize uint64) int64 {
+	return SliceHeaderSize + int64(bucketSize)*Uint16Size
+}
+
+// HyperLogLogRegisterDelta returns 0 as HLL registers are pre-allocated
+func HyperLogLogRegisterDelta() int64 {
+	return 0 // Registers are pre-allocated, no delta on insert
+}

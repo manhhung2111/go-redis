@@ -12,11 +12,12 @@ func (s *store) LPush(key string, elements ...string) (uint32, error) {
 
 	if result.exists {
 		quickList := result.object.value.(data_structure.QuickList)
-		return quickList.LPush(elements), nil
+		res, _ := quickList.LPush(elements)
+		return res, nil
 	}
 
 	quicklist := data_structure.NewQuickList()
-	res := quicklist.LPush(elements)
+	res, _ := quicklist.LPush(elements)
 
 	s.data.Set(key, &RObj{
 		objType:     ObjList,
@@ -38,7 +39,7 @@ func (s *store) LPop(key string, count uint32) ([]string, error) {
 	}
 
 	quickList := result.object.value.(data_structure.QuickList)
-	poppedElements := quickList.LPop(count)
+	poppedElements, _ := quickList.LPop(count)
 	if quickList.Size() == 0 {
 		s.delete(key)
 	}
@@ -54,11 +55,12 @@ func (s *store) RPush(key string, elements ...string) (uint32, error) {
 
 	if result.exists {
 		quickList := result.object.value.(data_structure.QuickList)
-		return quickList.RPush(elements), nil
+		res, _ :=  quickList.RPush(elements)
+		return res, nil
 	}
 
 	quicklist := data_structure.NewQuickList()
-	res := quicklist.RPush(elements)
+	res, _ := quicklist.RPush(elements)
 
 	s.data.Set(key, &RObj{
 		objType:     ObjList,
@@ -80,7 +82,7 @@ func (s *store) RPop(key string, count uint32) ([]string, error) {
 	}
 
 	quickList := result.object.value.(data_structure.QuickList)
-	poppedElements := quickList.RPop(count)
+	poppedElements, _ := quickList.RPop(count)
 	if quickList.Size() == 0 {
 		s.delete(key)
 	}
@@ -146,7 +148,7 @@ func (s *store) LRem(key string, count int32, element string) (uint32, error) {
 	}
 
 	quickList := result.object.value.(data_structure.QuickList)
-	removedElements := quickList.LRem(count, element)
+	removedElements, _ := quickList.LRem(count, element)
 	if quickList.Size() == 0 {
 		s.delete(key)
 	}
@@ -165,7 +167,8 @@ func (s *store) LSet(key string, index int32, element string) error {
 	}
 
 	quickList := result.object.value.(data_structure.QuickList)
-	return quickList.LSet(index, element)
+	err, _ := quickList.LSet(index, element)
+	return err
 }
 
 func (s *store) LTrim(key string, start, end int32) error {

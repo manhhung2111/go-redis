@@ -17,7 +17,8 @@ func (s *store) PFAdd(key string, items []string) (int, error) {
 			return 0, nil
 		}
 
-		return hll.PFAdd(items), nil
+		res, _ := hll.PFAdd(items)
+		return res, nil
 	}
 
 	// Key doesn't exist - create new HyperLogLog

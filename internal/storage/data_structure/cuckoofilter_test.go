@@ -46,15 +46,15 @@ func TestCuckooFilterAdd(t *testing.T) {
 	cf := NewCuckooFilter(100, 4, 500, 2)
 
 	// Add new item
-	result := cf.Add("item1")
+	result, _ := cf.Add("item1")
 	assert.Equal(t, 1, result, "should return 1 for new item")
 
 	// Add same item again (cuckoo filter allows duplicates)
-	result = cf.Add("item1")
+	result, _ = cf.Add("item1")
 	assert.Equal(t, 1, result, "should return 1 for duplicate item (allowed)")
 
 	// Add another new item
-	result = cf.Add("item2")
+	result, _ = cf.Add("item2")
 	assert.Equal(t, 1, result, "should return 1 for new item")
 }
 
@@ -63,7 +63,7 @@ func TestCuckooFilterAddMultipleItems(t *testing.T) {
 
 	items := []string{"apple", "banana", "cherry", "date", "elderberry"}
 	for _, item := range items {
-		result := cf.Add(item)
+		result, _ := cf.Add(item)
 		assert.Equal(t, 1, result, "should return 1 for new item: %s", item)
 	}
 
@@ -77,15 +77,15 @@ func TestCuckooFilterAddNx(t *testing.T) {
 	cf := NewCuckooFilter(100, 4, 500, 2)
 
 	// Add new item
-	result := cf.AddNx("item1")
+	result, _ := cf.AddNx("item1")
 	assert.Equal(t, 1, result, "should return 1 for new item")
 
 	// Try to add same item again
-	result = cf.AddNx("item1")
+	result, _ = cf.AddNx("item1")
 	assert.Equal(t, 0, result, "should return 0 for existing item")
 
 	// Add another new item
-	result = cf.AddNx("item2")
+	result, _ = cf.AddNx("item2")
 	assert.Equal(t, 1, result, "should return 1 for new item")
 
 	// Verify both exist
@@ -98,13 +98,13 @@ func TestCuckooFilterAddNxMultiple(t *testing.T) {
 
 	items := []string{"a", "b", "c", "d"}
 	for _, item := range items {
-		result := cf.AddNx(item)
+		result, _ := cf.AddNx(item)
 		assert.Equal(t, 1, result, "should return 1 for new item: %s", item)
 	}
 
 	// Add again - all should return 0
 	for _, item := range items {
-		result := cf.AddNx(item)
+		result, _ := cf.AddNx(item)
 		assert.Equal(t, 0, result, "should return 0 for existing item: %s", item)
 	}
 }
@@ -175,7 +175,7 @@ func TestCuckooFilterDel(t *testing.T) {
 	cf.Add("item1")
 	assert.Equal(t, 1, cf.Exists("item1"))
 
-	result := cf.Del("item1")
+	result, _ := cf.Del("item1")
 	assert.Equal(t, 1, result, "should return 1 for successful deletion")
 	assert.Equal(t, 0, cf.Exists("item1"), "item should not exist after deletion")
 }
@@ -184,7 +184,7 @@ func TestCuckooFilterDelNonExistent(t *testing.T) {
 	cf := NewCuckooFilter(100, 4, 500, 2)
 
 	// Try to delete non-existent item
-	result := cf.Del("nonexistent")
+	result, _ := cf.Del("nonexistent")
 	assert.Equal(t, 0, result, "should return 0 for non-existent item")
 }
 
@@ -198,8 +198,10 @@ func TestCuckooFilterDelMultiple(t *testing.T) {
 	}
 
 	// Delete some items
-	assert.Equal(t, 1, cf.Del("b"))
-	assert.Equal(t, 1, cf.Del("d"))
+	r1, _ := cf.Del("b")
+	assert.Equal(t, 1, r1)
+	r2, _ := cf.Del("d")
+	assert.Equal(t, 1, r2)
 
 	// Verify state
 	assert.Equal(t, 1, cf.Exists("a"))
@@ -377,7 +379,7 @@ func TestCuckooFilterDelAcrossFilters(t *testing.T) {
 
 	// Delete some items
 	for i := 0; i < 30; i += 3 {
-		result := cf.Del(fmt.Sprintf("item%d", i))
+		result, _ := cf.Del(fmt.Sprintf("item%d", i))
 		assert.Equal(t, 1, result)
 	}
 
@@ -395,14 +397,14 @@ func TestCuckooFilterEmptyString(t *testing.T) {
 	cf := NewCuckooFilter(100, 4, 500, 2)
 
 	// Empty string should work
-	result := cf.Add("")
+	result, _ := cf.Add("")
 	assert.Equal(t, 1, result)
 
 	assert.Equal(t, 1, cf.Exists(""))
 	assert.Equal(t, 1, cf.Count(""))
 
 	// Delete
-	result = cf.Del("")
+	result, _ = cf.Del("")
 	assert.Equal(t, 1, result)
 	assert.Equal(t, 0, cf.Exists(""))
 }
@@ -420,7 +422,7 @@ func TestCuckooFilterSpecialCharacters(t *testing.T) {
 	}
 
 	for _, item := range specialItems {
-		result := cf.Add(item)
+		result, _ := cf.Add(item)
 		assert.Equal(t, 1, result, "should add: %q", item)
 	}
 
@@ -429,7 +431,7 @@ func TestCuckooFilterSpecialCharacters(t *testing.T) {
 	}
 
 	for _, item := range specialItems {
-		result := cf.Del(item)
+		result, _ := cf.Del(item)
 		assert.Equal(t, 1, result, "should delete: %q", item)
 		assert.Equal(t, 0, cf.Exists(item), "should not exist after delete: %q", item)
 	}
@@ -444,7 +446,7 @@ func TestCuckooFilterLongStrings(t *testing.T) {
 		longString += "a"
 	}
 
-	result := cf.Add(longString)
+	result, _ := cf.Add(longString)
 	assert.Equal(t, 1, result)
 
 	assert.Equal(t, 1, cf.Exists(longString))
@@ -454,7 +456,7 @@ func TestCuckooFilterLongStrings(t *testing.T) {
 	assert.Equal(t, 0, cf.Exists(differentLongString))
 
 	// Delete works
-	result = cf.Del(longString)
+	result, _ = cf.Del(longString)
 	assert.Equal(t, 1, result)
 	assert.Equal(t, 0, cf.Exists(longString))
 }

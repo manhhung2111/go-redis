@@ -13,7 +13,8 @@ func (s *store) BFAdd(key string, item string) (int, error) {
 		return 0, err
 	}
 
-	return sbf.Add(item), nil
+	result, _ := sbf.Add(item)
+	return result, nil
 }
 
 func (s *store) BFCard(key string) (int, error) {
@@ -61,7 +62,8 @@ func (s *store) BFMAdd(key string, items []string) ([]int, error) {
 		return nil, err
 	}
 
-	return sbf.MAdd(items), nil
+	result, _ := sbf.MAdd(items)
+	return result, nil
 }
 
 func (s *store) BFMExists(key string, items []string) ([]int, error) {

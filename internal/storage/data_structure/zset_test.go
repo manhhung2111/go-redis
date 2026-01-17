@@ -13,7 +13,7 @@ import (
 func TestZSet_ZAdd_BasicInsert(t *testing.T) {
 	z := NewZSet()
 
-	res := z.ZAdd(map[string]float64{
+	res, _ := z.ZAdd(map[string]float64{
 		"one": 1,
 		"two": 2,
 	}, ZAddOptions{})
@@ -28,7 +28,7 @@ func TestZSet_ZAdd_NX(t *testing.T) {
 
 	z.ZAdd(map[string]float64{"a": 1}, ZAddOptions{})
 
-	res := z.ZAdd(map[string]float64{
+	res, _ := z.ZAdd(map[string]float64{
 		"a": 2, // should be ignored
 		"b": 3,
 	}, ZAddOptions{NX: true})
@@ -45,7 +45,7 @@ func TestZSet_ZAdd_XX(t *testing.T) {
 	z.ZAdd(map[string]float64{"a": 1}, ZAddOptions{})
 
 	// update without CH → result must be 0
-	res := z.ZAdd(map[string]float64{
+	res, _ := z.ZAdd(map[string]float64{
 		"a": 2,
 	}, ZAddOptions{XX: true})
 
@@ -55,7 +55,7 @@ func TestZSet_ZAdd_XX(t *testing.T) {
 	assert.Equal(t, float64(2), z.data["a"])
 
 	// update with CH → result increments
-	res = z.ZAdd(map[string]float64{
+	res, _ = z.ZAdd(map[string]float64{
 		"a": 3,
 	}, ZAddOptions{XX: true, CH: true})
 
@@ -69,30 +69,30 @@ func TestZSet_ZAdd_GT_LT(t *testing.T) {
 	z.ZAdd(map[string]float64{"a": 5}, ZAddOptions{})
 
 	// GT reject
-	res := z.ZAdd(map[string]float64{"a": 3}, ZAddOptions{GT: true})
+	res, _ := z.ZAdd(map[string]float64{"a": 3}, ZAddOptions{GT: true})
 	require.NotNil(t, res)
 	assert.Equal(t, uint32(0), *res)
 	assert.Equal(t, float64(5), z.data["a"])
 
 	// GT accept, no CH → 0
-	res = z.ZAdd(map[string]float64{"a": 7}, ZAddOptions{GT: true})
+	res, _ = z.ZAdd(map[string]float64{"a": 7}, ZAddOptions{GT: true})
 	require.NotNil(t, res)
 	assert.Equal(t, uint32(0), *res)
 	assert.Equal(t, float64(7), z.data["a"])
 
 	// GT accept with CH → 1
-	res = z.ZAdd(map[string]float64{"a": 9}, ZAddOptions{GT: true, CH: true})
+	res, _ = z.ZAdd(map[string]float64{"a": 9}, ZAddOptions{GT: true, CH: true})
 	require.NotNil(t, res)
 	assert.Equal(t, uint32(1), *res)
 	assert.Equal(t, float64(9), z.data["a"])
 
 	// LT reject
-	res = z.ZAdd(map[string]float64{"a": 10}, ZAddOptions{LT: true})
+	res, _ = z.ZAdd(map[string]float64{"a": 10}, ZAddOptions{LT: true})
 	require.NotNil(t, res)
 	assert.Equal(t, uint32(0), *res)
 
 	// LT accept with CH
-	res = z.ZAdd(map[string]float64{"a": 8}, ZAddOptions{LT: true, CH: true})
+	res, _ = z.ZAdd(map[string]float64{"a": 8}, ZAddOptions{LT: true, CH: true})
 	require.NotNil(t, res)
 	assert.Equal(t, uint32(1), *res)
 	assert.Equal(t, float64(8), z.data["a"])
@@ -101,17 +101,17 @@ func TestZSet_ZAdd_GT_LT(t *testing.T) {
 func TestZSet_ZAdd_CH(t *testing.T) {
 	z := NewZSet()
 
-	res := z.ZAdd(map[string]float64{"a": 1}, ZAddOptions{CH: true})
+	res, _ := z.ZAdd(map[string]float64{"a": 1}, ZAddOptions{CH: true})
 	require.NotNil(t, res)
 	assert.Equal(t, uint32(1), *res)
 
 	// same score → no change
-	res = z.ZAdd(map[string]float64{"a": 1}, ZAddOptions{CH: true})
+	res, _ = z.ZAdd(map[string]float64{"a": 1}, ZAddOptions{CH: true})
 	require.NotNil(t, res)
 	assert.Equal(t, uint32(0), *res)
 
 	// score change
-	res = z.ZAdd(map[string]float64{"a": 2}, ZAddOptions{CH: true})
+	res, _ = z.ZAdd(map[string]float64{"a": 2}, ZAddOptions{CH: true})
 	require.NotNil(t, res)
 	assert.Equal(t, uint32(1), *res)
 }
@@ -119,20 +119,23 @@ func TestZSet_ZAdd_CH(t *testing.T) {
 func TestZSet_ZAdd_InvalidOptions(t *testing.T) {
 	z := NewZSet()
 
-	assert.Nil(t, z.ZAdd(
+	r1, _ := z.ZAdd(
 		map[string]float64{"a": 1},
 		ZAddOptions{NX: true, XX: true},
-	))
+	)
+	assert.Nil(t, r1)
 
-	assert.Nil(t, z.ZAdd(
+	r2, _ := z.ZAdd(
 		map[string]float64{"a": 1},
 		ZAddOptions{GT: true, LT: true},
-	))
+	)
+	assert.Nil(t, r2)
 
-	assert.Nil(t, z.ZAdd(
+	r3, _ := z.ZAdd(
 		map[string]float64{"a": 1},
 		ZAddOptions{NX: true, GT: true},
-	))
+	)
+	assert.Nil(t, r3)
 }
 
 func TestZSet_ZCard_AfterUpdates(t *testing.T) {
@@ -211,16 +214,16 @@ func TestZSet_ZCount_NegativeScores(t *testing.T) {
 func TestZSet_ZIncrBy(t *testing.T) {
 	z := NewZSet()
 
-	score, ok := z.ZIncrBy("a", 1.5)
+	score, ok, _ := z.ZIncrBy("a", 1.5)
 	require.True(t, ok)
 	assert.Equal(t, 1.5, score)
 
-	score, ok = z.ZIncrBy("a", 2.5)
+	score, ok, _ = z.ZIncrBy("a", 2.5)
 	require.True(t, ok)
 	assert.Equal(t, 4.0, score)
 
 	// negative increment
-	score, ok = z.ZIncrBy("a", -1.0)
+	score, ok, _ = z.ZIncrBy("a", -1.0)
 	require.True(t, ok)
 	assert.Equal(t, 3.0, score)
 }
@@ -230,21 +233,21 @@ func TestZSet_ZIncrBy_Invalid(t *testing.T) {
 
 	z.ZIncrBy("a", math.MaxFloat64)
 
-	_, ok := z.ZIncrBy("a", math.MaxFloat64)
+	_, ok, _ := z.ZIncrBy("a", math.MaxFloat64)
 	assert.False(t, ok)
 
-	_, ok = z.ZIncrBy("a", math.NaN())
+	_, ok, _ = z.ZIncrBy("a", math.NaN())
 	assert.False(t, ok)
 }
 
 func TestZSet_ZIncrBy_ZeroIncrement(t *testing.T) {
 	z := NewZSet()
 
-	score, ok := z.ZIncrBy("a", 0)
+	score, ok, _ := z.ZIncrBy("a", 0)
 	require.True(t, ok)
 	assert.Equal(t, 0.0, score)
 
-	score, ok = z.ZIncrBy("a", 0)
+	score, ok, _ = z.ZIncrBy("a", 0)
 	require.True(t, ok)
 	assert.Equal(t, 0.0, score)
 }
@@ -253,7 +256,7 @@ func TestZSet_ZIncrBy_RepeatedUpdates(t *testing.T) {
 	z := NewZSet()
 
 	for i := 0; i < 10; i++ {
-		score, ok := z.ZIncrBy("counter", 1)
+		score, ok, _ := z.ZIncrBy("counter", 1)
 		require.True(t, ok)
 		assert.Equal(t, float64(i+1), score)
 	}
@@ -265,7 +268,7 @@ func TestZSet_ZIncrBy_DecreaseBelowZero(t *testing.T) {
 	z := NewZSet()
 
 	z.ZIncrBy("a", 5)
-	score, ok := z.ZIncrBy("a", -10)
+	score, ok, _ := z.ZIncrBy("a", -10)
 
 	require.True(t, ok)
 	assert.Equal(t, -5.0, score)
@@ -363,7 +366,7 @@ func TestZSet_ZPopMax(t *testing.T) {
 	z.ZIncrBy("b", 2)
 	z.ZIncrBy("c", 3)
 
-	res := z.ZPopMax(2)
+	res, _ := z.ZPopMax(2)
 
 	require.Equal(t, []string{"c", "3", "b", "2"}, res)
 	assert.Equal(t, uint32(1), z.ZCount(-100, 100))
@@ -376,7 +379,7 @@ func TestZSet_ZPopMin(t *testing.T) {
 	z.ZIncrBy("b", 2)
 	z.ZIncrBy("c", 3)
 
-	res := z.ZPopMin(2)
+	res, _ := z.ZPopMin(2)
 
 	require.Equal(t, []string{"a", "1", "b", "2"}, res)
 	assert.Equal(t, uint32(1), z.ZCount(-100, 100))
@@ -388,16 +391,20 @@ func TestZSet_ZPop_OverCount(t *testing.T) {
 	z.ZIncrBy("a", 1)
 	z.ZIncrBy("b", 2)
 
-	assert.Len(t, z.ZPopMax(10), 4)
-	assert.Len(t, z.ZPopMin(10), 0)
+	r1, _ := z.ZPopMax(10)
+	assert.Len(t, r1, 4)
+	r2, _ := z.ZPopMin(10)
+	assert.Len(t, r2, 0)
 }
 
 func TestZSet_ZPop_CountZero(t *testing.T) {
 	z := NewZSet()
 	z.ZIncrBy("a", 1)
 
-	assert.Empty(t, z.ZPopMax(0))
-	assert.Empty(t, z.ZPopMin(0))
+	r1, _ := z.ZPopMax(0)
+	assert.Empty(t, r1)
+	r2, _ := z.ZPopMin(0)
+	assert.Empty(t, r2)
 }
 
 func TestZSet_ZPop_ExactSize(t *testing.T) {
@@ -406,7 +413,7 @@ func TestZSet_ZPop_ExactSize(t *testing.T) {
 	z.ZIncrBy("a", 1)
 	z.ZIncrBy("b", 2)
 
-	res := z.ZPopMin(2)
+	res, _ := z.ZPopMin(2)
 	assert.Equal(t, []string{"a", "1", "b", "2"}, res)
 
 	assert.Equal(t, uint32(0), z.ZCount(-100, 100))
@@ -802,7 +809,7 @@ func TestZSet_ZRem_Single(t *testing.T) {
 		"b": 2,
 	}, ZAddOptions{})
 
-	removed := z.ZRem([]string{"a"})
+	removed, _ := z.ZRem([]string{"a"})
 	assert.Equal(t, 1, removed)
 
 	assert.Nil(t, z.ZRank("a", false))
@@ -817,7 +824,7 @@ func TestZSet_ZRem_Multiple(t *testing.T) {
 		"c": 3,
 	}, ZAddOptions{})
 
-	removed := z.ZRem([]string{"a", "c", "x"})
+	removed, _ := z.ZRem([]string{"a", "c", "x"})
 	assert.Equal(t, 2, removed)
 
 	assert.Nil(t, z.ZRank("a", false))
@@ -829,8 +836,10 @@ func TestZSet_ZRem_Idempotent(t *testing.T) {
 	z := NewZSet()
 	z.ZAdd(map[string]float64{"a": 1}, ZAddOptions{})
 
-	assert.Equal(t, 1, z.ZRem([]string{"a"}))
-	assert.Equal(t, 0, z.ZRem([]string{"a"}))
+	r1, _ := z.ZRem([]string{"a"})
+	assert.Equal(t, 1, r1)
+	r2, _ := z.ZRem([]string{"a"})
+	assert.Equal(t, 0, r2)
 }
 
 func TestZSet_ZScore_Basic(t *testing.T) {

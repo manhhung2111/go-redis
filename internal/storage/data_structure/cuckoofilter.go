@@ -21,10 +21,10 @@ const (
  * https://www.cs.cmu.edu/~dga/papers/cuckoo-conext2014.pdf
 **/
 type CuckooFilter interface {
-	Add(item string) int
-	AddNx(item string) int
+	Add(item string) (int, int64)
+	AddNx(item string) (int, int64)
 	Count(item string) int
-	Del(item string) int
+	Del(item string) (int, int64)
 	Exists(item string) int
 	Info() []any
 	MExists(items []string) []int
@@ -321,7 +321,7 @@ func (f *subCuckooFilter) deleteFromSubFilter(item string) bool {
 // 2. Try to insert in the current (newest) sub-filter
 // 3. If full, create a new sub-filter and retry
 // 4. Return 1 on success, 0 if completely full (shouldn't happen with scaling)
-func (scf *scalableCuckooFilter) Add(item string) int {
+func (scf *scalableCuckooFilter) Add(item string) (int, int64) {
 	fp := getFingerprint(item)
 
 	currentFilter := scf.filters[len(scf.filters)-1]
@@ -331,38 +331,40 @@ func (scf *scalableCuckooFilter) Add(item string) int {
 	if currentFilter.insert(bucketIdx, fp) {
 		currentFilter.insertedItems++
 		scf.totalItems++
-		return 1
+		return 1, 0
 	}
 
 	// Current filter is full - add a new one
 	if !scf.addNewFilter() {
 		// Max expansions reached, filter is completely full
-		return 0
+		return 0, 0
 	}
 
 	currentFilter = scf.filters[len(scf.filters)-1]
 	bucketIdx = currentFilter.getBucketIndex(item)
+	// Calculate delta for the new filter
+	delta := CuckooFilterBucketSize(currentFilter.bucketSize) * int64(currentFilter.numBuckets)
 
 	if currentFilter.insert(bucketIdx, fp) {
 		currentFilter.insertedItems++
 		scf.totalItems++
-		return 1
+		return 1, delta
 	}
 
 	// Shouldn't happen with a fresh filter, but just in case
-	return 0
+	return 0, delta
 }
 
-func (scf *scalableCuckooFilter) AddNx(item string) int {
+func (scf *scalableCuckooFilter) AddNx(item string) (int, int64) {
 	if scf.Exists(item) == 1 {
-		return 0
+		return 0, 0
 	}
 
-	result := scf.Add(item)
+	result, delta := scf.Add(item)
 	if result == 0 {
-		return -1
+		return -1, delta
 	}
-	return 1
+	return 1, delta
 }
 
 func (scf *scalableCuckooFilter) Count(item string) int {
@@ -373,16 +375,17 @@ func (scf *scalableCuckooFilter) Count(item string) int {
 	return count
 }
 
-func (scf *scalableCuckooFilter) Del(item string) int {
+func (scf *scalableCuckooFilter) Del(item string) (int, int64) {
 	for i := len(scf.filters) - 1; i >= 0; i-- {
 		if scf.filters[i].deleteFromSubFilter(item) {
 			scf.filters[i].deletedItems++
 			scf.totalItems--
 			scf.totalDeletes++
-			return 1
+			// Fingerprints are not deallocated, so delta is 0
+			return 1, 0
 		}
 	}
-	return 0
+	return 0, 0
 }
 
 func (scf *scalableCuckooFilter) Exists(item string) int {

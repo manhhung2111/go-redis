@@ -22,12 +22,12 @@ func (s *store) SAdd(key string, members ...string) (int64, error) {
 			// members contain an element can not be converted to int64
 			// adding members resulting in exceeding the config.SET_MAX_INTSET_ENTRIES
 			intset := rObj.value.(data_structure.Set)
-			added, succeeded := intset.Add(members...)
+			added, succeeded, _ := intset.Add(members...)
 			if !succeeded {
 				// Upgrade to SimpleSet
 				simpleSet := data_structure.NewSimpleSet()
 				simpleSet.Add(intset.Members()...)
-				added, _ := simpleSet.Add(members...)
+				added, _, _ := simpleSet.Add(members...)
 
 				// Update existing RObj
 				rObj.encoding = EncHashTable
@@ -40,17 +40,17 @@ func (s *store) SAdd(key string, members ...string) (int64, error) {
 		}
 
 		simpleSet := rObj.value.(data_structure.Set)
-		added, _ := simpleSet.Add(members...)
+		added, _, _ := simpleSet.Add(members...)
 		return added, nil
 	}
 
 	// Key doesn't exist - create new set
 	if canBeConvertedToInt64(members...) {
 		intset := data_structure.NewIntSet()
-		added, succeeded := intset.Add(members...)
+		added, succeeded, _ := intset.Add(members...)
 		if succeeded {
 			s.data.Set(key, &RObj{
-				objType:     ObjSet,
+				objType:  ObjSet,
 				encoding: EncIntSet,
 				value:    intset,
 			})
@@ -60,7 +60,7 @@ func (s *store) SAdd(key string, members ...string) (int64, error) {
 	}
 
 	simpleSet := data_structure.NewSimpleSet()
-	added, _ := simpleSet.Add(members...)
+	added, _, _ := simpleSet.Add(members...)
 
 	s.data.Set(key, &RObj{
 		objType:     ObjSet,
@@ -140,7 +140,8 @@ func (s *store) SRem(key string, members ...string) (int64, error) {
 	}
 
 	set := result.object.value.(data_structure.Set)
-	return set.Delete(members...), nil
+	removed, _ := set.Delete(members...)
+	return removed, nil
 }
 
 func (s *store) SPop(key string, count int) ([]string, error) {

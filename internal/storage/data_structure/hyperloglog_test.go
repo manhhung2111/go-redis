@@ -22,7 +22,7 @@ func TestHyperLogLogPFAddSingleItem(t *testing.T) {
 	hll := NewHyperLogLog()
 
 	// Add new item should return 1
-	result := hll.PFAdd([]string{"item1"})
+	result, _ := hll.PFAdd([]string{"item1"})
 	assert.Equal(t, 1, result, "should return 1 for new item")
 
 	// Cardinality should be ~1
@@ -34,11 +34,11 @@ func TestHyperLogLogPFAddDuplicateItem(t *testing.T) {
 	hll := NewHyperLogLog()
 
 	// Add item first time
-	result := hll.PFAdd([]string{"item1"})
+	result, _ := hll.PFAdd([]string{"item1"})
 	assert.Equal(t, 1, result)
 
 	// Add same item again - should return 0 (no register updated)
-	result = hll.PFAdd([]string{"item1"})
+	result, _ = hll.PFAdd([]string{"item1"})
 	assert.Equal(t, 0, result, "should return 0 for duplicate item")
 
 	// Cardinality should still be ~1
@@ -50,7 +50,7 @@ func TestHyperLogLogPFAddMultipleItems(t *testing.T) {
 	hll := NewHyperLogLog()
 
 	items := []string{"apple", "banana", "cherry", "date", "elderberry"}
-	result := hll.PFAdd(items)
+	result, _ := hll.PFAdd(items)
 	assert.Equal(t, 1, result, "should return 1 when registers updated")
 
 	// Cardinality should be close to 5
@@ -61,7 +61,7 @@ func TestHyperLogLogPFAddMultipleItems(t *testing.T) {
 func TestHyperLogLogPFAddEmptySlice(t *testing.T) {
 	hll := NewHyperLogLog()
 
-	result := hll.PFAdd([]string{})
+	result, _ := hll.PFAdd([]string{})
 	assert.Equal(t, 0, result, "should return 0 for empty slice")
 
 	count := hll.PFCount(nil)
@@ -71,7 +71,7 @@ func TestHyperLogLogPFAddEmptySlice(t *testing.T) {
 func TestHyperLogLogPFAddEmptyString(t *testing.T) {
 	hll := NewHyperLogLog()
 
-	result := hll.PFAdd([]string{""})
+	result, _ := hll.PFAdd([]string{""})
 	assert.Equal(t, 1, result, "should return 1 for empty string item")
 
 	count := hll.PFCount(nil)
@@ -267,7 +267,7 @@ func TestHyperLogLogCacheNotInvalidatedOnDuplicate(t *testing.T) {
 	count1 := hll.PFCount(nil)
 
 	// Add duplicate - should NOT invalidate cache (returns 0)
-	result := hll.PFAdd([]string{"item1"})
+	result, _ := hll.PFAdd([]string{"item1"})
 	assert.Equal(t, 0, result, "adding duplicate should return 0")
 
 	// Cache should still be valid
@@ -335,7 +335,7 @@ func TestHyperLogLogSpecialCharacters(t *testing.T) {
 		"null\x00byte",
 	}
 
-	result := hll.PFAdd(specialItems)
+	result, _ := hll.PFAdd(specialItems)
 	assert.Equal(t, 1, result)
 
 	count := hll.PFCount(nil)
@@ -351,7 +351,7 @@ func TestHyperLogLogLongStrings(t *testing.T) {
 		longString += "a"
 	}
 
-	result := hll.PFAdd([]string{longString})
+	result, _ := hll.PFAdd([]string{longString})
 	assert.Equal(t, 1, result)
 
 	count := hll.PFCount(nil)
@@ -359,7 +359,7 @@ func TestHyperLogLogLongStrings(t *testing.T) {
 
 	// Different long string should be counted separately
 	differentLongString := longString + "b"
-	result = hll.PFAdd([]string{differentLongString})
+	result, _ = hll.PFAdd([]string{differentLongString})
 	assert.Equal(t, 1, result)
 
 	count = hll.PFCount(nil)

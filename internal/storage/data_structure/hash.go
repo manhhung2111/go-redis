@@ -14,10 +14,10 @@ type Hash interface {
 	GetKeys() []string
 	GetValues() []string
 	Size() uint32
-	IncBy(key string, increment int64) (int64, error)
-	Set(fieldValue map[string]string) int64
-	SetNX(key, value string) bool
-	Delete(keys ...string) int64
+	IncBy(key string, increment int64) (int64, int64, error)
+	Set(fieldValue map[string]string) (int64, int64)
+	SetNX(key, value string) (bool, int64)
+	Delete(keys ...string) (int64, int64)
 	Exists(key string) bool
 	MemoryUsage() int64
 }
@@ -79,28 +79,34 @@ func (s *simpleHash) GetValues() []string {
 	return result
 }
 
-func (s *simpleHash) IncBy(key string, increment int64) (int64, error) {
+func (s *simpleHash) IncBy(key string, increment int64) (int64, int64, error) {
 	value, exists := s.contents[key]
 
 	if !exists {
-		s.contents[key] = strconv.FormatInt(increment, 10)
-		return increment, nil
+		newValue := strconv.FormatInt(increment, 10)
+		s.contents[key] = newValue
+		delta := StringStringMapEntrySize(key, newValue)
+		return increment, delta, nil
 	}
 
 	valueInt, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
-		return 0, errors.New("hash value is not an integer")
+		return 0, 0, errors.New("hash value is not an integer")
 	}
 
 	// Check for overflow
 	if (increment > 0 && valueInt > math.MaxInt64-increment) ||
 		(increment < 0 && valueInt < math.MinInt64-increment) {
-		return 0, errors.New("value is not an integer or out of range")
+		return 0, 0, errors.New("value is not an integer or out of range")
 	}
 
+	oldValue := value
 	valueInt += increment
-	s.contents[key] = strconv.FormatInt(valueInt, 10)
-	return valueInt, nil
+	newValue := strconv.FormatInt(valueInt, 10)
+	s.contents[key] = newValue
+	// Delta is the difference in value string length
+	delta := StringSize(newValue) - StringSize(oldValue)
+	return valueInt, delta, nil
 }
 
 func (s *simpleHash) MGet(keys ...string) []*string {
@@ -117,45 +123,53 @@ func (s *simpleHash) MGet(keys ...string) []*string {
 	return result
 }
 
-func (s *simpleHash) Set(fieldValue map[string]string) int64 {
+func (s *simpleHash) Set(fieldValue map[string]string) (int64, int64) {
 	if len(fieldValue) == 0 {
-		return 0
+		return 0, 0
 	}
-	
+
 	added := int64(0)
+	delta := int64(0)
 	for key, value := range fieldValue {
-		if _, exists := s.contents[key]; !exists {
+		if oldValue, exists := s.contents[key]; !exists {
 			added++
+			delta += StringStringMapEntrySize(key, value)
+		} else {
+			// Value is being updated, delta is the difference in value length
+			delta += StringSize(value) - StringSize(oldValue)
 		}
 		s.contents[key] = value
 	}
 
-	return added
+	return added, delta
 }
 
-func (s *simpleHash) SetNX(key, value string) bool {
+func (s *simpleHash) SetNX(key, value string) (bool, int64) {
 	if _, exists := s.contents[key]; exists {
-		return false
+		return false, 0
 	}
-	
+
 	s.contents[key] = value
-	return true
+	delta := StringStringMapEntrySize(key, value)
+	return true, delta
 }
 
-func (s *simpleHash) Delete(keys ...string) int64 {
+func (s *simpleHash) Delete(keys ...string) (int64, int64) {
 	if len(keys) == 0 {
-		return 0
+		return 0, 0
 	}
-	
+
 	deleted := int64(0)
+	delta := int64(0)
 	for _, key := range keys {
-		if _, exists := s.contents[key]; exists {
+		if value, exists := s.contents[key]; exists {
+			delta -= StringStringMapEntrySize(key, value)
 			delete(s.contents, key)
 			deleted++
 		}
 	}
-	
-	return deleted
+
+	return deleted, delta
 }
 
 func (s *simpleHash) Size() uint32 {

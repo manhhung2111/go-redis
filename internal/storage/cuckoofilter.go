@@ -13,7 +13,8 @@ func (s *store) CFAdd(key string, item string) (int, error) {
 		return 0, err
 	}
 
-	return scf.Add(item), nil
+	result, _ := scf.Add(item)
+	return result, nil
 }
 
 func (s *store) CFAddNx(key string, item string) (int, error) {
@@ -22,7 +23,8 @@ func (s *store) CFAddNx(key string, item string) (int, error) {
 		return 0, err
 	}
 
-	return scf.AddNx(item), nil
+	result, _ := scf.AddNx(item)
+	return result, nil
 }
 
 func (s *store) CFCount(key string, item string) (int, error) {
@@ -48,7 +50,8 @@ func (s *store) CFDel(key string, item string) (int, error) {
 		return 0, ErrKeyNotFoundError
 	}
 
-	return scf.Del(item), nil
+	result, _ := scf.Del(item)
+	return result, nil
 }
 
 func (s *store) CFExists(key string, item string) (int, error) {

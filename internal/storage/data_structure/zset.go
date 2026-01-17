@@ -10,14 +10,14 @@ import (
 )
 
 type ZSet interface {
-	ZAdd(scoreMember map[string]float64, options ZAddOptions) *uint32
+	ZAdd(scoreMember map[string]float64, options ZAddOptions) (*uint32, int64)
 	ZCard() uint32
 	ZCount(minScore, maxScore float64) uint32
-	ZIncrBy(member string, increment float64) (float64, bool)
+	ZIncrBy(member string, increment float64) (float64, bool, int64)
 	ZLexCount(minValue, maxValue string) uint32
 	ZMScore(members []string) []*float64
-	ZPopMax(count int) []string
-	ZPopMin(count int) []string
+	ZPopMax(count int) ([]string, int64)
+	ZPopMin(count int) ([]string, int64)
 	ZRandMember(count int, withScores bool) []string
 	ZRangeByRank(start, stop int, withScores bool) []string
 	ZRangeByLex(start, stop string, withScores bool) []string
@@ -26,12 +26,12 @@ type ZSet interface {
 	ZRevRangeByLex(start, stop string, withScores bool) []string
 	ZRevRangeByScore(start, stop float64, withScores bool) []string
 	ZRank(member string, withScore bool) []any
-	ZRem(members []string) int
+	ZRem(members []string) (int, int64)
 	ZRevRank(member string, withScore bool) []any
 	ZScore(member string) *float64
 
 	// Geo commands (stored as ZSet with geohash as score)
-	GeoAdd(items []GeoPoint, options ZAddOptions) *uint32
+	GeoAdd(items []GeoPoint, options ZAddOptions) (*uint32, int64)
 	GeoDist(member1, member2 string, unit string) *float64
 	GeoHash(members []string) []*string
 	GeoPos(members []string) []*GeoPoint
@@ -60,9 +60,9 @@ func NewZSet() ZSet {
 	}
 }
 
-func (zset *zSet) ZAdd(scoreMember map[string]float64, options ZAddOptions) *uint32 {
+func (zset *zSet) ZAdd(scoreMember map[string]float64, options ZAddOptions) (*uint32, int64) {
 	if options.NX && options.XX || options.GT && options.LT {
-		return nil
+		return nil, 0
 	}
 
 	count := 0
@@ -77,10 +77,11 @@ func (zset *zSet) ZAdd(scoreMember map[string]float64, options ZAddOptions) *uin
 	}
 
 	if count > 1 {
-		return nil
+		return nil, 0
 	}
 
 	result := uint32(0)
+	delta := int64(0)
 	for member, newScore := range scoreMember {
 		oldScore, exists := zset.data[member]
 
@@ -111,10 +112,12 @@ func (zset *zSet) ZAdd(scoreMember map[string]float64, options ZAddOptions) *uin
 
 		zset.skipList.insert(member, newScore)
 		zset.data[member] = newScore
+		// New member: add skip list node + map entry
+		delta += SkipListNodeSizeAvg(member) + StringFloat64MapEntrySize(member)
 		result++
 	}
 
-	return &result
+	return &result, delta
 }
 
 func (zset *zSet) ZCard() uint32 {
@@ -125,23 +128,25 @@ func (zset *zSet) ZCount(minScore, maxScore float64) uint32 {
 	return uint32(zset.skipList.countByScore(minScore, maxScore))
 }
 
-func (zset *zSet) ZIncrBy(member string, increment float64) (float64, bool) {
+func (zset *zSet) ZIncrBy(member string, increment float64) (float64, bool, int64) {
 	score, exists := zset.data[member]
 	if !exists {
 		zset.skipList.insert(member, increment)
 		zset.data[member] = increment
-		return increment, true
+		// New member: add skip list node + map entry
+		delta := SkipListNodeSizeAvg(member) + StringFloat64MapEntrySize(member)
+		return increment, true, delta
 	}
 
 	newScore := score + increment
 	if math.IsInf(newScore, 0) || math.IsNaN(newScore) {
-		return 0, false
+		return 0, false, 0
 	}
 
 	zset.skipList.update(member, score, newScore)
 	zset.data[member] = newScore
 
-	return newScore, true
+	return newScore, true, 0
 }
 
 func (zset *zSet) ZLexCount(minValue, maxValue string) uint32 {
@@ -161,36 +166,44 @@ func (zset *zSet) ZMScore(members []string) []*float64 {
 	return result
 }
 
-func (zset *zSet) ZPopMax(count int) []string {
+func (zset *zSet) ZPopMax(count int) ([]string, int64) {
 	poppedNodes := zset.skipList.popMax(count)
 	if poppedNodes == nil {
-		return []string{}
+		return []string{}, 0
 	}
 
 	result := make([]string, 0, len(poppedNodes)*2)
+	delta := int64(0)
 	for i := range poppedNodes {
-		delete(zset.data, poppedNodes[i].value)
-		result = append(result, poppedNodes[i].value)
+		member := poppedNodes[i].value
+		delete(zset.data, member)
+		result = append(result, member)
 		result = append(result, formatFloat(poppedNodes[i].score))
+		// Removed member: subtract skip list node + map entry
+		delta -= SkipListNodeSizeAvg(member) + StringFloat64MapEntrySize(member)
 	}
 
-	return result
+	return result, delta
 }
 
-func (zset *zSet) ZPopMin(count int) []string {
+func (zset *zSet) ZPopMin(count int) ([]string, int64) {
 	poppedNodes := zset.skipList.popMin(count)
 	if poppedNodes == nil {
-		return []string{}
+		return []string{}, 0
 	}
 
 	result := make([]string, 0, len(poppedNodes)*2)
+	delta := int64(0)
 	for i := range poppedNodes {
-		delete(zset.data, poppedNodes[i].value)
-		result = append(result, poppedNodes[i].value)
+		member := poppedNodes[i].value
+		delete(zset.data, member)
+		result = append(result, member)
 		result = append(result, formatFloat(poppedNodes[i].score))
+		// Removed member: subtract skip list node + map entry
+		delta -= SkipListNodeSizeAvg(member) + StringFloat64MapEntrySize(member)
 	}
 
-	return result
+	return result, delta
 }
 
 func (zset *zSet) ZRandMember(count int, withScores bool) []string {
@@ -299,8 +312,9 @@ func (zset *zSet) ZRank(member string, withScore bool) []any {
 	return []any{rank}
 }
 
-func (zset *zSet) ZRem(members []string) int {
+func (zset *zSet) ZRem(members []string) (int, int64) {
 	removed := 0
+	delta := int64(0)
 
 	for _, member := range members {
 		if score, exists := zset.data[member]; exists {
@@ -308,11 +322,13 @@ func (zset *zSet) ZRem(members []string) int {
 			if zset.skipList.delete(member, score) {
 				delete(zset.data, member)
 				removed++
+				// Removed member: subtract skip list node + map entry
+				delta -= SkipListNodeSizeAvg(member) + StringFloat64MapEntrySize(member)
 			}
 		}
 	}
 
-	return removed
+	return removed, delta
 }
 
 func (zset *zSet) ZRevRank(member string, withScore bool) []any {

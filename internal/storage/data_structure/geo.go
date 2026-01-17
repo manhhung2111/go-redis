@@ -6,7 +6,7 @@ import (
 )
 
 // GeoAdd adds geospatial items to the sorted set
-func (zset *zSet) GeoAdd(items []GeoPoint, options ZAddOptions) *uint32 {
+func (zset *zSet) GeoAdd(items []GeoPoint, options ZAddOptions) (*uint32, int64) {
 	scoreMember := make(map[string]float64, len(items))
 	for _, item := range items {
 		hash := GeoHashEncode(item.Longitude, item.Latitude)

@@ -16,9 +16,9 @@ const (
 )
 
 type HyperLogLog interface {
-	PFAdd(items []string) int
+	PFAdd(items []string) (int, int64)
 	PFCount(hyperLogLogs []HyperLogLog) int
-	PFMerge(hyperLogLogs []HyperLogLog)
+	PFMerge(hyperLogLogs []HyperLogLog) int64
 	MemoryUsage() int64
 }
 
@@ -37,7 +37,8 @@ func NewHyperLogLog() HyperLogLog {
 }
 
 // PFAdd adds items to the HyperLogLog and returns 1 if any register was updated, 0 otherwise.
-func (h *hyperLogLog) PFAdd(items []string) int {
+// Delta is always 0 since registers are pre-allocated.
+func (h *hyperLogLog) PFAdd(items []string) (int, int64) {
 	updated := 0
 	for i := range items {
 		updated += h.insert(items[i])
@@ -45,10 +46,10 @@ func (h *hyperLogLog) PFAdd(items []string) int {
 
 	if updated > 0 {
 		h.dirty = true // Invalidate cache when registers change
-		return 1
+		return 1, 0
 	}
 
-	return 0
+	return 0, 0
 }
 
 // PFCount returns the estimated cardinality of the union of this HLL and the provided HLLs.
@@ -92,7 +93,8 @@ func (h *hyperLogLog) PFCount(hyperLogLogs []HyperLogLog) int {
 }
 
 // PFMerge merges the provided HyperLogLogs into this one.
-func (h *hyperLogLog) PFMerge(hyperLogLogs []HyperLogLog) {
+// Delta is always 0 since registers are pre-allocated.
+func (h *hyperLogLog) PFMerge(hyperLogLogs []HyperLogLog) int64 {
 	for i := range hyperLogLogs {
 		hll := hyperLogLogs[i].(*hyperLogLog)
 		for j := range hllM {
@@ -102,6 +104,7 @@ func (h *hyperLogLog) PFMerge(hyperLogLogs []HyperLogLog) {
 		}
 	}
 	h.dirty = true // Invalidate cache after merge
+	return 0
 }
 
 func calculateCardinality(registers []uint8) int {

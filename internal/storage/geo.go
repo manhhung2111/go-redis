@@ -10,7 +10,7 @@ func (s *store) GeoAdd(key string, items []data_structure.GeoPoint, options data
 
 	if !result.exists {
 		zset := data_structure.NewZSet()
-		added := zset.GeoAdd(items, options)
+		added, _ := zset.GeoAdd(items, options)
 		s.data.Set(key, &RObj{
 			objType:     ObjZSet,
 			encoding: EncSortedSet,
@@ -20,7 +20,8 @@ func (s *store) GeoAdd(key string, items []data_structure.GeoPoint, options data
 	}
 
 	zset := result.object.value.(data_structure.ZSet)
-	return zset.GeoAdd(items, options), nil
+	added, _ := zset.GeoAdd(items, options)
+	return added, nil
 }
 
 func (s *store) GeoDist(key, member1, member2, unit string) (*float64, error) {
