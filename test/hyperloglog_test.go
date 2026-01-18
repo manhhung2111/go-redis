@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/manhhung2111/go-redis/internal/core"
+	"github.com/manhhung2111/go-redis/internal/protocol"
 )
 
 // PFADD tests
@@ -63,7 +63,7 @@ func TestPFAddWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.PFAdd(cmd("PFADD", "k", "item1"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 // PFCOUNT tests
@@ -128,7 +128,7 @@ func TestPFCountWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.PFCount(cmd("PFCOUNT", "k"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestPFCountOneWrongType(t *testing.T) {
@@ -139,7 +139,7 @@ func TestPFCountOneWrongType(t *testing.T) {
 
 	// Should fail because one key is wrong type
 	resp := r.PFCount(cmd("PFCOUNT", "hll", "k"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 // PFMERGE tests
@@ -151,7 +151,7 @@ func TestPFMerge(t *testing.T) {
 	r.PFAdd(cmd("PFADD", "hll2", "d", "e", "f"))
 
 	resp := r.PFMerge(cmd("PFMERGE", "dest", "hll1", "hll2"))
-	assert.Equal(t, core.RespOK, resp)
+	assert.Equal(t, protocol.RespOK, resp)
 
 	// Verify merged count
 	resp = r.PFCount(cmd("PFCOUNT", "dest"))
@@ -165,7 +165,7 @@ func TestPFMergeWithOverlap(t *testing.T) {
 	r.PFAdd(cmd("PFADD", "hll2", "b", "c", "d"))
 
 	resp := r.PFMerge(cmd("PFMERGE", "dest", "hll1", "hll2"))
-	assert.Equal(t, core.RespOK, resp)
+	assert.Equal(t, protocol.RespOK, resp)
 
 	// Union should be 4 (a, b, c, d)
 	resp = r.PFCount(cmd("PFCOUNT", "dest"))
@@ -179,7 +179,7 @@ func TestPFMergeIntoExisting(t *testing.T) {
 	r.PFAdd(cmd("PFADD", "src", "a", "b", "c"))
 
 	resp := r.PFMerge(cmd("PFMERGE", "dest", "src"))
-	assert.Equal(t, core.RespOK, resp)
+	assert.Equal(t, protocol.RespOK, resp)
 
 	// Dest should have union of both
 	resp = r.PFCount(cmd("PFCOUNT", "dest"))
@@ -191,7 +191,7 @@ func TestPFMergeNoSources(t *testing.T) {
 
 	// Merge with no sources - just creates empty dest
 	resp := r.PFMerge(cmd("PFMERGE", "dest"))
-	assert.Equal(t, core.RespOK, resp)
+	assert.Equal(t, protocol.RespOK, resp)
 
 	// Dest should exist but be empty
 	resp = r.PFCount(cmd("PFCOUNT", "dest"))
@@ -205,7 +205,7 @@ func TestPFMergeNonExistingSources(t *testing.T) {
 
 	// Merge including non-existing sources
 	resp := r.PFMerge(cmd("PFMERGE", "dest", "hll", "nonexistent"))
-	assert.Equal(t, core.RespOK, resp)
+	assert.Equal(t, protocol.RespOK, resp)
 
 	// Should only have data from hll
 	resp = r.PFCount(cmd("PFCOUNT", "dest"))
@@ -226,7 +226,7 @@ func TestPFMergeWrongTypeInDest(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.PFMerge(cmd("PFMERGE", "k", "hll"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestPFMergeWrongTypeInSource(t *testing.T) {
@@ -236,7 +236,7 @@ func TestPFMergeWrongTypeInSource(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.PFMerge(cmd("PFMERGE", "dest", "hll", "k"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 // Workflow tests
@@ -265,7 +265,7 @@ func TestPFWorkflow(t *testing.T) {
 
 	// Merge into daily total
 	resp = r.PFMerge(cmd("PFMERGE", "daily:total", "page:home", "page:about", "page:contact"))
-	assert.Equal(t, core.RespOK, resp)
+	assert.Equal(t, protocol.RespOK, resp)
 
 	resp = r.PFCount(cmd("PFCOUNT", "daily:total"))
 	assert.Equal(t, []byte(":5\r\n"), resp)

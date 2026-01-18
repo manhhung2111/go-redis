@@ -1,4 +1,4 @@
-package core
+package protocol
 
 // Pre-encoded RESP responses for common operations
 var (

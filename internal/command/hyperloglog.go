@@ -1,15 +1,15 @@
 package command
 
 import (
-	"github.com/manhhung2111/go-redis/internal/core"
+	"github.com/manhhung2111/go-redis/internal/protocol"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
 
 /* Support PFADD key [element [element ...]] */
-func (redis *redis) PFAdd(cmd core.RedisCmd) []byte {
+func (redis *redis) PFAdd(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 1 {
-		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	// Elements are optional - if not provided, just create the HLL
@@ -20,32 +20,32 @@ func (redis *redis) PFAdd(cmd core.RedisCmd) []byte {
 
 	result, err := redis.Store.PFAdd(args[0], elements)
 	if err != nil {
-		return core.EncodeResp(err, false)
+		return protocol.EncodeResp(err, false)
 	}
 
-	return core.EncodeResp(result, false)
+	return protocol.EncodeResp(result, false)
 }
 
 /* Support PFCOUNT key [key ...] */
-func (redis *redis) PFCount(cmd core.RedisCmd) []byte {
+func (redis *redis) PFCount(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 1 {
-		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	count, err := redis.Store.PFCount(args)
 	if err != nil {
-		return core.EncodeResp(err, false)
+		return protocol.EncodeResp(err, false)
 	}
 
-	return core.EncodeResp(count, false)
+	return protocol.EncodeResp(count, false)
 }
 
 /* Support PFMERGE destkey [sourcekey [sourcekey ...]] */
-func (redis *redis) PFMerge(cmd core.RedisCmd) []byte {
+func (redis *redis) PFMerge(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 1 {
-		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	destKey := args[0]
@@ -56,8 +56,8 @@ func (redis *redis) PFMerge(cmd core.RedisCmd) []byte {
 
 	err := redis.Store.PFMerge(destKey, sourceKeys)
 	if err != nil {
-		return core.EncodeResp(err, false)
+		return protocol.EncodeResp(err, false)
 	}
 
-	return core.RespOK
+	return protocol.RespOK
 }

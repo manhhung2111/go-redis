@@ -10,7 +10,7 @@ import (
 
 	"github.com/manhhung2111/go-redis/internal/command"
 	"github.com/manhhung2111/go-redis/internal/config"
-	"github.com/manhhung2111/go-redis/internal/core"
+	"github.com/manhhung2111/go-redis/internal/protocol"
 )
 
 const activeExpireTimerIdent = 2003
@@ -199,10 +199,10 @@ func (s *Server) handleClientRequest(clientFD int) error {
 		return nil
 	}
 
-	cmd, err := core.ParseCmd(buf[:n])
+	cmd, err := protocol.ParseCmd(buf[:n])
 	var response []byte
 	if err != nil {
-		response = core.EncodeResp(err, false)
+		response = protocol.EncodeResp(err, false)
 	} else {
 		response = s.redis.HandleCommand(*cmd)
 	}

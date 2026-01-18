@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/manhhung2111/go-redis/internal/core"
+	"github.com/manhhung2111/go-redis/internal/protocol"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
 
@@ -14,35 +14,35 @@ import (
 func TestHGet_InvalidArity_NoArgs(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HGet(cmd("HGET", "key"))
-	expected := core.EncodeResp(util.InvalidNumberOfArgs("HGET"), false)
+	expected := protocol.EncodeResp(util.InvalidNumberOfArgs("HGET"), false)
 	assert.Equal(t, expected, resp)
 }
 
 func TestHGet_InvalidArity_TooManyArgs(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HGet(cmd("HGET", "key", "field1", "field2"))
-	expected := core.EncodeResp(util.InvalidNumberOfArgs("HGET"), false)
+	expected := protocol.EncodeResp(util.InvalidNumberOfArgs("HGET"), false)
 	assert.Equal(t, expected, resp)
 }
 
 func TestHGet_KeyNotExist(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HGet(cmd("HGET", "missing", "field"))
-	assert.Equal(t, core.RespNilBulkString, resp)
+	assert.Equal(t, protocol.RespNilBulkString, resp)
 }
 
 func TestHGet_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HGet(cmd("HGET", "key", "field"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestHGet_FieldNotExist(t *testing.T) {
 	r := newTestRedis()
 	r.HSet(cmd("HSET", "key", "field1", "value1"))
 	resp := r.HGet(cmd("HGET", "key", "field2"))
-	assert.Equal(t, core.RespNilBulkString, resp)
+	assert.Equal(t, protocol.RespNilBulkString, resp)
 }
 
 func TestHGet_Success(t *testing.T) {
@@ -50,7 +50,7 @@ func TestHGet_Success(t *testing.T) {
 	r.HSet(cmd("HSET", "key", "field1", "value1"))
 	resp := r.HGet(cmd("HGET", "key", "field1"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, "value1", val)
 }
@@ -59,7 +59,7 @@ func TestHGet_Success(t *testing.T) {
 func TestHGetAll_InvalidArity(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HGetAll(cmd("HGETALL"))
-	expected := core.EncodeResp(util.InvalidNumberOfArgs("HGETALL"), false)
+	expected := protocol.EncodeResp(util.InvalidNumberOfArgs("HGETALL"), false)
 	assert.Equal(t, expected, resp)
 }
 
@@ -67,7 +67,7 @@ func TestHGetAll_KeyNotExist(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HGetAll(cmd("HGETALL", "missing"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, []interface{}{}, val)
 }
@@ -76,7 +76,7 @@ func TestHGetAll_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HGetAll(cmd("HGETALL", "key"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestHGetAll_Success(t *testing.T) {
@@ -84,7 +84,7 @@ func TestHGetAll_Success(t *testing.T) {
 	r.HSet(cmd("HSET", "key", "field1", "value1", "field2", "value2"))
 	resp := r.HGetAll(cmd("HGETALL", "key"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	
 	result := val.([]interface{})
@@ -99,7 +99,7 @@ func TestHGetAll_Success(t *testing.T) {
 func TestHMGet_InvalidArity(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HMGet(cmd("HMGET", "key"))
-	expected := core.EncodeResp(util.InvalidNumberOfArgs("HMGET"), false)
+	expected := protocol.EncodeResp(util.InvalidNumberOfArgs("HMGET"), false)
 	assert.Equal(t, expected, resp)
 }
 
@@ -107,14 +107,14 @@ func TestHMGet_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HMGet(cmd("HMGET", "key", "field1"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestHMGet_KeyNotExist(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HMGet(cmd("HMGET", "missing", "field1", "field2"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	
 	result := val.([]interface{})
@@ -128,7 +128,7 @@ func TestHMGet_MixExistingAndNonExisting(t *testing.T) {
 	r.HSet(cmd("HSET", "key", "field1", "value1", "field3", "value3"))
 	resp := r.HMGet(cmd("HMGET", "key", "field1", "field2", "field3"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	
 	result := val.([]interface{})
@@ -142,14 +142,14 @@ func TestHMGet_MixExistingAndNonExisting(t *testing.T) {
 func TestHIncrBy_InvalidArity_TooFew(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HIncrBy(cmd("HINCRBY", "key", "field"))
-	expected := core.EncodeResp(util.InvalidNumberOfArgs("HINCRBY"), false)
+	expected := protocol.EncodeResp(util.InvalidNumberOfArgs("HINCRBY"), false)
 	assert.Equal(t, expected, resp)
 }
 
 func TestHIncrBy_InvalidArity_TooMany(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HIncrBy(cmd("HINCRBY", "key", "field", "5", "extra"))
-	expected := core.EncodeResp(util.InvalidNumberOfArgs("HINCRBY"), false)
+	expected := protocol.EncodeResp(util.InvalidNumberOfArgs("HINCRBY"), false)
 	assert.Equal(t, expected, resp)
 }
 
@@ -157,13 +157,13 @@ func TestHIncrBy_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HIncrBy(cmd("HINCRBY", "key", "field", "5"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestHIncrBy_InvalidIncrement(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HIncrBy(cmd("HINCRBY", "key", "field", "notanumber"))
-	assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
+	assert.Equal(t, protocol.RespValueNotIntegerOrOutOfRange, resp)
 }
 
 func TestHIncrBy_FieldNotInteger(t *testing.T) {
@@ -171,7 +171,7 @@ func TestHIncrBy_FieldNotInteger(t *testing.T) {
 	r.HSet(cmd("HSET", "key", "field", "notanumber"))
 	resp := r.HIncrBy(cmd("HINCRBY", "key", "field", "5"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	
 	// Should return error message
@@ -183,7 +183,7 @@ func TestHIncrBy_NewField(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HIncrBy(cmd("HINCRBY", "key", "counter", "10"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(10), val)
 }
@@ -193,7 +193,7 @@ func TestHIncrBy_ExistingField(t *testing.T) {
 	r.HSet(cmd("HSET", "key", "counter", "5"))
 	resp := r.HIncrBy(cmd("HINCRBY", "key", "counter", "3"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(8), val)
 }
@@ -203,7 +203,7 @@ func TestHIncrBy_NegativeIncrement(t *testing.T) {
 	r.HSet(cmd("HSET", "key", "counter", "10"))
 	resp := r.HIncrBy(cmd("HINCRBY", "key", "counter", "-3"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(7), val)
 }
@@ -212,7 +212,7 @@ func TestHIncrBy_NegativeIncrement(t *testing.T) {
 func TestHKeys_InvalidArity(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HKeys(cmd("HKEYS"))
-	expected := core.EncodeResp(util.InvalidNumberOfArgs("HKEYS"), false)
+	expected := protocol.EncodeResp(util.InvalidNumberOfArgs("HKEYS"), false)
 	assert.Equal(t, expected, resp)
 }
 
@@ -220,7 +220,7 @@ func TestHKeys_KeyNotExist(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HKeys(cmd("HKEYS", "missing"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, []interface{}{}, val)
 }
@@ -229,7 +229,7 @@ func TestHKeys_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HKeys(cmd("HKEYS", "key"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestHKeys_Success(t *testing.T) {
@@ -237,7 +237,7 @@ func TestHKeys_Success(t *testing.T) {
 	r.HSet(cmd("HSET", "key", "field1", "value1", "field2", "value2"))
 	resp := r.HKeys(cmd("HKEYS", "key"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	
 	result := val.([]interface{})
@@ -250,7 +250,7 @@ func TestHKeys_Success(t *testing.T) {
 func TestHVals_InvalidArity(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HVals(cmd("HVALS"))
-	expected := core.EncodeResp(util.InvalidNumberOfArgs("HVALS"), false)
+	expected := protocol.EncodeResp(util.InvalidNumberOfArgs("HVALS"), false)
 	assert.Equal(t, expected, resp)
 }
 
@@ -258,7 +258,7 @@ func TestHVals_KeyNotExist(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HVals(cmd("HVALS", "missing"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, []interface{}{}, val)
 }
@@ -267,7 +267,7 @@ func TestHVals_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HVals(cmd("HVALS", "key"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestHVals_Success(t *testing.T) {
@@ -275,7 +275,7 @@ func TestHVals_Success(t *testing.T) {
 	r.HSet(cmd("HSET", "key", "field1", "value1", "field2", "value2"))
 	resp := r.HVals(cmd("HVALS", "key"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	
 	result := val.([]interface{})
@@ -288,7 +288,7 @@ func TestHVals_Success(t *testing.T) {
 func TestHLen_InvalidArity(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HLen(cmd("HLEN"))
-	expected := core.EncodeResp(util.InvalidNumberOfArgs("HLEN"), false)
+	expected := protocol.EncodeResp(util.InvalidNumberOfArgs("HLEN"), false)
 	assert.Equal(t, expected, resp)
 }
 
@@ -296,7 +296,7 @@ func TestHLen_KeyNotExist(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HLen(cmd("HLEN", "missing"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), val)
 }
@@ -305,7 +305,7 @@ func TestHLen_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HLen(cmd("HLEN", "key"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestHLen_Success(t *testing.T) {
@@ -313,7 +313,7 @@ func TestHLen_Success(t *testing.T) {
 	r.HSet(cmd("HSET", "key", "field1", "value1", "field2", "value2", "field3", "value3"))
 	resp := r.HLen(cmd("HLEN", "key"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(3), val)
 }
@@ -322,14 +322,14 @@ func TestHLen_Success(t *testing.T) {
 func TestHSet_InvalidArity_TooFew(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HSet(cmd("HSET", "key", "field"))
-	expected := core.EncodeResp(util.InvalidNumberOfArgs("HSET"), false)
+	expected := protocol.EncodeResp(util.InvalidNumberOfArgs("HSET"), false)
 	assert.Equal(t, expected, resp)
 }
 
 func TestHSet_InvalidArity_EvenArgs(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HSet(cmd("HSET", "key", "field1", "value1", "field2"))
-	expected := core.EncodeResp(util.InvalidNumberOfArgs("HSET"), false)
+	expected := protocol.EncodeResp(util.InvalidNumberOfArgs("HSET"), false)
 	assert.Equal(t, expected, resp)
 }
 
@@ -337,20 +337,20 @@ func TestHSet_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HSet(cmd("HSET", "key", "field", "value"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestHSet_NewFields(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HSet(cmd("HSET", "key", "field1", "value1", "field2", "value2"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), val)
 	
 	// Verify fields were set
 	getResp := r.HGet(cmd("HGET", "key", "field1"))
-	getVal, _, err := core.DecodeResp(getResp)
+	getVal, _, err := protocol.DecodeResp(getResp)
 	require.NoError(t, err)
 	assert.Equal(t, "value1", getVal)
 }
@@ -360,13 +360,13 @@ func TestHSet_UpdateExistingField(t *testing.T) {
 	r.HSet(cmd("HSET", "key", "field1", "value1"))
 	resp := r.HSet(cmd("HSET", "key", "field1", "newvalue"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), val) // No new fields added
 	
 	// Verify field was updated
 	getResp := r.HGet(cmd("HGET", "key", "field1"))
-	getVal, _, err := core.DecodeResp(getResp)
+	getVal, _, err := protocol.DecodeResp(getResp)
 	require.NoError(t, err)
 	assert.Equal(t, "newvalue", getVal)
 }
@@ -376,7 +376,7 @@ func TestHSet_MixNewAndExisting(t *testing.T) {
 	r.HSet(cmd("HSET", "key", "field1", "value1"))
 	resp := r.HSet(cmd("HSET", "key", "field1", "newvalue", "field2", "value2"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), val) // Only field2 is new
 }
@@ -385,14 +385,14 @@ func TestHSet_MixNewAndExisting(t *testing.T) {
 func TestHSetNx_InvalidArity_TooFew(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HSetNx(cmd("HSETNX", "key", "field"))
-	expected := core.EncodeResp(util.InvalidNumberOfArgs("HSETNX"), false)
+	expected := protocol.EncodeResp(util.InvalidNumberOfArgs("HSETNX"), false)
 	assert.Equal(t, expected, resp)
 }
 
 func TestHSetNx_InvalidArity_TooMany(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HSetNx(cmd("HSETNX", "key", "field", "value", "extra"))
-	expected := core.EncodeResp(util.InvalidNumberOfArgs("HSETNX"), false)
+	expected := protocol.EncodeResp(util.InvalidNumberOfArgs("HSETNX"), false)
 	assert.Equal(t, expected, resp)
 }
 
@@ -400,20 +400,20 @@ func TestHSetNx_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HSetNx(cmd("HSETNX", "key", "field", "value"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestHSetNx_NewField(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HSetNx(cmd("HSETNX", "key", "field", "value"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), val)
 	
 	// Verify field was set
 	getResp := r.HGet(cmd("HGET", "key", "field"))
-	getVal, _, err := core.DecodeResp(getResp)
+	getVal, _, err := protocol.DecodeResp(getResp)
 	require.NoError(t, err)
 	assert.Equal(t, "value", getVal)
 }
@@ -423,13 +423,13 @@ func TestHSetNx_ExistingField(t *testing.T) {
 	r.HSet(cmd("HSET", "key", "field", "value1"))
 	resp := r.HSetNx(cmd("HSETNX", "key", "field", "value2"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), val)
 	
 	// Verify field was not updated
 	getResp := r.HGet(cmd("HGET", "key", "field"))
-	getVal, _, err := core.DecodeResp(getResp)
+	getVal, _, err := protocol.DecodeResp(getResp)
 	require.NoError(t, err)
 	assert.Equal(t, "value1", getVal)
 }
@@ -438,7 +438,7 @@ func TestHSetNx_ExistingField(t *testing.T) {
 func TestHDel_InvalidArity(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HDel(cmd("HDEL", "key"))
-	expected := core.EncodeResp(util.InvalidNumberOfArgs("HDEL"), false)
+	expected := protocol.EncodeResp(util.InvalidNumberOfArgs("HDEL"), false)
 	assert.Equal(t, expected, resp)
 }
 
@@ -446,7 +446,7 @@ func TestHDel_KeyNotExist(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HDel(cmd("HDEL", "missing", "field1"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), val)
 }
@@ -455,7 +455,7 @@ func TestHDel_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HDel(cmd("HDEL", "key", "field"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestHDel_SingleField(t *testing.T) {
@@ -463,13 +463,13 @@ func TestHDel_SingleField(t *testing.T) {
 	r.HSet(cmd("HSET", "key", "field1", "value1", "field2", "value2"))
 	resp := r.HDel(cmd("HDEL", "key", "field1"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), val)
 	
 	// Verify field was deleted
 	getResp := r.HGet(cmd("HGET", "key", "field1"))
-	assert.Equal(t, core.RespNilBulkString, getResp)
+	assert.Equal(t, protocol.RespNilBulkString, getResp)
 }
 
 func TestHDel_MultipleFields(t *testing.T) {
@@ -477,13 +477,13 @@ func TestHDel_MultipleFields(t *testing.T) {
 	r.HSet(cmd("HSET", "key", "field1", "value1", "field2", "value2", "field3", "value3"))
 	resp := r.HDel(cmd("HDEL", "key", "field1", "field3"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), val)
 	
 	// Verify remaining field
 	lenResp := r.HLen(cmd("HLEN", "key"))
-	lenVal, _, err := core.DecodeResp(lenResp)
+	lenVal, _, err := protocol.DecodeResp(lenResp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), lenVal)
 }
@@ -493,7 +493,7 @@ func TestHDel_NonExistentFields(t *testing.T) {
 	r.HSet(cmd("HSET", "key", "field1", "value1"))
 	resp := r.HDel(cmd("HDEL", "key", "field2", "field3"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), val)
 }
@@ -505,21 +505,21 @@ func TestHDel_RemovesKeyWhenEmpty(t *testing.T) {
 	
 	// Verify key was deleted
 	getResp := r.HGet(cmd("HGET", "key", "field1"))
-	assert.Equal(t, core.RespNilBulkString, getResp)
+	assert.Equal(t, protocol.RespNilBulkString, getResp)
 }
 
 // HEXISTS Tests
 func TestHExists_InvalidArity_TooFew(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HExists(cmd("HEXISTS", "key"))
-	expected := core.EncodeResp(util.InvalidNumberOfArgs("HEXISTS"), false)
+	expected := protocol.EncodeResp(util.InvalidNumberOfArgs("HEXISTS"), false)
 	assert.Equal(t, expected, resp)
 }
 
 func TestHExists_InvalidArity_TooMany(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HExists(cmd("HEXISTS", "key", "field", "extra"))
-	expected := core.EncodeResp(util.InvalidNumberOfArgs("HEXISTS"), false)
+	expected := protocol.EncodeResp(util.InvalidNumberOfArgs("HEXISTS"), false)
 	assert.Equal(t, expected, resp)
 }
 
@@ -527,7 +527,7 @@ func TestHExists_KeyNotExist(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HExists(cmd("HEXISTS", "missing", "field"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), val)
 }
@@ -536,7 +536,7 @@ func TestHExists_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HExists(cmd("HEXISTS", "key", "field"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestHExists_FieldExists(t *testing.T) {
@@ -544,7 +544,7 @@ func TestHExists_FieldExists(t *testing.T) {
 	r.HSet(cmd("HSET", "key", "field", "value"))
 	resp := r.HExists(cmd("HEXISTS", "key", "field"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), val)
 }
@@ -554,7 +554,7 @@ func TestHExists_FieldNotExist(t *testing.T) {
 	r.HSet(cmd("HSET", "key", "field1", "value1"))
 	resp := r.HExists(cmd("HEXISTS", "key", "field2"))
 	
-	val, _, err := core.DecodeResp(resp)
+	val, _, err := protocol.DecodeResp(resp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), val)
 }

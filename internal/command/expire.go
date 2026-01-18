@@ -4,43 +4,43 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/manhhung2111/go-redis/internal/core"
+	"github.com/manhhung2111/go-redis/internal/protocol"
 	"github.com/manhhung2111/go-redis/internal/storage"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
 
 /* Supports `TTL key` */
-func (redis *redis) TTL(cmd core.RedisCmd) []byte {
+func (redis *redis) TTL(cmd protocol.RedisCmd) []byte {
 	if len(cmd.Args) != 1 {
-		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	ttl := redis.Store.TTL(cmd.Args[0])
 
-	if ttl == core.KeyNotExists {
-		return core.RespTTLKeyNotExist
+	if ttl == protocol.KeyNotExists {
+		return protocol.RespTTLKeyNotExist
 	}
 
-	if ttl == core.NoExpire {
-		return core.RespTTLKeyExistNoExpire
+	if ttl == protocol.NoExpire {
+		return protocol.RespTTLKeyExistNoExpire
 	}
 
-	return core.EncodeResp(ttl, false)
+	return protocol.EncodeResp(ttl, false)
 }
 
 /* Supports EXPIRE key seconds [NX | XX | GT | LT] */
-func (redis *redis) Expire(cmd core.RedisCmd) []byte {
+func (redis *redis) Expire(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	argsLen := len(args)
 
 	if argsLen < 2 {
-		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	key := args[0]
 	ttlSeconds, err := strconv.ParseInt(args[1], 10, 64)
 	if err != nil || ttlSeconds <= 0 {
-		return core.EncodeResp(util.InvalidExpireTime(cmd.Cmd), false)
+		return protocol.EncodeResp(util.InvalidExpireTime(cmd.Cmd), false)
 	}
 
 	var opt storage.ExpireOptions
@@ -57,19 +57,19 @@ func (redis *redis) Expire(cmd core.RedisCmd) []byte {
 		case "LT":
 			opt.LT = true
 		default:
-			return core.EncodeResp(util.InvalidCommandOption(cmdOpt, cmd.Cmd), false)
+			return protocol.EncodeResp(util.InvalidCommandOption(cmdOpt, cmd.Cmd), false)
 		}
 	}
 
 	// The GT, LT and NX options are mutually exclusive.
 	if (opt.NX && opt.XX) || (opt.GT && opt.LT) || (opt.NX && (opt.GT || opt.LT)) {
-		return core.RespExpireOptionsNotCompatible
+		return protocol.RespExpireOptionsNotCompatible
 	}
 
 	ok := redis.Store.Expire(key, ttlSeconds, opt)
 	if !ok {
-		return core.RespExpireTimeoutNotSet
+		return protocol.RespExpireTimeoutNotSet
 	}
 
-	return core.RespExpireTimeoutSet
+	return protocol.RespExpireTimeoutSet
 }

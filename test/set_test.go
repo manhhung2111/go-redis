@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/manhhung2111/go-redis/internal/core"
+	"github.com/manhhung2111/go-redis/internal/protocol"
 )
 
 func TestSAdd(t *testing.T) {
@@ -32,7 +32,7 @@ func TestSAddWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.SAdd(cmd("SADD", "k", "a"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestSCard(t *testing.T) {
@@ -56,7 +56,7 @@ func TestSCardWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.SCard(cmd("SCARD", "k"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestSIsMember(t *testing.T) {
@@ -83,7 +83,7 @@ func TestSIsMemberWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.SIsMember(cmd("SISMEMBER", "k", "a"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestSMembers(t *testing.T) {
@@ -108,7 +108,7 @@ func TestSMembersWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.SMembers(cmd("SMEMBERS", "k"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestSMIsMember(t *testing.T) {
@@ -134,7 +134,7 @@ func TestSMIsMemberWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.SMIsMember(cmd("SMISMEMBER", "k", "a"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestSRem(t *testing.T) {
@@ -158,7 +158,7 @@ func TestSRemWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.SRem(cmd("SREM", "k", "a"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestSPopSingle(t *testing.T) {
@@ -183,7 +183,7 @@ func TestSPopNil(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.SPop(cmd("SPOP", "missing"))
-	assert.Equal(t, core.RespNilBulkString, resp)
+	assert.Equal(t, protocol.RespNilBulkString, resp)
 }
 
 func TestSPopWrongArgs(t *testing.T) {
@@ -199,7 +199,7 @@ func TestSPopWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.SPop(cmd("SPOP", "k"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestSPopInvalidValue(t *testing.T) {
@@ -207,7 +207,7 @@ func TestSPopInvalidValue(t *testing.T) {
 	r.SAdd(cmd("SADD", "k", "a", "b"))
 
 	resp := r.SPop(cmd("SPOP", "k", "-1"))
-	assert.Equal(t, core.RespValueOutOfRangeMustPositive, resp)
+	assert.Equal(t, protocol.RespValueOutOfRangeMustPositive, resp)
 }
 
 func TestSRandMemberSingle(t *testing.T) {
@@ -258,7 +258,7 @@ func TestSRandMemberWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.SRandMember(cmd("SRANDMEMBER", "k"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }
 
 func TestSRandMemberInvalidValue(t *testing.T) {
@@ -266,7 +266,7 @@ func TestSRandMemberInvalidValue(t *testing.T) {
 	r.SAdd(cmd("SADD", "k", "a", "b"))
 
 	resp := r.SRandMember(cmd("SRANDMEMBER", "k", "v"))
-	assert.Equal(t, core.RespValueOutOfRangeMustPositive, resp)
+	assert.Equal(t, protocol.RespValueOutOfRangeMustPositive, resp)
 }
 
 func TestSetWrongType(t *testing.T) {
@@ -274,5 +274,5 @@ func TestSetWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.SAdd(cmd("SADD", "k", "a"))
-	assert.Equal(t, core.RespWrongTypeOperation, resp)
+	assert.Equal(t, protocol.RespWrongTypeOperation, resp)
 }

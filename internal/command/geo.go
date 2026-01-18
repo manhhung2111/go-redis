@@ -4,16 +4,16 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/manhhung2111/go-redis/internal/core"
+	"github.com/manhhung2111/go-redis/internal/protocol"
 	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
 
 /* Support GEOADD key [NX | XX] [CH] longitude latitude member [longitude latitude member...] */
-func (redis *redis) GeoAdd(cmd core.RedisCmd) []byte {
+func (redis *redis) GeoAdd(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 4 {
-		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	options := data_structure.ZAddOptions{}
@@ -33,19 +33,19 @@ func (redis *redis) GeoAdd(cmd core.RedisCmd) []byte {
 		case "CH":
 			options.CH = true
 		default:
-			return core.RespSyntaxError
+			return protocol.RespSyntaxError
 		}
 		i++
 	}
 
 	if options.NX && options.XX {
-		return core.RespXXNXNotCompatible
+		return protocol.RespXXNXNotCompatible
 	}
 
 	// Remaining args should be longitude latitude member triplets
 	remaining := len(args) - i
 	if remaining == 0 || remaining%3 != 0 {
-		return core.RespSyntaxError
+		return protocol.RespSyntaxError
 	}
 
 	items := make([]data_structure.GeoPoint, 0, remaining/3)
@@ -53,16 +53,16 @@ func (redis *redis) GeoAdd(cmd core.RedisCmd) []byte {
 	for i < len(args) {
 		longitude, err := strconv.ParseFloat(args[i], 64)
 		if err != nil {
-			return core.RespValueNotValidFloat
+			return protocol.RespValueNotValidFloat
 		}
 
 		latitude, err := strconv.ParseFloat(args[i+1], 64)
 		if err != nil {
-			return core.RespValueNotValidFloat
+			return protocol.RespValueNotValidFloat
 		}
 
 		if !data_structure.ValidateCoordinates(longitude, latitude) {
-			return core.RespInvalidLongitudeLatitude
+			return protocol.RespInvalidLongitudeLatitude
 		}
 
 		member := args[i+2]
@@ -77,68 +77,68 @@ func (redis *redis) GeoAdd(cmd core.RedisCmd) []byte {
 
 	result, err := redis.Store.GeoAdd(args[0], items, options)
 	if err != nil {
-		return core.EncodeResp(err, false)
+		return protocol.EncodeResp(err, false)
 	}
 
 	if result == nil {
-		return core.RespSyntaxError
+		return protocol.RespSyntaxError
 	}
 
-	return core.EncodeResp(*result, false)
+	return protocol.EncodeResp(*result, false)
 }
 
 /* Support GEODIST key member1 member2 [M | KM | FT | MI] */
-func (redis *redis) GeoDist(cmd core.RedisCmd) []byte {
+func (redis *redis) GeoDist(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 3 || len(args) > 4 {
-		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	unit := "m"
 	if len(args) == 4 {
 		unit = strings.ToLower(args[3])
 		if unit != "m" && unit != "km" && unit != "ft" && unit != "mi" {
-			return core.RespSyntaxError
+			return protocol.RespSyntaxError
 		}
 	}
 
 	result, err := redis.Store.GeoDist(args[0], args[1], args[2], unit)
 	if err != nil {
-		return core.EncodeResp(err, false)
+		return protocol.EncodeResp(err, false)
 	}
 
 	if result == nil {
-		return core.RespNilBulkString
+		return protocol.RespNilBulkString
 	}
 
-	return core.EncodeResp(*result, false)
+	return protocol.EncodeResp(*result, false)
 }
 
 /* Support GEOHASH key member [member ...] */
-func (redis *redis) GeoHash(cmd core.RedisCmd) []byte {
+func (redis *redis) GeoHash(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 2 {
-		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.GeoHash(args[0], args[1:])
 	if err != nil {
-		return core.EncodeResp(err, false)
+		return protocol.EncodeResp(err, false)
 	}
 
-	return core.EncodeResp(result, false)
+	return protocol.EncodeResp(result, false)
 }
 
 /* Support GEOPOS key member [member ...] */
-func (redis *redis) GeoPos(cmd core.RedisCmd) []byte {
+func (redis *redis) GeoPos(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 2 {
-		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	points, err := redis.Store.GeoPos(args[0], args[1:])
 	if err != nil {
-		return core.EncodeResp(err, false)
+		return protocol.EncodeResp(err, false)
 	}
 
 	// Convert to array of arrays for RESP encoding
@@ -154,7 +154,7 @@ func (redis *redis) GeoPos(cmd core.RedisCmd) []byte {
 		}
 	}
 
-	return core.EncodeResp(result, false)
+	return protocol.EncodeResp(result, false)
 }
 
 /*
@@ -163,10 +163,10 @@ Support GEOSEARCH key [FROMMEMBER member | FROMLONLAT longitude latitude]
 	[BYRADIUS radius M | KM | FT | MI | BYBOX width height M | KM | FT | MI]
 	[ASC | DESC] [COUNT count [ANY]] [WITHCOORD] [WITHDIST] [WITHHASH]
 */
-func (redis *redis) GeoSearch(cmd core.RedisCmd) []byte {
+func (redis *redis) GeoSearch(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 4 {
-		return core.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	options := data_structure.GeoSearchOptions{
@@ -180,60 +180,60 @@ func (redis *redis) GeoSearch(cmd core.RedisCmd) []byte {
 		switch opt {
 		case "FROMMEMBER":
 			if i+1 >= len(args) {
-				return core.RespSyntaxError
+				return protocol.RespSyntaxError
 			}
 			options.FromMember = args[i+1]
 			i += 2
 
 		case "FROMLONLAT":
 			if i+2 >= len(args) {
-				return core.RespSyntaxError
+				return protocol.RespSyntaxError
 			}
 			lon, err := strconv.ParseFloat(args[i+1], 64)
 			if err != nil {
-				return core.RespValueNotValidFloat
+				return protocol.RespValueNotValidFloat
 			}
 			lat, err := strconv.ParseFloat(args[i+2], 64)
 			if err != nil {
-				return core.RespValueNotValidFloat
+				return protocol.RespValueNotValidFloat
 			}
 			if !data_structure.ValidateCoordinates(lon, lat) {
-				return core.RespInvalidLongitudeLatitude
+				return protocol.RespInvalidLongitudeLatitude
 			}
 			options.FromLonLat = &data_structure.GeoPoint{Longitude: lon, Latitude: lat}
 			i += 3
 
 		case "BYRADIUS":
 			if i+2 >= len(args) {
-				return core.RespSyntaxError
+				return protocol.RespSyntaxError
 			}
 			radius, err := strconv.ParseFloat(args[i+1], 64)
 			if err != nil || radius < 0 {
-				return core.RespValueNotValidFloat
+				return protocol.RespValueNotValidFloat
 			}
 			options.ByRadius = radius
 			options.Unit = strings.ToLower(args[i+2])
 			if !isValidGeoUnit(options.Unit) {
-				return core.RespSyntaxError
+				return protocol.RespSyntaxError
 			}
 			i += 3
 
 		case "BYBOX":
 			if i+3 >= len(args) {
-				return core.RespSyntaxError
+				return protocol.RespSyntaxError
 			}
 			width, err := strconv.ParseFloat(args[i+1], 64)
 			if err != nil || width < 0 {
-				return core.RespValueNotValidFloat
+				return protocol.RespValueNotValidFloat
 			}
 			height, err := strconv.ParseFloat(args[i+2], 64)
 			if err != nil || height < 0 {
-				return core.RespValueNotValidFloat
+				return protocol.RespValueNotValidFloat
 			}
 			options.ByBox = &data_structure.GeoBox{Width: width, Height: height}
 			options.Unit = strings.ToLower(args[i+3])
 			if !isValidGeoUnit(options.Unit) {
-				return core.RespSyntaxError
+				return protocol.RespSyntaxError
 			}
 			i += 4
 
@@ -247,11 +247,11 @@ func (redis *redis) GeoSearch(cmd core.RedisCmd) []byte {
 
 		case "COUNT":
 			if i+1 >= len(args) {
-				return core.RespSyntaxError
+				return protocol.RespSyntaxError
 			}
 			count, err := strconv.ParseInt(args[i+1], 10, 64)
 			if err != nil || count < 0 {
-				return core.RespValueOutOfRangeMustPositive
+				return protocol.RespValueOutOfRangeMustPositive
 			}
 			options.Count = int(count)
 			i += 2
@@ -274,34 +274,34 @@ func (redis *redis) GeoSearch(cmd core.RedisCmd) []byte {
 			i++
 
 		default:
-			return core.RespSyntaxError
+			return protocol.RespSyntaxError
 		}
 	}
 
 	// Validate required options
 	if options.FromMember == "" && options.FromLonLat == nil {
-		return core.RespGeoFromMemberOrFromLonLatReq
+		return protocol.RespGeoFromMemberOrFromLonLatReq
 	}
 	if options.FromMember != "" && options.FromLonLat != nil {
-		return core.RespGeoFromMemberOrFromLonLatReq
+		return protocol.RespGeoFromMemberOrFromLonLatReq
 	}
 	if options.ByRadius == 0 && options.ByBox == nil {
-		return core.RespGeoByRadiusOrByBoxReq
+		return protocol.RespGeoByRadiusOrByBoxReq
 	}
 	if options.ByRadius > 0 && options.ByBox != nil {
-		return core.RespGeoByRadiusOrByBoxReq
+		return protocol.RespGeoByRadiusOrByBoxReq
 	}
 	if options.Ascending && options.Descending {
-		return core.RespSyntaxError
+		return protocol.RespSyntaxError
 	}
 
 	results, err := redis.Store.GeoSearch(args[0], options)
 	if err != nil {
-		return core.EncodeResp(err, false)
+		return protocol.EncodeResp(err, false)
 	}
 
 	if results == nil {
-		return core.EncodeResp([]string{}, false)
+		return protocol.EncodeResp([]string{}, false)
 	}
 
 	// Format output based on options
@@ -319,7 +319,7 @@ func formatGeoSearchResults(results []data_structure.GeoResult, options data_str
 		for i, r := range results {
 			members[i] = r.Member
 		}
-		return core.EncodeResp(members, false)
+		return protocol.EncodeResp(members, false)
 	}
 
 	// Array of arrays with additional info
@@ -343,5 +343,5 @@ func formatGeoSearchResults(results []data_structure.GeoResult, options data_str
 		output[i] = entry
 	}
 
-	return core.EncodeResp(output, false)
+	return protocol.EncodeResp(output, false)
 }
