@@ -17,7 +17,7 @@ func (s *store) evictionPoolPopulate() int {
 
 	// Check if we can sample keys based on policy
 	switch config.EVICTION_POLICY {
-	case config.VolatileLRU, config.VolatileLFU:
+	case config.VolatileLRU, config.VolatileLFU, config.VolatileTTL:
 		if s.expires.Empty() {
 			return 0
 		}
@@ -34,7 +34,7 @@ func (s *store) evictionPoolPopulate() int {
 		switch config.EVICTION_POLICY {
 		case config.AllKeysLRU, config.AllKeysLFU:
 			key = s.data.GetRandomKey()
-		case config.VolatileLRU, config.VolatileLFU:
+		case config.VolatileLRU, config.VolatileLFU, config.VolatileTTL:
 			key = s.expires.GetRandomKey()
 		default:
 			continue
@@ -52,6 +52,22 @@ func (s *store) evictionPoolPopulate() int {
 			// Invert the counter so lower counter maps to higher idleTime
 			counter := rObj.LFUDecay()
 			idleTime = uint32(255 - counter)
+		case config.VolatileTTL:
+			expireAt, _ := s.expires.Get(key)
+			nowMs := uint64(time.Now().UnixMilli())
+			if expireAt <= nowMs {
+				// Already expired - highest eviction priority
+				idleTime = 1<<32 - 1
+			} else {
+				// Convert remaining TTL to seconds, cap at uint32 max
+				remainingMs := expireAt - nowMs
+				remainingSec := remainingMs / 1000
+				if remainingSec > uint64(1<<32-2) {
+					remainingSec = 1<<32 - 2
+				}
+				// Invert: smaller remaining TTL = higher idleTime = evict first
+				idleTime = (1<<32 - 1) - uint32(remainingSec)
+			}
 		default:
 			// LRU: use idle time directly
 			idleTime = getIdleTime(rObj.lru)
