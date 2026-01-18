@@ -42,8 +42,16 @@ func (s *store) access(key string, expectedType ObjectType, isWrite bool) storag
 
 	obj, exists := s.data.Get(key)
 	if exists {
-		if config.EVICTION_POLICY == config.AllKeysLRU || config.EVICTION_POLICY == config.VolatileLRU {
+		switch config.EVICTION_POLICY {
+		case config.AllKeysLRU, config.VolatileLRU:
 			obj.lru = uint32(time.Now().Unix())
+		case config.AllKeysLFU, config.VolatileLFU:
+			// First decay the counter based on elapsed time, then increment
+			// LFUDecay() updates obj.lru with decayed counter and current time
+			counter := obj.LFUDecay()
+			counter = LFULogIncr(counter)
+			// Update only the counter portion, keep the time from LFUDecay
+			obj.lru = (obj.lru & 0xFFFFFF00) | uint32(counter)
 		}
 	}
 

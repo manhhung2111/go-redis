@@ -50,3 +50,7 @@ var EVICTION_POLICY = AllKeysLRU
 var EVICTION_POOL_SIZE = 16
 var MAXMEMORY_SAMPLES = 10
 var MAXMEMORY_LIMIT int64 = 3 * 1024 * 1024 * 1024 // 3GiB
+
+var LFU_INIT_VAL uint8 = 5
+var LFU_LOG_FACTOR = 10
+var LFU_DECAY_TIME uint32 = 1 // Minutes before counter decays by 1

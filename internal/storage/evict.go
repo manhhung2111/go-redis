@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"math/rand/v2"
 	"time"
 
 	"github.com/manhhung2111/go-redis/internal/config"
@@ -15,21 +16,28 @@ func (s *store) evictionPoolPopulate() int {
 	}
 
 	// Check if we can sample keys based on policy
-	if config.EVICTION_POLICY == config.VolatileLRU && s.expires.Empty() {
-		return 0
-	}
-	if config.EVICTION_POLICY == config.AllKeysLRU && s.data.Empty() {
-		return 0
+	switch config.EVICTION_POLICY {
+	case config.VolatileLRU, config.VolatileLFU:
+		if s.expires.Empty() {
+			return 0
+		}
+	case config.AllKeysLRU, config.AllKeysLFU:
+		if s.data.Empty() {
+			return 0
+		}
 	}
 
 	inserted := 0
 	for range config.MAXMEMORY_SAMPLES {
 		// Sample a key based on eviction policy
 		var key string
-		if config.EVICTION_POLICY == config.AllKeysLRU {
+		switch config.EVICTION_POLICY {
+		case config.AllKeysLRU, config.AllKeysLFU:
 			key = s.data.GetRandomKey()
-		} else if config.EVICTION_POLICY == config.VolatileLRU {
+		case config.VolatileLRU, config.VolatileLFU:
 			key = s.expires.GetRandomKey()
+		default:
+			continue
 		}
 
 		rObj, exists := s.data.Get(key)
@@ -37,7 +45,17 @@ func (s *store) evictionPoolPopulate() int {
 			continue
 		}
 
-		idleTime := getIdleTime(rObj.lru)
+		var idleTime uint32
+		switch config.EVICTION_POLICY {
+		case config.AllKeysLFU, config.VolatileLFU:
+			// For LFU: lower counter = less frequently used = should evict first
+			// Invert the counter so lower counter maps to higher idleTime
+			counter := rObj.LFUDecay()
+			idleTime = uint32(255 - counter)
+		default:
+			// LRU: use idle time directly
+			idleTime = getIdleTime(rObj.lru)
+		}
 
 		// Skip if this key is already in the pool with same or higher idle time
 		// or if it's not better than the worst candidate when pool is full
@@ -151,4 +169,42 @@ func getIdleTime(lruTime uint32) uint32 {
 		return 0
 	}
 	return now - lruTime
+}
+
+func LFULogIncr(counter uint8) uint8 {
+	if counter == 255 {
+		return 255
+	}
+
+	r := rand.Float64()
+	baseval := max(0, int(counter)-int(config.LFU_INIT_VAL))
+	p := 1.0 / (float64(baseval)*float64(config.LFU_LOG_FACTOR) + 1)
+	if r < p {
+		counter++
+	}
+	return counter
+}
+
+func (rObj *RObj) LFUDecay() uint8 {
+	counter := uint8(rObj.lru & 0xFF)
+	lastAccessTime := rObj.lru >> 8
+	nowMinutes := uint32(time.Now().Unix()/60) & ((1 << 24) - 1)
+
+	// Calculate elapsed time with wrap-around handling (24-bit minutes)
+	var elapsedMinutes uint32
+	if nowMinutes >= lastAccessTime {
+		elapsedMinutes = nowMinutes - lastAccessTime
+	} else {
+		// Wrap-around case
+		elapsedMinutes = (1 << 24) - lastAccessTime + nowMinutes
+	}
+
+	if elapsedMinutes > 0 && config.LFU_DECAY_TIME > 0 {
+		decayAmount := elapsedMinutes / config.LFU_DECAY_TIME
+		newCounter := max(0, int(counter)-int(decayAmount))
+		counter = uint8(newCounter)
+		rObj.lru = (nowMinutes << 8) | uint32(counter)
+	}
+
+	return counter
 }
