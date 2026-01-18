@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/manhhung2111/go-redis/internal/config"
-	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
@@ -124,11 +123,11 @@ func (redis *redis) CFReserve(cmd core.RedisCmd) []byte {
 
 	capacity, err := strconv.ParseInt(args[1], 10, 64)
 	if err != nil {
-		return constant.RESP_BAD_CAPACITY
+		return core.RespBadCapacity
 	}
 
 	if capacity < 1 || capacity > int64(config.CF_MAX_INITIAL_SIZE) {
-		return constant.RESP_CAPACITY_INVALID_RANGE
+		return core.RespCapacityInvalidRange
 	}
 
 	bucketSize := config.CF_DEFAULT_BUCKET_SIZE
@@ -146,10 +145,10 @@ func (redis *redis) CFReserve(cmd core.RedisCmd) []byte {
 			}
 			bs, err := strconv.ParseInt(args[i+1], 10, 64)
 			if err != nil {
-				return constant.RESP_BAD_BUCKET_SIZE
+				return core.RespBadBucketSize
 			}
 			if bs < int64(config.CF_MIN_BUCKET_SIZE) || bs > int64(config.CF_MAX_BUCKET_SIZE) {
-				return constant.RESP_BUCKET_SIZE_INVALID_RANGE
+				return core.RespBucketSizeInvalidRange
 			}
 			bucketSize = int(bs)
 			i += 2
@@ -159,10 +158,10 @@ func (redis *redis) CFReserve(cmd core.RedisCmd) []byte {
 			}
 			mi, err := strconv.ParseInt(args[i+1], 10, 64)
 			if err != nil {
-				return constant.RESP_BAD_MAX_ITERATIONS
+				return core.RespBadMaxIterations
 			}
 			if mi < int64(config.CF_MIN_MAX_ITERATIONS) || mi > int64(config.CF_MAX_MAX_ITERATIONS) {
-				return constant.RESP_MAX_ITERATIONS_INVALID_RANGE
+				return core.RespMaxIterationsInvalidRange
 			}
 			maxIterations = int(mi)
 			i += 2
@@ -172,15 +171,15 @@ func (redis *redis) CFReserve(cmd core.RedisCmd) []byte {
 			}
 			exp, err := strconv.ParseInt(args[i+1], 10, 64)
 			if err != nil {
-				return constant.RESP_BAD_EXPANSION
+				return core.RespBadExpansion
 			}
 			if exp < int64(config.CF_MIN_EXPANSION_FACTOR) || exp > int64(config.CF_MAX_EXPANSION_FACTOR) {
-				return constant.RESP_EXPANSION_INVALID_RANGE
+				return core.RespExpansionInvalidRange
 			}
 			expansion = int(exp)
 			i += 2
 		default:
-			return constant.RESP_SYNTAX_ERROR
+			return core.RespSyntaxError
 		}
 	}
 
@@ -189,5 +188,5 @@ func (redis *redis) CFReserve(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(err, false)
 	}
 
-	return constant.RESP_OK
+	return core.RespOK
 }

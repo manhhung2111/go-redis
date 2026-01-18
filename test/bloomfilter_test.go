@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/manhhung2111/go-redis/internal/constant"
+	"github.com/manhhung2111/go-redis/internal/core"
 )
 
 func TestBFAdd(t *testing.T) {
@@ -41,7 +41,7 @@ func TestBFAddWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.BFAdd(cmd("BF.ADD", "k", "item1"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestBFCard(t *testing.T) {
@@ -76,7 +76,7 @@ func TestBFCardWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.BFCard(cmd("BF.CARD", "k"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestBFExists(t *testing.T) {
@@ -113,7 +113,7 @@ func TestBFExistsWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.BFExists(cmd("BF.EXISTS", "k", "item1"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestBFInfo(t *testing.T) {
@@ -213,7 +213,7 @@ func TestBFInfoWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.BFInfo(cmd("BF.INFO", "k"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestBFMAdd(t *testing.T) {
@@ -253,7 +253,7 @@ func TestBFMAddWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.BFMAdd(cmd("BF.MADD", "k", "item1"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestBFMExists(t *testing.T) {
@@ -287,14 +287,14 @@ func TestBFMExistsWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.BFMExists(cmd("BF.MEXISTS", "k", "item1"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestBFReserve(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.BFReserve(cmd("BF.RESERVE", "bf", "0.01", "1000"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	// Verify bloom filter was created by adding an item
 	resp = r.BFAdd(cmd("BF.ADD", "bf", "item1"))
@@ -305,14 +305,14 @@ func TestBFReserveWithExpansion(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.BFReserve(cmd("BF.RESERVE", "bf", "0.01", "1000", "EXPANSION", "4"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 }
 
 func TestBFReserveExpansionCaseInsensitive(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.BFReserve(cmd("BF.RESERVE", "bf", "0.01", "1000", "expansion", "4"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 }
 
 func TestBFReserveWrongArgs(t *testing.T) {
@@ -334,7 +334,7 @@ func TestBFReserveWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.BFReserve(cmd("BF.RESERVE", "k", "0.01", "1000"))
-	assert.Equal(t, constant.RESP_ITEM_EXISTS, resp)
+	assert.Equal(t, core.RespItemExists, resp)
 }
 
 func TestBFReserveItemExists(t *testing.T) {
@@ -345,14 +345,14 @@ func TestBFReserveItemExists(t *testing.T) {
 
 	// Try to reserve again
 	resp := r.BFReserve(cmd("BF.RESERVE", "bf", "0.01", "1000"))
-	assert.Equal(t, constant.RESP_ITEM_EXISTS, resp)
+	assert.Equal(t, core.RespItemExists, resp)
 }
 
 func TestBFReserveBadErrorRate(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.BFReserve(cmd("BF.RESERVE", "bf", "invalid", "1000"))
-	assert.Equal(t, constant.RESP_BAD_ERROR_RATE, resp)
+	assert.Equal(t, core.RespBadErrorRate, resp)
 }
 
 func TestBFReserveErrorRateOutOfRange(t *testing.T) {
@@ -360,18 +360,18 @@ func TestBFReserveErrorRateOutOfRange(t *testing.T) {
 
 	// Error rate > 1
 	resp := r.BFReserve(cmd("BF.RESERVE", "bf", "1.5", "1000"))
-	assert.Equal(t, constant.RESP_ERROR_RATE_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespErrorRateInvalidRange, resp)
 
 	// Error rate < 0
 	resp = r.BFReserve(cmd("BF.RESERVE", "bf2", "-0.1", "1000"))
-	assert.Equal(t, constant.RESP_ERROR_RATE_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespErrorRateInvalidRange, resp)
 }
 
 func TestBFReserveBadCapacity(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.BFReserve(cmd("BF.RESERVE", "bf", "0.01", "invalid"))
-	assert.Equal(t, constant.RESP_BAD_CAPACITY, resp)
+	assert.Equal(t, core.RespBadCapacity, resp)
 }
 
 func TestBFReserveCapacityOutOfRange(t *testing.T) {
@@ -379,11 +379,11 @@ func TestBFReserveCapacityOutOfRange(t *testing.T) {
 
 	// Capacity < min (0)
 	resp := r.BFReserve(cmd("BF.RESERVE", "bf", "0.01", "0"))
-	assert.Equal(t, constant.RESP_CAPACITY_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespCapacityInvalidRange, resp)
 
 	// Capacity > max (1073741825)
 	resp = r.BFReserve(cmd("BF.RESERVE", "bf2", "0.01", "1073741825"))
-	assert.Equal(t, constant.RESP_CAPACITY_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespCapacityInvalidRange, resp)
 }
 
 func TestBFReserveSyntaxError(t *testing.T) {
@@ -391,14 +391,14 @@ func TestBFReserveSyntaxError(t *testing.T) {
 
 	// Invalid keyword instead of EXPANSION
 	resp := r.BFReserve(cmd("BF.RESERVE", "bf", "0.01", "1000", "INVALID", "4"))
-	assert.Equal(t, constant.RESP_SYNTAX_ERROR, resp)
+	assert.Equal(t, core.RespSyntaxError, resp)
 }
 
 func TestBFReserveBadExpansion(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.BFReserve(cmd("BF.RESERVE", "bf", "0.01", "1000", "EXPANSION", "invalid"))
-	assert.Equal(t, constant.RESP_BAD_EXPANSION, resp)
+	assert.Equal(t, core.RespBadExpansion, resp)
 }
 
 func TestBFReserveExpansionOutOfRange(t *testing.T) {
@@ -406,11 +406,11 @@ func TestBFReserveExpansionOutOfRange(t *testing.T) {
 
 	// Expansion < min (0)
 	resp := r.BFReserve(cmd("BF.RESERVE", "bf", "0.01", "1000", "EXPANSION", "0"))
-	assert.Equal(t, constant.RESP_EXPANSION_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespExpansionInvalidRange, resp)
 
 	// Expansion > max (32769)
 	resp = r.BFReserve(cmd("BF.RESERVE", "bf2", "0.01", "1000", "EXPANSION", "32769"))
-	assert.Equal(t, constant.RESP_EXPANSION_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespExpansionInvalidRange, resp)
 }
 
 func TestBFWorkflow(t *testing.T) {
@@ -418,7 +418,7 @@ func TestBFWorkflow(t *testing.T) {
 
 	// Reserve a bloom filter
 	resp := r.BFReserve(cmd("BF.RESERVE", "bf", "0.001", "10000"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	// Add multiple items
 	resp = r.BFMAdd(cmd("BF.MADD", "bf", "apple", "banana", "cherry"))

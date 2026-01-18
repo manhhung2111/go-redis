@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
@@ -36,7 +35,7 @@ func TestLPushWrongType(t *testing.T) {
 	r.Set(cmd("SET", "mykey", "value"))
 
 	resp := r.LPush(cmd("LPUSH", "mykey", "a"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestLPopSingle(t *testing.T) {
@@ -60,7 +59,7 @@ func TestLPopNil(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.LPop(cmd("LPOP", "missing"))
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, resp)
+	assert.Equal(t, core.RespNilBulkString, resp)
 }
 
 func TestLPopWrongArgs(t *testing.T) {
@@ -75,10 +74,10 @@ func TestLPopInvalidCount(t *testing.T) {
 	r.LPush(cmd("LPUSH", "mylist", "a", "b"))
 
 	resp := r.LPop(cmd("LPOP", "mylist", "abc"))
-	assert.Equal(t, constant.RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE, resp)
+	assert.Equal(t, core.RespValueOutOfRangeMustPositive, resp)
 
 	resp = r.LPop(cmd("LPOP", "mylist", "-1"))
-	assert.Equal(t, constant.RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE, resp)
+	assert.Equal(t, core.RespValueOutOfRangeMustPositive, resp)
 }
 
 func TestLPopWrongType(t *testing.T) {
@@ -86,7 +85,7 @@ func TestLPopWrongType(t *testing.T) {
 	r.Set(cmd("SET", "mykey", "value"))
 
 	resp := r.LPop(cmd("LPOP", "mykey"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestRPush(t *testing.T) {
@@ -111,7 +110,7 @@ func TestRPushWrongType(t *testing.T) {
 	r.Set(cmd("SET", "mykey", "value"))
 
 	resp := r.RPush(cmd("RPUSH", "mykey", "a"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestRPopSingle(t *testing.T) {
@@ -134,7 +133,7 @@ func TestRPopNil(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.RPop(cmd("RPOP", "missing"))
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, resp)
+	assert.Equal(t, core.RespNilBulkString, resp)
 }
 
 func TestRPopWrongArgs(t *testing.T) {
@@ -149,10 +148,10 @@ func TestRPopInvalidCount(t *testing.T) {
 	r.RPush(cmd("RPUSH", "mylist", "a", "b"))
 
 	resp := r.RPop(cmd("RPOP", "mylist", "invalid"))
-	assert.Equal(t, constant.RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE, resp)
+	assert.Equal(t, core.RespValueOutOfRangeMustPositive, resp)
 
 	resp = r.RPop(cmd("RPOP", "mylist", "-5"))
-	assert.Equal(t, constant.RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE, resp)
+	assert.Equal(t, core.RespValueOutOfRangeMustPositive, resp)
 }
 
 func TestRPopWrongType(t *testing.T) {
@@ -160,7 +159,7 @@ func TestRPopWrongType(t *testing.T) {
 	r.Set(cmd("SET", "mykey", "value"))
 
 	resp := r.RPop(cmd("RPOP", "mykey"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestLRange(t *testing.T) {
@@ -223,10 +222,10 @@ func TestLRangeInvalidIndices(t *testing.T) {
 	r.RPush(cmd("RPUSH", "mylist", "a"))
 
 	resp := r.LRange(cmd("LRANGE", "mylist", "abc", "2"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+	assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 
 	resp = r.LRange(cmd("LRANGE", "mylist", "0", "xyz"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+	assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 }
 
 func TestLRangeWrongType(t *testing.T) {
@@ -234,7 +233,7 @@ func TestLRangeWrongType(t *testing.T) {
 	r.Set(cmd("SET", "mykey", "value"))
 
 	resp := r.LRange(cmd("LRANGE", "mykey", "0", "-1"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestLIndex(t *testing.T) {
@@ -261,14 +260,14 @@ func TestLIndexOutOfRange(t *testing.T) {
 	r.LPush(cmd("LPUSH", "k", "a"))
 
 	resp := r.LIndex(cmd("LINDEX", "k", "10"))
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, resp)
+	assert.Equal(t, core.RespNilBulkString, resp)
 }
 
 func TestLIndexNonExistentKey(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.LIndex(cmd("LINDEX", "missing", "0"))
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, resp)
+	assert.Equal(t, core.RespNilBulkString, resp)
 }
 
 func TestLIndexWrongType(t *testing.T) {
@@ -276,7 +275,7 @@ func TestLIndexWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.LIndex(cmd("LINDEX", "k", "0"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestLIndexInvalidIndex(t *testing.T) {
@@ -284,7 +283,7 @@ func TestLIndexInvalidIndex(t *testing.T) {
 	r.LPush(cmd("LPUSH", "k", "a"))
 
 	resp := r.LIndex(cmd("LINDEX", "k", "notanumber"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+	assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 }
 
 func TestLIndexWrongArgs(t *testing.T) {
@@ -314,7 +313,7 @@ func TestLLenWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.LLen(cmd("LLEN", "k"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestLLenWrongArgs(t *testing.T) {
@@ -356,7 +355,7 @@ func TestLPushX_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.LPushX(cmd("LPUSHX", "key", "element"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestLPushX_SingleElement(t *testing.T) {
@@ -442,7 +441,7 @@ func TestLRem_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.LRem(cmd("LREM", "key", "0", "element"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestLRem_InvalidCount(t *testing.T) {
@@ -460,7 +459,7 @@ func TestLRem_InvalidCount(t *testing.T) {
 			r := newTestRedis()
 			r.LPush(cmd("LPUSH", "list", "value"))
 			resp := r.LRem(cmd("LREM", "list", tt.count, "value"))
-			assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+			assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 		})
 	}
 }
@@ -546,7 +545,7 @@ func TestLSet_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.LSet(cmd("LSET", "key", "0", "newvalue"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestLSet_InvalidIndex(t *testing.T) {
@@ -564,7 +563,7 @@ func TestLSet_InvalidIndex(t *testing.T) {
 			r := newTestRedis()
 			r.LPush(cmd("LPUSH", "list", "value"))
 			resp := r.LSet(cmd("LSET", "list", tt.index, "newvalue"))
-			assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+			assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 		})
 	}
 }
@@ -576,7 +575,7 @@ func TestLSet_KeyNotExist(t *testing.T) {
 	_, _, err := core.DecodeResp(resp)
 	require.NoError(t, err)
 	// Should return an error (likely "no such key" or similar)
-	assert.NotEqual(t, constant.RESP_OK, resp)
+	assert.NotEqual(t, core.RespOK, resp)
 }
 
 func TestLSet_IndexOutOfRange_Positive(t *testing.T) {
@@ -587,7 +586,7 @@ func TestLSet_IndexOutOfRange_Positive(t *testing.T) {
 	_, _, err := core.DecodeResp(resp)
 	require.NoError(t, err)
 	// Should return error
-	assert.NotEqual(t, constant.RESP_OK, resp)
+	assert.NotEqual(t, core.RespOK, resp)
 }
 
 func TestLSet_IndexOutOfRange_Negative(t *testing.T) {
@@ -598,7 +597,7 @@ func TestLSet_IndexOutOfRange_Negative(t *testing.T) {
 	_, _, err := core.DecodeResp(resp)
 	require.NoError(t, err)
 	// Should return error
-	assert.NotEqual(t, constant.RESP_OK, resp)
+	assert.NotEqual(t, core.RespOK, resp)
 }
 
 func TestLSet_PositiveIndex(t *testing.T) {
@@ -606,7 +605,7 @@ func TestLSet_PositiveIndex(t *testing.T) {
 	r.LPush(cmd("LPUSH", "list", "a", "b", "c"))
 	resp := r.LSet(cmd("LSET", "list", "1", "newvalue"))
 
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	// Verify the value was set
 	indexResp := r.LIndex(cmd("LINDEX", "list", "1"))
@@ -620,7 +619,7 @@ func TestLSet_NegativeIndex(t *testing.T) {
 	r.LPush(cmd("LPUSH", "list", "a", "b", "c"))
 	resp := r.LSet(cmd("LSET", "list", "-1", "newvalue"))
 
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	// Verify the last element was set
 	indexResp := r.LIndex(cmd("LINDEX", "list", "-1"))
@@ -634,7 +633,7 @@ func TestLSet_IndexZero(t *testing.T) {
 	r.LPush(cmd("LPUSH", "list", "a", "b", "c"))
 	resp := r.LSet(cmd("LSET", "list", "0", "newvalue"))
 
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	// Verify the first element was set
 	indexResp := r.LIndex(cmd("LINDEX", "list", "0"))
@@ -648,7 +647,7 @@ func TestLSet_EmptyValue(t *testing.T) {
 	r.LPush(cmd("LPUSH", "list", "a", "b", "c"))
 	resp := r.LSet(cmd("LSET", "list", "0", ""))
 
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	indexResp := r.LIndex(cmd("LINDEX", "list", "0"))
 	indexVal, _, err := core.DecodeResp(indexResp)
@@ -680,14 +679,14 @@ func TestLTrim_InvalidArity(t *testing.T) {
 func TestLTrim_KeyNotExist(t *testing.T) {
 	r := newTestRedis()
 	resp := r.LTrim(cmd("LTRIM", "nonexistent", "0", "-1"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 }
 
 func TestLTrim_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.LTrim(cmd("LTRIM", "key", "0", "-1"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestLTrim_InvalidStart(t *testing.T) {
@@ -705,7 +704,7 @@ func TestLTrim_InvalidStart(t *testing.T) {
 			r := newTestRedis()
 			r.LPush(cmd("LPUSH", "list", "a", "b", "c"))
 			resp := r.LTrim(cmd("LTRIM", "list", tt.start, "1"))
-			assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+			assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 		})
 	}
 }
@@ -725,7 +724,7 @@ func TestLTrim_InvalidStop(t *testing.T) {
 			r := newTestRedis()
 			r.LPush(cmd("LPUSH", "list", "a", "b", "c"))
 			resp := r.LTrim(cmd("LTRIM", "list", "0", tt.stop))
-			assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+			assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 		})
 	}
 }
@@ -735,7 +734,7 @@ func TestLTrim_KeepAll(t *testing.T) {
 	r.LPush(cmd("LPUSH", "list", "a", "b", "c", "d", "e"))
 	resp := r.LTrim(cmd("LTRIM", "list", "0", "-1"))
 
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	lenResp := r.LLen(cmd("LLEN", "list"))
 	lenVal, _, err := core.DecodeResp(lenResp)
@@ -748,7 +747,7 @@ func TestLTrim_KeepMiddle(t *testing.T) {
 	r.LPush(cmd("LPUSH", "list", "a", "b", "c", "d", "e"))
 	resp := r.LTrim(cmd("LTRIM", "list", "1", "3"))
 
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	lenResp := r.LLen(cmd("LLEN", "list"))
 	lenVal, _, err := core.DecodeResp(lenResp)
@@ -761,7 +760,7 @@ func TestLTrim_KeepFirst(t *testing.T) {
 	r.LPush(cmd("LPUSH", "list", "a", "b", "c", "d", "e"))
 	resp := r.LTrim(cmd("LTRIM", "list", "0", "2"))
 
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	lenResp := r.LLen(cmd("LLEN", "list"))
 	lenVal, _, err := core.DecodeResp(lenResp)
@@ -774,7 +773,7 @@ func TestLTrim_KeepLast(t *testing.T) {
 	r.LPush(cmd("LPUSH", "list", "a", "b", "c", "d", "e"))
 	resp := r.LTrim(cmd("LTRIM", "list", "-3", "-1"))
 
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	lenResp := r.LLen(cmd("LLEN", "list"))
 	lenVal, _, err := core.DecodeResp(lenResp)
@@ -787,7 +786,7 @@ func TestLTrim_EmptyList(t *testing.T) {
 	r.LPush(cmd("LPUSH", "list", "a", "b", "c"))
 	resp := r.LTrim(cmd("LTRIM", "list", "10", "20"))
 
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	// List should be empty or deleted
 	lenResp := r.LLen(cmd("LLEN", "list"))
@@ -801,7 +800,7 @@ func TestLTrim_StartGreaterThanStop(t *testing.T) {
 	r.LPush(cmd("LPUSH", "list", "a", "b", "c"))
 	resp := r.LTrim(cmd("LTRIM", "list", "3", "1"))
 
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	lenResp := r.LLen(cmd("LLEN", "list"))
 	lenVal, _, err := core.DecodeResp(lenResp)
@@ -814,7 +813,7 @@ func TestLTrim_NegativeIndices(t *testing.T) {
 	r.LPush(cmd("LPUSH", "list", "a", "b", "c", "d", "e"))
 	resp := r.LTrim(cmd("LTRIM", "list", "-4", "-2"))
 
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	lenResp := r.LLen(cmd("LLEN", "list"))
 	lenVal, _, err := core.DecodeResp(lenResp)
@@ -854,7 +853,7 @@ func TestRPushX_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.RPushX(cmd("RPUSHX", "key", "element"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestRPushX_SingleElement(t *testing.T) {

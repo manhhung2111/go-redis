@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/manhhung2111/go-redis/internal/constant"
+	"github.com/manhhung2111/go-redis/internal/core"
 )
 
 // ==================== GEOADD Tests ====================
@@ -88,7 +88,7 @@ func TestGeoAddWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.GeoAdd(cmd("GEOADD", "k", "-122.4194", "37.7749", "sf"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestGeoAddInvalidLongitude(t *testing.T) {
@@ -96,14 +96,14 @@ func TestGeoAddInvalidLongitude(t *testing.T) {
 
 	// "abc" is parsed as option first, so it returns syntax error
 	resp := r.GeoAdd(cmd("GEOADD", "geo", "abc", "37.7749", "sf"))
-	assert.Equal(t, constant.RESP_SYNTAX_ERROR, resp)
+	assert.Equal(t, core.RespSyntaxError, resp)
 }
 
 func TestGeoAddInvalidLatitude(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.GeoAdd(cmd("GEOADD", "geo", "-122.4194", "abc", "sf"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_VALID_FLOAT, resp)
+	assert.Equal(t, core.RespValueNotValidFloat, resp)
 }
 
 func TestGeoAddInvalidCoordinates(t *testing.T) {
@@ -111,25 +111,25 @@ func TestGeoAddInvalidCoordinates(t *testing.T) {
 
 	// Longitude out of range
 	resp := r.GeoAdd(cmd("GEOADD", "geo", "200.0", "37.7749", "sf"))
-	assert.Equal(t, constant.RESP_INVALID_LONGITUDE_LATITUDE, resp)
+	assert.Equal(t, core.RespInvalidLongitudeLatitude, resp)
 
 	// Latitude out of range
 	resp = r.GeoAdd(cmd("GEOADD", "geo", "-122.4194", "90.0", "sf"))
-	assert.Equal(t, constant.RESP_INVALID_LONGITUDE_LATITUDE, resp)
+	assert.Equal(t, core.RespInvalidLongitudeLatitude, resp)
 }
 
 func TestGeoAddNXXXConflict(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.GeoAdd(cmd("GEOADD", "geo", "NX", "XX", "-122.4194", "37.7749", "sf"))
-	assert.Equal(t, constant.RESP_XX_NX_NOT_COMPATIBLE, resp)
+	assert.Equal(t, core.RespXXNXNotCompatible, resp)
 }
 
 func TestGeoAddInvalidOption(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.GeoAdd(cmd("GEOADD", "geo", "INVALID", "-122.4194", "37.7749", "sf"))
-	assert.Equal(t, constant.RESP_SYNTAX_ERROR, resp)
+	assert.Equal(t, core.RespSyntaxError, resp)
 }
 
 func TestGeoAddIncompleteTriplet(t *testing.T) {
@@ -137,7 +137,7 @@ func TestGeoAddIncompleteTriplet(t *testing.T) {
 
 	// Only longitude and latitude, missing member
 	resp := r.GeoAdd(cmd("GEOADD", "geo", "-122.4194", "37.7749", "sf", "-118.2437", "34.0522"))
-	assert.Equal(t, constant.RESP_SYNTAX_ERROR, resp)
+	assert.Equal(t, core.RespSyntaxError, resp)
 }
 
 // ==================== GEODIST Tests ====================
@@ -178,7 +178,7 @@ func TestGeoDistMissingKey(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.GeoDist(cmd("GEODIST", "geo", "sf", "la"))
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, resp)
+	assert.Equal(t, core.RespNilBulkString, resp)
 }
 
 func TestGeoDistMissingMember(t *testing.T) {
@@ -187,10 +187,10 @@ func TestGeoDistMissingMember(t *testing.T) {
 	r.GeoAdd(cmd("GEOADD", "geo", "-122.4194", "37.7749", "sf"))
 
 	resp := r.GeoDist(cmd("GEODIST", "geo", "sf", "la"))
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, resp)
+	assert.Equal(t, core.RespNilBulkString, resp)
 
 	resp = r.GeoDist(cmd("GEODIST", "geo", "unknown", "sf"))
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, resp)
+	assert.Equal(t, core.RespNilBulkString, resp)
 }
 
 func TestGeoDistWrongArgs(t *testing.T) {
@@ -210,7 +210,7 @@ func TestGeoDistWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.GeoDist(cmd("GEODIST", "k", "sf", "la"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestGeoDistInvalidUnit(t *testing.T) {
@@ -219,7 +219,7 @@ func TestGeoDistInvalidUnit(t *testing.T) {
 	r.GeoAdd(cmd("GEOADD", "geo", "-122.4194", "37.7749", "sf", "-118.2437", "34.0522", "la"))
 
 	resp := r.GeoDist(cmd("GEODIST", "geo", "sf", "la", "invalid"))
-	assert.Equal(t, constant.RESP_SYNTAX_ERROR, resp)
+	assert.Equal(t, core.RespSyntaxError, resp)
 }
 
 // ==================== GEOHASH Tests ====================
@@ -275,7 +275,7 @@ func TestGeoHashWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.GeoHash(cmd("GEOHASH", "k", "sf"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 // ==================== GEOPOS Tests ====================
@@ -331,7 +331,7 @@ func TestGeoPosWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.GeoPos(cmd("GEOPOS", "k", "sf"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 // ==================== GEOSEARCH Tests ====================
@@ -468,7 +468,7 @@ func TestGeoSearchWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.GeoSearch(cmd("GEOSEARCH", "k", "FROMMEMBER", "sf", "BYRADIUS", "100", "km"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestGeoSearchMissingFrom(t *testing.T) {
@@ -477,7 +477,7 @@ func TestGeoSearchMissingFrom(t *testing.T) {
 	r.GeoAdd(cmd("GEOADD", "geo", "-122.4194", "37.7749", "sf"))
 
 	resp := r.GeoSearch(cmd("GEOSEARCH", "geo", "BYRADIUS", "100", "km"))
-	assert.Equal(t, constant.RESP_GEO_FROMMEMBER_OR_FROMLONLAT_REQUIRED, resp)
+	assert.Equal(t, core.RespGeoFromMemberOrFromLonLatReq, resp)
 }
 
 func TestGeoSearchBothFromOptions(t *testing.T) {
@@ -486,7 +486,7 @@ func TestGeoSearchBothFromOptions(t *testing.T) {
 	r.GeoAdd(cmd("GEOADD", "geo", "-122.4194", "37.7749", "sf"))
 
 	resp := r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMMEMBER", "sf", "FROMLONLAT", "-122.0", "37.0", "BYRADIUS", "100", "km"))
-	assert.Equal(t, constant.RESP_GEO_FROMMEMBER_OR_FROMLONLAT_REQUIRED, resp)
+	assert.Equal(t, core.RespGeoFromMemberOrFromLonLatReq, resp)
 }
 
 func TestGeoSearchMissingBy(t *testing.T) {
@@ -496,7 +496,7 @@ func TestGeoSearchMissingBy(t *testing.T) {
 
 	// Need at least 4 args, provide extra args but no BYRADIUS/BYBOX
 	resp := r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMMEMBER", "sf", "ASC"))
-	assert.Equal(t, constant.RESP_GEO_BYRADIUS_OR_BYBOX_REQUIRED, resp)
+	assert.Equal(t, core.RespGeoByRadiusOrByBoxReq, resp)
 }
 
 func TestGeoSearchBothByOptions(t *testing.T) {
@@ -505,7 +505,7 @@ func TestGeoSearchBothByOptions(t *testing.T) {
 	r.GeoAdd(cmd("GEOADD", "geo", "-122.4194", "37.7749", "sf"))
 
 	resp := r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMMEMBER", "sf", "BYRADIUS", "100", "km", "BYBOX", "200", "200", "km"))
-	assert.Equal(t, constant.RESP_GEO_BYRADIUS_OR_BYBOX_REQUIRED, resp)
+	assert.Equal(t, core.RespGeoByRadiusOrByBoxReq, resp)
 }
 
 func TestGeoSearchASCDESCConflict(t *testing.T) {
@@ -514,7 +514,7 @@ func TestGeoSearchASCDESCConflict(t *testing.T) {
 	r.GeoAdd(cmd("GEOADD", "geo", "-122.4194", "37.7749", "sf"))
 
 	resp := r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMMEMBER", "sf", "BYRADIUS", "100", "km", "ASC", "DESC"))
-	assert.Equal(t, constant.RESP_SYNTAX_ERROR, resp)
+	assert.Equal(t, core.RespSyntaxError, resp)
 }
 
 func TestGeoSearchInvalidFromLonLat(t *testing.T) {
@@ -524,11 +524,11 @@ func TestGeoSearchInvalidFromLonLat(t *testing.T) {
 
 	// Invalid longitude
 	resp := r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMLONLAT", "abc", "37.0", "BYRADIUS", "100", "km"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_VALID_FLOAT, resp)
+	assert.Equal(t, core.RespValueNotValidFloat, resp)
 
 	// Invalid latitude
 	resp = r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMLONLAT", "-122.0", "abc", "BYRADIUS", "100", "km"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_VALID_FLOAT, resp)
+	assert.Equal(t, core.RespValueNotValidFloat, resp)
 }
 
 func TestGeoSearchInvalidCoordinates(t *testing.T) {
@@ -538,11 +538,11 @@ func TestGeoSearchInvalidCoordinates(t *testing.T) {
 
 	// Longitude out of range
 	resp := r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMLONLAT", "200.0", "37.0", "BYRADIUS", "100", "km"))
-	assert.Equal(t, constant.RESP_INVALID_LONGITUDE_LATITUDE, resp)
+	assert.Equal(t, core.RespInvalidLongitudeLatitude, resp)
 
 	// Latitude out of range
 	resp = r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMLONLAT", "-122.0", "90.0", "BYRADIUS", "100", "km"))
-	assert.Equal(t, constant.RESP_INVALID_LONGITUDE_LATITUDE, resp)
+	assert.Equal(t, core.RespInvalidLongitudeLatitude, resp)
 }
 
 func TestGeoSearchInvalidRadius(t *testing.T) {
@@ -551,11 +551,11 @@ func TestGeoSearchInvalidRadius(t *testing.T) {
 	r.GeoAdd(cmd("GEOADD", "geo", "-122.4194", "37.7749", "sf"))
 
 	resp := r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMMEMBER", "sf", "BYRADIUS", "abc", "km"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_VALID_FLOAT, resp)
+	assert.Equal(t, core.RespValueNotValidFloat, resp)
 
 	// Negative radius
 	resp = r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMMEMBER", "sf", "BYRADIUS", "-100", "km"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_VALID_FLOAT, resp)
+	assert.Equal(t, core.RespValueNotValidFloat, resp)
 }
 
 func TestGeoSearchInvalidBoxDimensions(t *testing.T) {
@@ -565,19 +565,19 @@ func TestGeoSearchInvalidBoxDimensions(t *testing.T) {
 
 	// Invalid width
 	resp := r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMMEMBER", "sf", "BYBOX", "abc", "200", "km"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_VALID_FLOAT, resp)
+	assert.Equal(t, core.RespValueNotValidFloat, resp)
 
 	// Invalid height
 	resp = r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMMEMBER", "sf", "BYBOX", "200", "abc", "km"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_VALID_FLOAT, resp)
+	assert.Equal(t, core.RespValueNotValidFloat, resp)
 
 	// Negative width
 	resp = r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMMEMBER", "sf", "BYBOX", "-200", "200", "km"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_VALID_FLOAT, resp)
+	assert.Equal(t, core.RespValueNotValidFloat, resp)
 
 	// Negative height
 	resp = r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMMEMBER", "sf", "BYBOX", "200", "-200", "km"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_VALID_FLOAT, resp)
+	assert.Equal(t, core.RespValueNotValidFloat, resp)
 }
 
 func TestGeoSearchInvalidUnit(t *testing.T) {
@@ -586,10 +586,10 @@ func TestGeoSearchInvalidUnit(t *testing.T) {
 	r.GeoAdd(cmd("GEOADD", "geo", "-122.4194", "37.7749", "sf"))
 
 	resp := r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMMEMBER", "sf", "BYRADIUS", "100", "invalid"))
-	assert.Equal(t, constant.RESP_SYNTAX_ERROR, resp)
+	assert.Equal(t, core.RespSyntaxError, resp)
 
 	resp = r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMMEMBER", "sf", "BYBOX", "200", "200", "invalid"))
-	assert.Equal(t, constant.RESP_SYNTAX_ERROR, resp)
+	assert.Equal(t, core.RespSyntaxError, resp)
 }
 
 func TestGeoSearchInvalidCount(t *testing.T) {
@@ -598,10 +598,10 @@ func TestGeoSearchInvalidCount(t *testing.T) {
 	r.GeoAdd(cmd("GEOADD", "geo", "-122.4194", "37.7749", "sf"))
 
 	resp := r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMMEMBER", "sf", "BYRADIUS", "100", "km", "COUNT", "abc"))
-	assert.Equal(t, constant.RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE, resp)
+	assert.Equal(t, core.RespValueOutOfRangeMustPositive, resp)
 
 	resp = r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMMEMBER", "sf", "BYRADIUS", "100", "km", "COUNT", "-1"))
-	assert.Equal(t, constant.RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE, resp)
+	assert.Equal(t, core.RespValueOutOfRangeMustPositive, resp)
 }
 
 func TestGeoSearchInvalidOption(t *testing.T) {
@@ -610,7 +610,7 @@ func TestGeoSearchInvalidOption(t *testing.T) {
 	r.GeoAdd(cmd("GEOADD", "geo", "-122.4194", "37.7749", "sf"))
 
 	resp := r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMMEMBER", "sf", "BYRADIUS", "100", "km", "INVALID"))
-	assert.Equal(t, constant.RESP_SYNTAX_ERROR, resp)
+	assert.Equal(t, core.RespSyntaxError, resp)
 }
 
 func TestGeoSearchFromMemberNotFound(t *testing.T) {
@@ -631,7 +631,7 @@ func TestGeoSearchIncompleteFromMember(t *testing.T) {
 
 	// FROMMEMBER at end without member - needs more context to trigger syntax error
 	resp := r.GeoSearch(cmd("GEOSEARCH", "geo", "BYRADIUS", "100", "km", "FROMMEMBER"))
-	assert.Equal(t, constant.RESP_SYNTAX_ERROR, resp)
+	assert.Equal(t, core.RespSyntaxError, resp)
 }
 
 func TestGeoSearchIncompleteFromLonLat(t *testing.T) {
@@ -641,7 +641,7 @@ func TestGeoSearchIncompleteFromLonLat(t *testing.T) {
 
 	// FROMLONLAT with only one coordinate
 	resp := r.GeoSearch(cmd("GEOSEARCH", "geo", "BYRADIUS", "100", "km", "FROMLONLAT", "-122.0"))
-	assert.Equal(t, constant.RESP_SYNTAX_ERROR, resp)
+	assert.Equal(t, core.RespSyntaxError, resp)
 }
 
 func TestGeoSearchIncompleteByRadius(t *testing.T) {
@@ -650,7 +650,7 @@ func TestGeoSearchIncompleteByRadius(t *testing.T) {
 	r.GeoAdd(cmd("GEOADD", "geo", "-122.4194", "37.7749", "sf"))
 
 	resp := r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMMEMBER", "sf", "BYRADIUS", "100"))
-	assert.Equal(t, constant.RESP_SYNTAX_ERROR, resp)
+	assert.Equal(t, core.RespSyntaxError, resp)
 }
 
 func TestGeoSearchIncompleteByBox(t *testing.T) {
@@ -659,7 +659,7 @@ func TestGeoSearchIncompleteByBox(t *testing.T) {
 	r.GeoAdd(cmd("GEOADD", "geo", "-122.4194", "37.7749", "sf"))
 
 	resp := r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMMEMBER", "sf", "BYBOX", "200", "200"))
-	assert.Equal(t, constant.RESP_SYNTAX_ERROR, resp)
+	assert.Equal(t, core.RespSyntaxError, resp)
 }
 
 func TestGeoSearchIncompleteCount(t *testing.T) {
@@ -668,7 +668,7 @@ func TestGeoSearchIncompleteCount(t *testing.T) {
 	r.GeoAdd(cmd("GEOADD", "geo", "-122.4194", "37.7749", "sf"))
 
 	resp := r.GeoSearch(cmd("GEOSEARCH", "geo", "FROMMEMBER", "sf", "BYRADIUS", "100", "km", "COUNT"))
-	assert.Equal(t, constant.RESP_SYNTAX_ERROR, resp)
+	assert.Equal(t, core.RespSyntaxError, resp)
 }
 
 func TestGeoSearchAllUnits(t *testing.T) {

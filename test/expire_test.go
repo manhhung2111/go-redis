@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
@@ -22,7 +21,7 @@ func TestTTL_NoKey(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.TTL(cmd("TTL", "missing"))
-	assert.Equal(t, constant.RESP_TTL_KEY_NOT_EXIST, resp)
+	assert.Equal(t, core.RespTTLKeyNotExist, resp)
 }
 
 func TestTTL_NoExpire(t *testing.T) {
@@ -31,7 +30,7 @@ func TestTTL_NoExpire(t *testing.T) {
 	r.Set(cmd("SET", "foo", "bar"))
 	resp := r.TTL(cmd("TTL", "foo"))
 
-	assert.Equal(t, constant.RESP_TTL_KEY_EXIST_NO_EXPIRE, resp)
+	assert.Equal(t, core.RespTTLKeyExistNoExpire, resp)
 }
 
 func TestTTL_WithExpire(t *testing.T) {
@@ -102,7 +101,7 @@ func TestExpire_IncompatibleOptions_NX_XX(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.Expire(cmd("EXPIRE", "k", "10", "NX", "XX"))
-	assert.Equal(t, constant.RESP_EXPIRE_OPTIONS_NOT_COMPATIBLE, resp)
+	assert.Equal(t, core.RespExpireOptionsNotCompatible, resp)
 }
 
 func TestExpire_IncompatibleOptions_GT_LT(t *testing.T) {
@@ -110,7 +109,7 @@ func TestExpire_IncompatibleOptions_GT_LT(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.Expire(cmd("EXPIRE", "k", "10", "GT", "LT"))
-	assert.Equal(t, constant.RESP_EXPIRE_OPTIONS_NOT_COMPATIBLE, resp)
+	assert.Equal(t, core.RespExpireOptionsNotCompatible, resp)
 }
 
 func TestExpire_IncompatibleOptions_NX_GT(t *testing.T) {
@@ -118,14 +117,14 @@ func TestExpire_IncompatibleOptions_NX_GT(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.Expire(cmd("EXPIRE", "k", "10", "NX", "GT"))
-	assert.Equal(t, constant.RESP_EXPIRE_OPTIONS_NOT_COMPATIBLE, resp)
+	assert.Equal(t, core.RespExpireOptionsNotCompatible, resp)
 }
 
 func TestExpire_KeyNotExist(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.Expire(cmd("EXPIRE", "missing", "10"))
-	assert.Equal(t, constant.RESP_EXPIRE_TIMEOUT_NOT_SET, resp)
+	assert.Equal(t, core.RespExpireTimeoutNotSet, resp)
 }
 
 func TestExpire_NX_FirstSet(t *testing.T) {
@@ -133,7 +132,7 @@ func TestExpire_NX_FirstSet(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.Expire(cmd("EXPIRE", "k", "10", "NX"))
-	assert.Equal(t, constant.RESP_EXPIRE_TIMEOUT_SET, resp)
+	assert.Equal(t, core.RespExpireTimeoutSet, resp)
 }
 
 func TestExpire_NX_RejectWhenTTLExists(t *testing.T) {
@@ -142,7 +141,7 @@ func TestExpire_NX_RejectWhenTTLExists(t *testing.T) {
 	r.Expire(cmd("EXPIRE", "k", "10"))
 
 	resp := r.Expire(cmd("EXPIRE", "k", "20", "NX"))
-	assert.Equal(t, constant.RESP_EXPIRE_TIMEOUT_NOT_SET, resp)
+	assert.Equal(t, core.RespExpireTimeoutNotSet, resp)
 }
 
 func TestExpire_XX_RejectWhenNoTTL(t *testing.T) {
@@ -150,7 +149,7 @@ func TestExpire_XX_RejectWhenNoTTL(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.Expire(cmd("EXPIRE", "k", "10", "XX"))
-	assert.Equal(t, constant.RESP_EXPIRE_TIMEOUT_NOT_SET, resp)
+	assert.Equal(t, core.RespExpireTimeoutNotSet, resp)
 }
 
 func TestExpire_XX_AcceptWhenTTLExists(t *testing.T) {
@@ -159,7 +158,7 @@ func TestExpire_XX_AcceptWhenTTLExists(t *testing.T) {
 	r.Expire(cmd("EXPIRE", "k", "5"))
 
 	resp := r.Expire(cmd("EXPIRE", "k", "10", "XX"))
-	assert.Equal(t, constant.RESP_EXPIRE_TIMEOUT_SET, resp)
+	assert.Equal(t, core.RespExpireTimeoutSet, resp)
 }
 
 func TestExpire_GT_RejectSmallerTTL(t *testing.T) {
@@ -168,7 +167,7 @@ func TestExpire_GT_RejectSmallerTTL(t *testing.T) {
 	r.Expire(cmd("EXPIRE", "k", "10"))
 
 	resp := r.Expire(cmd("EXPIRE", "k", "5", "GT"))
-	assert.Equal(t, constant.RESP_EXPIRE_TIMEOUT_NOT_SET, resp)
+	assert.Equal(t, core.RespExpireTimeoutNotSet, resp)
 }
 
 func TestExpire_GT_AcceptLargerTTL(t *testing.T) {
@@ -177,7 +176,7 @@ func TestExpire_GT_AcceptLargerTTL(t *testing.T) {
 	r.Expire(cmd("EXPIRE", "k", "10"))
 
 	resp := r.Expire(cmd("EXPIRE", "k", "20", "GT"))
-	assert.Equal(t, constant.RESP_EXPIRE_TIMEOUT_SET, resp)
+	assert.Equal(t, core.RespExpireTimeoutSet, resp)
 }
 
 func TestExpire_LT_RejectLargerTTL(t *testing.T) {
@@ -186,7 +185,7 @@ func TestExpire_LT_RejectLargerTTL(t *testing.T) {
 	r.Expire(cmd("EXPIRE", "k", "10"))
 
 	resp := r.Expire(cmd("EXPIRE", "k", "20", "LT"))
-	assert.Equal(t, constant.RESP_EXPIRE_TIMEOUT_NOT_SET, resp)
+	assert.Equal(t, core.RespExpireTimeoutNotSet, resp)
 }
 
 func TestExpire_LT_AcceptSmallerTTL(t *testing.T) {
@@ -195,5 +194,5 @@ func TestExpire_LT_AcceptSmallerTTL(t *testing.T) {
 	r.Expire(cmd("EXPIRE", "k", "10"))
 
 	resp := r.Expire(cmd("EXPIRE", "k", "5", "LT"))
-	assert.Equal(t, constant.RESP_EXPIRE_TIMEOUT_SET, resp)
+	assert.Equal(t, core.RespExpireTimeoutSet, resp)
 }

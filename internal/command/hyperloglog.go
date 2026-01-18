@@ -1,7 +1,6 @@
 package command
 
 import (
-	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
@@ -60,5 +59,5 @@ func (redis *redis) PFMerge(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(err, false)
 	}
 
-	return constant.RESP_OK
+	return core.RespOK
 }

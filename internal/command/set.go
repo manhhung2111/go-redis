@@ -3,7 +3,6 @@ package command
 import (
 	"strconv"
 
-	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
@@ -122,7 +121,7 @@ func (redis *redis) SPop(cmd core.RedisCmd) []byte {
 	if len(args) == 2 {
 		newCount, err := strconv.ParseInt(args[1], 10, 64)
 		if err != nil || newCount <= 0 {
-			return constant.RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE
+			return core.RespValueOutOfRangeMustPositive
 		}
 
 		count = int(newCount)
@@ -134,7 +133,7 @@ func (redis *redis) SPop(cmd core.RedisCmd) []byte {
 	}
 
 	if len(poppedElements) == 0 {
-		return constant.RESP_NIL_BULK_STRING
+		return core.RespNilBulkString
 	}
 
 	if len(args) == 1 {
@@ -154,7 +153,7 @@ func (redis *redis) SRandMember(cmd core.RedisCmd) []byte {
 	if len(args) == 2 {
 		newCount, err := strconv.ParseInt(args[1], 10, 64)
 		if err != nil {
-			return constant.RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE
+			return core.RespValueOutOfRangeMustPositive
 		}
 
 		count = int(newCount)

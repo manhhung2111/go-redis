@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
 	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
 	"github.com/manhhung2111/go-redis/internal/util"
@@ -34,19 +33,19 @@ func (redis *redis) GeoAdd(cmd core.RedisCmd) []byte {
 		case "CH":
 			options.CH = true
 		default:
-			return constant.RESP_SYNTAX_ERROR
+			return core.RespSyntaxError
 		}
 		i++
 	}
 
 	if options.NX && options.XX {
-		return constant.RESP_XX_NX_NOT_COMPATIBLE
+		return core.RespXXNXNotCompatible
 	}
 
 	// Remaining args should be longitude latitude member triplets
 	remaining := len(args) - i
 	if remaining == 0 || remaining%3 != 0 {
-		return constant.RESP_SYNTAX_ERROR
+		return core.RespSyntaxError
 	}
 
 	items := make([]data_structure.GeoPoint, 0, remaining/3)
@@ -54,16 +53,16 @@ func (redis *redis) GeoAdd(cmd core.RedisCmd) []byte {
 	for i < len(args) {
 		longitude, err := strconv.ParseFloat(args[i], 64)
 		if err != nil {
-			return constant.RESP_VALUE_IS_NOT_VALID_FLOAT
+			return core.RespValueNotValidFloat
 		}
 
 		latitude, err := strconv.ParseFloat(args[i+1], 64)
 		if err != nil {
-			return constant.RESP_VALUE_IS_NOT_VALID_FLOAT
+			return core.RespValueNotValidFloat
 		}
 
 		if !data_structure.ValidateCoordinates(longitude, latitude) {
-			return constant.RESP_INVALID_LONGITUDE_LATITUDE
+			return core.RespInvalidLongitudeLatitude
 		}
 
 		member := args[i+2]
@@ -82,7 +81,7 @@ func (redis *redis) GeoAdd(cmd core.RedisCmd) []byte {
 	}
 
 	if result == nil {
-		return constant.RESP_SYNTAX_ERROR
+		return core.RespSyntaxError
 	}
 
 	return core.EncodeResp(*result, false)
@@ -99,7 +98,7 @@ func (redis *redis) GeoDist(cmd core.RedisCmd) []byte {
 	if len(args) == 4 {
 		unit = strings.ToLower(args[3])
 		if unit != "m" && unit != "km" && unit != "ft" && unit != "mi" {
-			return constant.RESP_SYNTAX_ERROR
+			return core.RespSyntaxError
 		}
 	}
 
@@ -109,7 +108,7 @@ func (redis *redis) GeoDist(cmd core.RedisCmd) []byte {
 	}
 
 	if result == nil {
-		return constant.RESP_NIL_BULK_STRING
+		return core.RespNilBulkString
 	}
 
 	return core.EncodeResp(*result, false)
@@ -181,60 +180,60 @@ func (redis *redis) GeoSearch(cmd core.RedisCmd) []byte {
 		switch opt {
 		case "FROMMEMBER":
 			if i+1 >= len(args) {
-				return constant.RESP_SYNTAX_ERROR
+				return core.RespSyntaxError
 			}
 			options.FromMember = args[i+1]
 			i += 2
 
 		case "FROMLONLAT":
 			if i+2 >= len(args) {
-				return constant.RESP_SYNTAX_ERROR
+				return core.RespSyntaxError
 			}
 			lon, err := strconv.ParseFloat(args[i+1], 64)
 			if err != nil {
-				return constant.RESP_VALUE_IS_NOT_VALID_FLOAT
+				return core.RespValueNotValidFloat
 			}
 			lat, err := strconv.ParseFloat(args[i+2], 64)
 			if err != nil {
-				return constant.RESP_VALUE_IS_NOT_VALID_FLOAT
+				return core.RespValueNotValidFloat
 			}
 			if !data_structure.ValidateCoordinates(lon, lat) {
-				return constant.RESP_INVALID_LONGITUDE_LATITUDE
+				return core.RespInvalidLongitudeLatitude
 			}
 			options.FromLonLat = &data_structure.GeoPoint{Longitude: lon, Latitude: lat}
 			i += 3
 
 		case "BYRADIUS":
 			if i+2 >= len(args) {
-				return constant.RESP_SYNTAX_ERROR
+				return core.RespSyntaxError
 			}
 			radius, err := strconv.ParseFloat(args[i+1], 64)
 			if err != nil || radius < 0 {
-				return constant.RESP_VALUE_IS_NOT_VALID_FLOAT
+				return core.RespValueNotValidFloat
 			}
 			options.ByRadius = radius
 			options.Unit = strings.ToLower(args[i+2])
 			if !isValidGeoUnit(options.Unit) {
-				return constant.RESP_SYNTAX_ERROR
+				return core.RespSyntaxError
 			}
 			i += 3
 
 		case "BYBOX":
 			if i+3 >= len(args) {
-				return constant.RESP_SYNTAX_ERROR
+				return core.RespSyntaxError
 			}
 			width, err := strconv.ParseFloat(args[i+1], 64)
 			if err != nil || width < 0 {
-				return constant.RESP_VALUE_IS_NOT_VALID_FLOAT
+				return core.RespValueNotValidFloat
 			}
 			height, err := strconv.ParseFloat(args[i+2], 64)
 			if err != nil || height < 0 {
-				return constant.RESP_VALUE_IS_NOT_VALID_FLOAT
+				return core.RespValueNotValidFloat
 			}
 			options.ByBox = &data_structure.GeoBox{Width: width, Height: height}
 			options.Unit = strings.ToLower(args[i+3])
 			if !isValidGeoUnit(options.Unit) {
-				return constant.RESP_SYNTAX_ERROR
+				return core.RespSyntaxError
 			}
 			i += 4
 
@@ -248,11 +247,11 @@ func (redis *redis) GeoSearch(cmd core.RedisCmd) []byte {
 
 		case "COUNT":
 			if i+1 >= len(args) {
-				return constant.RESP_SYNTAX_ERROR
+				return core.RespSyntaxError
 			}
 			count, err := strconv.ParseInt(args[i+1], 10, 64)
 			if err != nil || count < 0 {
-				return constant.RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE
+				return core.RespValueOutOfRangeMustPositive
 			}
 			options.Count = int(count)
 			i += 2
@@ -275,25 +274,25 @@ func (redis *redis) GeoSearch(cmd core.RedisCmd) []byte {
 			i++
 
 		default:
-			return constant.RESP_SYNTAX_ERROR
+			return core.RespSyntaxError
 		}
 	}
 
 	// Validate required options
 	if options.FromMember == "" && options.FromLonLat == nil {
-		return constant.RESP_GEO_FROMMEMBER_OR_FROMLONLAT_REQUIRED
+		return core.RespGeoFromMemberOrFromLonLatReq
 	}
 	if options.FromMember != "" && options.FromLonLat != nil {
-		return constant.RESP_GEO_FROMMEMBER_OR_FROMLONLAT_REQUIRED
+		return core.RespGeoFromMemberOrFromLonLatReq
 	}
 	if options.ByRadius == 0 && options.ByBox == nil {
-		return constant.RESP_GEO_BYRADIUS_OR_BYBOX_REQUIRED
+		return core.RespGeoByRadiusOrByBoxReq
 	}
 	if options.ByRadius > 0 && options.ByBox != nil {
-		return constant.RESP_GEO_BYRADIUS_OR_BYBOX_REQUIRED
+		return core.RespGeoByRadiusOrByBoxReq
 	}
 	if options.Ascending && options.Descending {
-		return constant.RESP_SYNTAX_ERROR
+		return core.RespSyntaxError
 	}
 
 	results, err := redis.Store.GeoSearch(args[0], options)

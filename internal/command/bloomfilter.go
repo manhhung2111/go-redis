@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/manhhung2111/go-redis/internal/config"
-	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
 	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
 	"github.com/manhhung2111/go-redis/internal/util"
@@ -128,35 +127,35 @@ func (redis *redis) BFReserve(cmd core.RedisCmd) []byte {
 
 	errorRate, err := strconv.ParseFloat(args[1], 64)
 	if err != nil {
-		return constant.RESP_BAD_ERROR_RATE
+		return core.RespBadErrorRate
 	}
 
 	if errorRate < 0 || errorRate > 1 {
-		return constant.RESP_ERROR_RATE_INVALID_RANGE
+		return core.RespErrorRateInvalidRange
 	}
 
 	capacity, err := strconv.ParseInt(args[2], 10, 64)
 	if err != nil {
-		return constant.RESP_BAD_CAPACITY
+		return core.RespBadCapacity
 	}
 
 	if capacity < int64(config.BF_MIN_CAPACITY) || capacity > int64(config.BF_MAX_CAPACITY) {
-		return constant.RESP_CAPACITY_INVALID_RANGE
+		return core.RespCapacityInvalidRange
 	}
 
 	expansion := config.BF_DEFAULT_EXPANSION
 	if len(args) == 5 {
 		if strings.ToUpper(args[3]) != "EXPANSION" {
-			return constant.RESP_SYNTAX_ERROR
+			return core.RespSyntaxError
 		}
 
 		newExpansion, err := strconv.ParseInt(args[4], 10, 64)
 		if err != nil {
-			return constant.RESP_BAD_EXPANSION
+			return core.RespBadExpansion
 		}
 
 		if newExpansion < int64(config.BF_MIN_EXPANSION) || newExpansion > int64(config.BF_MAX_EXPANSION) {
-			return constant.RESP_EXPANSION_INVALID_RANGE
+			return core.RespExpansionInvalidRange
 		}
 
 		expansion = int(newExpansion)
@@ -167,5 +166,5 @@ func (redis *redis) BFReserve(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(err, false)
 	}
 
-	return constant.RESP_OK
+	return core.RespOK
 }

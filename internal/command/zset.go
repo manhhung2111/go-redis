@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
 	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
 	"github.com/manhhung2111/go-redis/internal/util"
@@ -43,24 +42,24 @@ func (redis *redis) ZAdd(cmd core.RedisCmd) []byte {
 		case "CH":
 			options.CH = true
 		default:
-			return constant.RESP_SYNTAX_ERROR
+			return core.RespSyntaxError
 		}
 		i++
 	}
 
 	if options.NX && options.XX {
-		return constant.RESP_XX_NX_NOT_COMPATIBLE
+		return core.RespXXNXNotCompatible
 	}
 	if (options.GT || options.LT) && options.NX {
-		return constant.RESP_GT_LT_NX_NOT_COMPATIBLE
+		return core.RespGTLTNXNotCompatible
 	}
 	if options.GT && options.LT {
-		return constant.RESP_GT_LT_NX_NOT_COMPATIBLE
+		return core.RespGTLTNXNotCompatible
 	}
 
 	remaining := len(args) - i
 	if remaining == 0 || remaining%2 != 0 {
-		return constant.RESP_SYNTAX_ERROR
+		return core.RespSyntaxError
 	}
 
 	scoreMember := make(map[string]float64, remaining/2)
@@ -68,7 +67,7 @@ func (redis *redis) ZAdd(cmd core.RedisCmd) []byte {
 	for i < len(args) {
 		score, err := strconv.ParseFloat(args[i], 64)
 		if err != nil {
-			return constant.RESP_SYNTAX_ERROR
+			return core.RespSyntaxError
 		}
 		member := args[i+1]
 		scoreMember[member] = score
@@ -81,7 +80,7 @@ func (redis *redis) ZAdd(cmd core.RedisCmd) []byte {
 	}
 
 	if result == nil {
-		return constant.RESP_SYNTAX_ERROR
+		return core.RespSyntaxError
 	}
 
 	return core.EncodeResp(*result, false)
@@ -111,12 +110,12 @@ func (redis *redis) ZCount(cmd core.RedisCmd) []byte {
 
 	minValue, err := strconv.ParseFloat(args[1], 64)
 	if err != nil {
-		return constant.RESP_VALUE_IS_NOT_VALID_FLOAT
+		return core.RespValueNotValidFloat
 	}
 
 	maxValue, err := strconv.ParseFloat(args[2], 64)
 	if err != nil {
-		return constant.RESP_VALUE_IS_NOT_VALID_FLOAT
+		return core.RespValueNotValidFloat
 	}
 
 	result, err := redis.Store.ZCount(args[0], minValue, maxValue)
@@ -136,7 +135,7 @@ func (redis *redis) ZIncrBy(cmd core.RedisCmd) []byte {
 
 	increment, err := strconv.ParseFloat(args[1], 64)
 	if err != nil {
-		return constant.RESP_VALUE_IS_NOT_VALID_FLOAT
+		return core.RespValueNotValidFloat
 	}
 
 	result, err := redis.Store.ZIncrBy(args[0], args[2], increment)
@@ -198,7 +197,7 @@ func (redis *redis) ZPopMax(cmd core.RedisCmd) []byte {
 	if len(args) == 2 {
 		newCount, err := strconv.ParseInt(args[1], 10, 64)
 		if err != nil || newCount < 0 {
-			return constant.RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE
+			return core.RespValueOutOfRangeMustPositive
 		}
 		count = int(newCount)
 	}
@@ -222,7 +221,7 @@ func (redis *redis) ZPopMin(cmd core.RedisCmd) []byte {
 	if len(args) == 2 {
 		newCount, err := strconv.ParseInt(args[1], 10, 64)
 		if err != nil || newCount < 0 {
-			return constant.RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE
+			return core.RespValueOutOfRangeMustPositive
 		}
 		count = int(newCount)
 	}
@@ -246,7 +245,7 @@ func (redis *redis) ZRandMember(cmd core.RedisCmd) []byte {
 	if len(args) >= 2 {
 		newCount, err := strconv.ParseInt(args[1], 10, 64)
 		if err != nil {
-			return constant.RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE
+			return core.RespValueOutOfRangeMustPositive
 		}
 		count = int(newCount)
 	}
@@ -256,7 +255,7 @@ func (redis *redis) ZRandMember(cmd core.RedisCmd) []byte {
 		if strings.ToUpper(args[2]) == "WITHSCORES" {
 			withScores = true
 		} else {
-			return constant.RESP_SYNTAX_ERROR
+			return core.RespSyntaxError
 		}
 	}
 
@@ -267,7 +266,7 @@ func (redis *redis) ZRandMember(cmd core.RedisCmd) []byte {
 
 	if len(args) == 1 {
 		if len(result) == 0 {
-			return constant.RESP_NIL_BULK_STRING
+			return core.RespNilBulkString
 		}
 		return core.EncodeResp(result[0], false)
 	}
@@ -300,27 +299,27 @@ func (redis *redis) ZRange(cmd core.RedisCmd) []byte {
 		case "WITHSCORES":
 			withScores = true
 		default:
-			return constant.RESP_SYNTAX_ERROR
+			return core.RespSyntaxError
 		}
 	}
 
 	if byScore && byLex {
-		return constant.RESP_SYNTAX_ERROR
+		return core.RespSyntaxError
 	}
 
 	if byLex && withScores {
-		return constant.RESP_WITHSCORES_NOT_SUPPORTED_WITH_BYLEX
+		return core.RespWithScoresNotSupportedByLex
 	}
 
 	if !byScore && !byLex {
 		start, err := strconv.ParseInt(args[1], 10, 64)
 		if err != nil {
-			return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+			return core.RespValueNotIntegerOrOutOfRange
 		}
 
 		stop, err := strconv.ParseInt(args[2], 10, 64)
 		if err != nil {
-			return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+			return core.RespValueNotIntegerOrOutOfRange
 		}
 
 		result := []string{}
@@ -340,12 +339,12 @@ func (redis *redis) ZRange(cmd core.RedisCmd) []byte {
 	if byScore {
 		start, err := strconv.ParseFloat(args[1], 64)
 		if err != nil {
-			return constant.RESP_MIN_OR_MAX_IS_NOT_FLOAT
+			return core.RespMinOrMaxNotFloat
 		}
 
 		stop, err := strconv.ParseFloat(args[2], 64)
 		if err != nil {
-			return constant.RESP_MIN_OR_MAX_IS_NOT_FLOAT
+			return core.RespMinOrMaxNotFloat
 		}
 
 		result := []string{}
@@ -388,7 +387,7 @@ func (redis *redis) ZRange(cmd core.RedisCmd) []byte {
 	}
 
 	// This line should never be reached
-	return constant.RESP_SYNTAX_ERROR
+	return core.RespSyntaxError
 }
 
 /* Support ZRANK key member [WITHSCORE] */
@@ -403,7 +402,7 @@ func (redis *redis) ZRank(cmd core.RedisCmd) []byte {
 		if strings.ToUpper(args[2]) == "WITHSCORE" {
 			withScore = true
 		} else {
-			return constant.RESP_SYNTAX_ERROR
+			return core.RespSyntaxError
 		}
 	}
 
@@ -413,7 +412,7 @@ func (redis *redis) ZRank(cmd core.RedisCmd) []byte {
 	}
 
 	if result == nil {
-		return constant.RESP_NIL_BULK_STRING
+		return core.RespNilBulkString
 	}
 	if !withScore {
 		return core.EncodeResp(result[0], false)
@@ -448,7 +447,7 @@ func (redis *redis) ZRevRank(cmd core.RedisCmd) []byte {
 		if strings.ToUpper(args[2]) == "WITHSCORE" {
 			withScore = true
 		} else {
-			return constant.RESP_SYNTAX_ERROR
+			return core.RespSyntaxError
 		}
 	}
 
@@ -458,7 +457,7 @@ func (redis *redis) ZRevRank(cmd core.RedisCmd) []byte {
 	}
 
 	if result == nil {
-		return constant.RESP_NIL_BULK_STRING
+		return core.RespNilBulkString
 	}
 	if !withScore {
 		return core.EncodeResp(result[0], false)

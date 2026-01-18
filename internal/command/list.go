@@ -3,7 +3,6 @@ package command
 import (
 	"strconv"
 
-	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
@@ -34,7 +33,7 @@ func (redis *redis) LPop(cmd core.RedisCmd) []byte {
 	if len(args) == 2 {
 		newCount, err := strconv.ParseInt(args[1], 10, 64)
 		if err != nil || newCount < 0 {
-			return constant.RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE
+			return core.RespValueOutOfRangeMustPositive
 		}
 
 		count = uint32(newCount)
@@ -46,7 +45,7 @@ func (redis *redis) LPop(cmd core.RedisCmd) []byte {
 	}
 
 	if result == nil {
-		return constant.RESP_NIL_BULK_STRING
+		return core.RespNilBulkString
 	}
 
 	if len(args) == 1 && len(result) > 0 {
@@ -82,7 +81,7 @@ func (redis *redis) RPop(cmd core.RedisCmd) []byte {
 	if len(args) == 2 {
 		newCount, err := strconv.ParseInt(args[1], 10, 64)
 		if err != nil || newCount < 0 {
-			return constant.RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE
+			return core.RespValueOutOfRangeMustPositive
 		}
 
 		count = uint32(newCount)
@@ -94,7 +93,7 @@ func (redis *redis) RPop(cmd core.RedisCmd) []byte {
 	}
 
 	if result == nil {
-		return constant.RESP_NIL_BULK_STRING
+		return core.RespNilBulkString
 	}
 
 	if len(args) == 1 && len(result) > 0 {
@@ -113,12 +112,12 @@ func (redis *redis) LRange(cmd core.RedisCmd) []byte {
 
 	start, err := strconv.ParseInt(args[1], 10, 32)
 	if err != nil {
-		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+		return core.RespValueNotIntegerOrOutOfRange
 	}
 
 	end, err := strconv.ParseInt(args[2], 10, 32)
 	if err != nil {
-		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+		return core.RespValueNotIntegerOrOutOfRange
 	}
 
 	result, err := redis.Store.LRange(args[0], int32(start), int32(end))
@@ -138,7 +137,7 @@ func (redis *redis) LIndex(cmd core.RedisCmd) []byte {
 
 	index, err := strconv.ParseInt(args[1], 10, 64)
 	if err != nil {
-		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+		return core.RespValueNotIntegerOrOutOfRange
 	}
 
 	result, err := redis.Store.LIndex(args[0], int32(index))
@@ -147,7 +146,7 @@ func (redis *redis) LIndex(cmd core.RedisCmd) []byte {
 	}
 
 	if result == nil {
-		return constant.RESP_NIL_BULK_STRING
+		return core.RespNilBulkString
 	}
 
 	return core.EncodeResp(result, false)
@@ -197,7 +196,7 @@ func (redis *redis) LRem(cmd core.RedisCmd) []byte {
 
 	count, err := strconv.ParseInt(args[1], 10, 64)
 	if err != nil {
-		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+		return core.RespValueNotIntegerOrOutOfRange
 	}
 
 	result, err := redis.Store.LRem(args[0], int32(count), args[2])
@@ -217,7 +216,7 @@ func (redis *redis) LSet(cmd core.RedisCmd) []byte {
 
 	index, err := strconv.ParseInt(args[1], 10, 64)
 	if err != nil {
-		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+		return core.RespValueNotIntegerOrOutOfRange
 	}
 
 	err = redis.Store.LSet(args[0], int32(index), args[2])
@@ -225,7 +224,7 @@ func (redis *redis) LSet(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(err, false)
 	}
 
-	return constant.RESP_OK
+	return core.RespOK
 }
 
 /* Support LTRIM key start stop */
@@ -237,19 +236,19 @@ func (redis *redis) LTrim(cmd core.RedisCmd) []byte {
 
 	start, err := strconv.ParseInt(args[1], 10, 64)
 	if err != nil {
-		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+		return core.RespValueNotIntegerOrOutOfRange
 	}
 
 	end, err := strconv.ParseInt(args[2], 10, 64)
 	if err != nil {
-		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+		return core.RespValueNotIntegerOrOutOfRange
 	}
 
 	if err = redis.Store.LTrim(args[0], int32(start), int32(end)); err != nil {
 		return core.EncodeResp(err, false)
 	}
 
-	return constant.RESP_OK
+	return core.RespOK
 }
 
 /* Support RPUSHX key element [element ...] */

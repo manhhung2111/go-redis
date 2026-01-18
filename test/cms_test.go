@@ -6,14 +6,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/manhhung2111/go-redis/internal/constant"
+	"github.com/manhhung2111/go-redis/internal/core"
 )
 
 func TestCMSInitByDim(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CMSInitByDim(cmd("CMS.INITBYDIM", "cms", "100", "5"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	// Verify CMS was created by getting info
 	resp = r.CMSInfo(cmd("CMS.INFO", "cms"))
@@ -25,11 +25,11 @@ func TestCMSInitByDimKeyExists(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CMSInitByDim(cmd("CMS.INITBYDIM", "cms", "100", "5"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	// Try to create again - should fail
 	resp = r.CMSInitByDim(cmd("CMS.INITBYDIM", "cms", "200", "10"))
-	assert.Equal(t, constant.RESP_CMS_KEY_ALREADY_EXISTS, resp)
+	assert.Equal(t, core.RespCMSKeyAlreadyExists, resp)
 }
 
 func TestCMSInitByDimKeyExistsOtherType(t *testing.T) {
@@ -40,7 +40,7 @@ func TestCMSInitByDimKeyExistsOtherType(t *testing.T) {
 
 	// Try to create CMS with same key - should fail
 	resp := r.CMSInitByDim(cmd("CMS.INITBYDIM", "k", "100", "5"))
-	assert.Equal(t, constant.RESP_CMS_KEY_ALREADY_EXISTS, resp)
+	assert.Equal(t, core.RespCMSKeyAlreadyExists, resp)
 }
 
 func TestCMSInitByDimWrongArgs(t *testing.T) {
@@ -65,33 +65,33 @@ func TestCMSInitByDimBadWidth(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CMSInitByDim(cmd("CMS.INITBYDIM", "cms", "invalid", "5"))
-	assert.Equal(t, constant.RESP_CMS_BAD_WIDTH, resp)
+	assert.Equal(t, core.RespCMSBadWidth, resp)
 
 	resp = r.CMSInitByDim(cmd("CMS.INITBYDIM", "cms", "0", "5"))
-	assert.Equal(t, constant.RESP_CMS_BAD_WIDTH, resp)
+	assert.Equal(t, core.RespCMSBadWidth, resp)
 
 	resp = r.CMSInitByDim(cmd("CMS.INITBYDIM", "cms", "-1", "5"))
-	assert.Equal(t, constant.RESP_CMS_BAD_WIDTH, resp)
+	assert.Equal(t, core.RespCMSBadWidth, resp)
 }
 
 func TestCMSInitByDimBadDepth(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CMSInitByDim(cmd("CMS.INITBYDIM", "cms", "100", "invalid"))
-	assert.Equal(t, constant.RESP_CMS_BAD_DEPTH, resp)
+	assert.Equal(t, core.RespCMSBadDepth, resp)
 
 	resp = r.CMSInitByDim(cmd("CMS.INITBYDIM", "cms", "100", "0"))
-	assert.Equal(t, constant.RESP_CMS_BAD_DEPTH, resp)
+	assert.Equal(t, core.RespCMSBadDepth, resp)
 
 	resp = r.CMSInitByDim(cmd("CMS.INITBYDIM", "cms", "100", "-1"))
-	assert.Equal(t, constant.RESP_CMS_BAD_DEPTH, resp)
+	assert.Equal(t, core.RespCMSBadDepth, resp)
 }
 
 func TestCMSInitByProb(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CMSInitByProb(cmd("CMS.INITBYPROB", "cms", "0.01", "0.01"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	// Verify CMS was created
 	resp = r.CMSInfo(cmd("CMS.INFO", "cms"))
@@ -103,11 +103,11 @@ func TestCMSInitByProbKeyExists(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CMSInitByProb(cmd("CMS.INITBYPROB", "cms", "0.01", "0.01"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	// Try to create again - should fail
 	resp = r.CMSInitByProb(cmd("CMS.INITBYPROB", "cms", "0.1", "0.1"))
-	assert.Equal(t, constant.RESP_CMS_KEY_ALREADY_EXISTS, resp)
+	assert.Equal(t, core.RespCMSKeyAlreadyExists, resp)
 }
 
 func TestCMSInitByProbKeyExistsOtherType(t *testing.T) {
@@ -116,7 +116,7 @@ func TestCMSInitByProbKeyExistsOtherType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.CMSInitByProb(cmd("CMS.INITBYPROB", "k", "0.01", "0.01"))
-	assert.Equal(t, constant.RESP_CMS_KEY_ALREADY_EXISTS, resp)
+	assert.Equal(t, core.RespCMSKeyAlreadyExists, resp)
 }
 
 func TestCMSInitByProbWrongArgs(t *testing.T) {
@@ -139,7 +139,7 @@ func TestCMSInitByProbBadErrorRate(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CMSInitByProb(cmd("CMS.INITBYPROB", "cms", "invalid", "0.01"))
-	assert.Equal(t, constant.RESP_BAD_ERROR_RATE, resp)
+	assert.Equal(t, core.RespBadErrorRate, resp)
 }
 
 func TestCMSInitByProbErrorRateOutOfRange(t *testing.T) {
@@ -147,24 +147,24 @@ func TestCMSInitByProbErrorRateOutOfRange(t *testing.T) {
 
 	// Error rate <= 0
 	resp := r.CMSInitByProb(cmd("CMS.INITBYPROB", "cms", "0", "0.01"))
-	assert.Equal(t, constant.RESP_ERROR_RATE_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespErrorRateInvalidRange, resp)
 
 	resp = r.CMSInitByProb(cmd("CMS.INITBYPROB", "cms", "-0.1", "0.01"))
-	assert.Equal(t, constant.RESP_ERROR_RATE_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespErrorRateInvalidRange, resp)
 
 	// Error rate >= 1
 	resp = r.CMSInitByProb(cmd("CMS.INITBYPROB", "cms", "1", "0.01"))
-	assert.Equal(t, constant.RESP_ERROR_RATE_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespErrorRateInvalidRange, resp)
 
 	resp = r.CMSInitByProb(cmd("CMS.INITBYPROB", "cms", "1.5", "0.01"))
-	assert.Equal(t, constant.RESP_ERROR_RATE_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespErrorRateInvalidRange, resp)
 }
 
 func TestCMSInitByProbBadProbability(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CMSInitByProb(cmd("CMS.INITBYPROB", "cms", "0.01", "invalid"))
-	assert.Equal(t, constant.RESP_CMS_BAD_PROBABILITY, resp)
+	assert.Equal(t, core.RespCMSBadProbability, resp)
 }
 
 func TestCMSInitByProbProbabilityOutOfRange(t *testing.T) {
@@ -172,17 +172,17 @@ func TestCMSInitByProbProbabilityOutOfRange(t *testing.T) {
 
 	// Probability <= 0
 	resp := r.CMSInitByProb(cmd("CMS.INITBYPROB", "cms", "0.01", "0"))
-	assert.Equal(t, constant.RESP_CMS_PROBABILITY_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespCMSProbabilityInvalidRange, resp)
 
 	resp = r.CMSInitByProb(cmd("CMS.INITBYPROB", "cms", "0.01", "-0.1"))
-	assert.Equal(t, constant.RESP_CMS_PROBABILITY_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespCMSProbabilityInvalidRange, resp)
 
 	// Probability >= 1
 	resp = r.CMSInitByProb(cmd("CMS.INITBYPROB", "cms", "0.01", "1"))
-	assert.Equal(t, constant.RESP_CMS_PROBABILITY_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespCMSProbabilityInvalidRange, resp)
 
 	resp = r.CMSInitByProb(cmd("CMS.INITBYPROB", "cms", "0.01", "1.5"))
-	assert.Equal(t, constant.RESP_CMS_PROBABILITY_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespCMSProbabilityInvalidRange, resp)
 }
 
 func TestCMSIncrBy(t *testing.T) {
@@ -230,7 +230,7 @@ func TestCMSIncrByNonExistingKey(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CMSIncrBy(cmd("CMS.INCRBY", "nonexistent", "item1", "5"))
-	assert.Equal(t, constant.RESP_CMS_KEY_DOES_NOT_EXIST, resp)
+	assert.Equal(t, core.RespCMSKeyDoesNotExist, resp)
 }
 
 func TestCMSIncrByWrongType(t *testing.T) {
@@ -239,7 +239,7 @@ func TestCMSIncrByWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.CMSIncrBy(cmd("CMS.INCRBY", "k", "item1", "5"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestCMSIncrByWrongArgs(t *testing.T) {
@@ -268,10 +268,10 @@ func TestCMSIncrByBadIncrement(t *testing.T) {
 	r.CMSInitByDim(cmd("CMS.INITBYDIM", "cms", "100", "5"))
 
 	resp := r.CMSIncrBy(cmd("CMS.INCRBY", "cms", "item1", "invalid"))
-	assert.Equal(t, constant.RESP_CMS_BAD_INCREMENT, resp)
+	assert.Equal(t, core.RespCMSBadIncrement, resp)
 
 	resp = r.CMSIncrBy(cmd("CMS.INCRBY", "cms", "item1", "-5"))
-	assert.Equal(t, constant.RESP_CMS_BAD_INCREMENT, resp)
+	assert.Equal(t, core.RespCMSBadIncrement, resp)
 }
 
 func TestCMSQuery(t *testing.T) {
@@ -313,7 +313,7 @@ func TestCMSQueryNonExistingKey(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CMSQuery(cmd("CMS.QUERY", "nonexistent", "item1"))
-	assert.Equal(t, constant.RESP_CMS_KEY_DOES_NOT_EXIST, resp)
+	assert.Equal(t, core.RespCMSKeyDoesNotExist, resp)
 }
 
 func TestCMSQueryWrongType(t *testing.T) {
@@ -322,7 +322,7 @@ func TestCMSQueryWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.CMSQuery(cmd("CMS.QUERY", "k", "item1"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestCMSQueryWrongArgs(t *testing.T) {
@@ -355,7 +355,7 @@ func TestCMSInfoNonExistingKey(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CMSInfo(cmd("CMS.INFO", "nonexistent"))
-	assert.Equal(t, constant.RESP_CMS_KEY_DOES_NOT_EXIST, resp)
+	assert.Equal(t, core.RespCMSKeyDoesNotExist, resp)
 }
 
 func TestCMSInfoWrongType(t *testing.T) {
@@ -364,7 +364,7 @@ func TestCMSInfoWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.CMSInfo(cmd("CMS.INFO", "k"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestCMSInfoWrongArgs(t *testing.T) {
@@ -384,7 +384,7 @@ func TestCMSWorkflow(t *testing.T) {
 
 	// Initialize CMS by dimensions
 	resp := r.CMSInitByDim(cmd("CMS.INITBYDIM", "pageviews", "1000", "5"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	// Track page views
 	r.CMSIncrBy(cmd("CMS.INCRBY", "pageviews", "/home", "100", "/about", "50", "/contact", "25"))
@@ -408,7 +408,7 @@ func TestCMSWorkflowByProb(t *testing.T) {
 
 	// Initialize CMS by probability
 	resp := r.CMSInitByProb(cmd("CMS.INITBYPROB", "events", "0.001", "0.01"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	// Track events
 	r.CMSIncrBy(cmd("CMS.INCRBY", "events", "click", "1000", "scroll", "5000", "purchase", "50"))

@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/manhhung2111/go-redis/internal/constant"
+	"github.com/manhhung2111/go-redis/internal/core"
 )
 
 func TestZAddBasic(t *testing.T) {
@@ -60,34 +60,34 @@ func TestZAddWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.ZAdd(cmd("ZADD", "k", "1", "a"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestZAddConflictingOptions(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.ZAdd(cmd("ZADD", "k", "NX", "XX", "1", "a"))
-	assert.Equal(t, constant.RESP_XX_NX_NOT_COMPATIBLE, resp)
+	assert.Equal(t, core.RespXXNXNotCompatible, resp)
 
 	resp = r.ZAdd(cmd("ZADD", "k", "NX", "GT", "1", "a"))
-	assert.Equal(t, constant.RESP_GT_LT_NX_NOT_COMPATIBLE, resp)
+	assert.Equal(t, core.RespGTLTNXNotCompatible, resp)
 
 	resp = r.ZAdd(cmd("ZADD", "k", "GT", "LT", "1", "a"))
-	assert.Equal(t, constant.RESP_GT_LT_NX_NOT_COMPATIBLE, resp)
+	assert.Equal(t, core.RespGTLTNXNotCompatible, resp)
 }
 
 func TestZAddInvalidScore(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.ZAdd(cmd("ZADD", "k", "x", "a"))
-	assert.Equal(t, constant.RESP_SYNTAX_ERROR, resp)
+	assert.Equal(t, core.RespSyntaxError, resp)
 }
 
 func TestZAddOddArgs(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.ZAdd(cmd("ZADD", "k", "1", "a", "2"))
-	assert.Equal(t, constant.RESP_SYNTAX_ERROR, resp)
+	assert.Equal(t, core.RespSyntaxError, resp)
 }
 
 func TestZCard(t *testing.T) {
@@ -134,14 +134,14 @@ func TestZCountWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.ZCount(cmd("ZCOUNT", "k", "1", "2"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestZCountInvalidFloat(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.ZCount(cmd("ZCOUNT", "k", "a", "b"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_VALID_FLOAT, resp)
+	assert.Equal(t, core.RespValueNotValidFloat, resp)
 }
 
 func TestZIncrBy(t *testing.T) {
@@ -166,7 +166,7 @@ func TestZIncrByWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.ZIncrBy(cmd("ZINCRBY", "k", "1", "a"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestZIncrByNewMember(t *testing.T) {
@@ -181,7 +181,7 @@ func TestZIncrByInvalid(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.ZIncrBy(cmd("ZINCRBY", "k", "x", "a"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_VALID_FLOAT, resp)
+	assert.Equal(t, core.RespValueNotValidFloat, resp)
 }
 
 func TestZRangeByRank(t *testing.T) {
@@ -215,10 +215,10 @@ func TestZRangeInvalidOptions(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.ZRange(cmd("ZRANGE", "k", "0", "1", "BYSCORE", "BYLEX"))
-	assert.Equal(t, constant.RESP_SYNTAX_ERROR, resp)
+	assert.Equal(t, core.RespSyntaxError, resp)
 
 	resp = r.ZRange(cmd("ZRANGE", "k", "a", "b"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+	assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 }
 
 func TestZRangeWrongArgs(t *testing.T) {
@@ -234,21 +234,21 @@ func TestZRangeWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.ZRange(cmd("ZRANGE", "k", "0", "1"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestZRangeByLexWithScores(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.ZRange(cmd("ZRANGE", "k", "-", "+", "BYLEX", "WITHSCORES"))
-	assert.Equal(t, constant.RESP_WITHSCORES_NOT_SUPPORTED_WITH_BYLEX, resp)
+	assert.Equal(t, core.RespWithScoresNotSupportedByLex, resp)
 }
 
 func TestZRangeInvalidScoreRange(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.ZRange(cmd("ZRANGE", "k", "a", "b", "BYSCORE"))
-	assert.Equal(t, constant.RESP_MIN_OR_MAX_IS_NOT_FLOAT, resp)
+	assert.Equal(t, core.RespMinOrMaxNotFloat, resp)
 }
 
 func TestZRangeByLex(t *testing.T) {
@@ -282,7 +282,7 @@ func TestZRankNonExisting(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.ZRank(cmd("ZRANK", "k", "a"))
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, resp)
+	assert.Equal(t, core.RespNilBulkString, resp)
 }
 
 func TestZRankWrongArgs(t *testing.T) {
@@ -298,7 +298,7 @@ func TestZRankWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.ZRank(cmd("ZRANK", "k", "a"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestZRankMemberNotFound(t *testing.T) {
@@ -306,7 +306,7 @@ func TestZRankMemberNotFound(t *testing.T) {
 	r.ZAdd(cmd("ZADD", "k", "1", "a"))
 
 	resp := r.ZRank(cmd("ZRANK", "k", "x"))
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, resp)
+	assert.Equal(t, core.RespNilBulkString, resp)
 }
 
 func TestZRevRankWithScore(t *testing.T) {
@@ -323,7 +323,7 @@ func TestZRevRankInvalidOption(t *testing.T) {
 	r.ZAdd(cmd("ZADD", "k", "1", "member1"))
 
 	resp := r.ZRevRank(cmd("ZREVRANK", "k", "a", "BAD"))
-	assert.Equal(t, constant.RESP_SYNTAX_ERROR, resp)
+	assert.Equal(t, core.RespSyntaxError, resp)
 }
 
 func TestZScore(t *testing.T) {
@@ -348,7 +348,7 @@ func TestZScoreWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.ZScore(cmd("ZSCORE", "k", "a"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestZScoreMemberNotFound(t *testing.T) {
@@ -356,7 +356,7 @@ func TestZScoreMemberNotFound(t *testing.T) {
 	r.ZAdd(cmd("ZADD", "k", "1", "a"))
 
 	resp := r.ZScore(cmd("ZSCORE", "k", "x"))
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, resp)
+	assert.Equal(t, core.RespNilBulkString, resp)
 }
 
 func TestZMScore(t *testing.T) {
@@ -381,7 +381,7 @@ func TestZMScoreWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.ZMScore(cmd("ZMSCORE", "k", "a"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestZMScoreMissingKey(t *testing.T) {
@@ -420,7 +420,7 @@ func TestZRemWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.ZRem(cmd("ZREM", "k", "a"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestZPopMax(t *testing.T) {
@@ -445,14 +445,14 @@ func TestZPopMaxWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.ZPopMax(cmd("ZPOPMAX", "k"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestZPopMaxInvalidCount(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.ZPopMax(cmd("ZPOPMAX", "k", "abc"))
-	assert.Equal(t, constant.RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE, resp)
+	assert.Equal(t, core.RespValueOutOfRangeMustPositive, resp)
 }
 
 func TestZPopMaxNonExisting(t *testing.T) {
@@ -475,7 +475,7 @@ func TestZPopMinInvalidCount(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.ZPopMin(cmd("ZPOPMIN", "k", "-1"))
-	assert.Equal(t, constant.RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE, resp)
+	assert.Equal(t, core.RespValueOutOfRangeMustPositive, resp)
 }
 
 func TestZRandMember(t *testing.T) {
@@ -491,7 +491,7 @@ func TestZRandMemberMissing(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.ZRandMember(cmd("ZRANDMEMBER", "missing"))
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, resp)
+	assert.Equal(t, core.RespNilBulkString, resp)
 }
 
 func TestZRandMemberZeroCount(t *testing.T) {
@@ -516,14 +516,14 @@ func TestZRandMemberInvalidWithScores(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.ZRandMember(cmd("ZRANDMEMBER", "k", "1", "BAD"))
-	assert.Equal(t, constant.RESP_SYNTAX_ERROR, resp)
+	assert.Equal(t, core.RespSyntaxError, resp)
 }
 
 func TestZRandMemberInvalidCount(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.ZRandMember(cmd("ZRANDMEMBER", "k", "abc"))
-	assert.Equal(t, constant.RESP_VALUE_IS_OUT_OF_RANGE_MUST_BE_POSITIVE, resp)
+	assert.Equal(t, core.RespValueOutOfRangeMustPositive, resp)
 }
 
 func TestZRandMemberPositiveCount(t *testing.T) {
@@ -612,5 +612,5 @@ func TestZLexCountWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.ZLexCount(cmd("ZLEXCOUNT", "k", "-", "+"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }

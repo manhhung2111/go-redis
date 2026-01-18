@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/manhhung2111/go-redis/internal/constant"
+	"github.com/manhhung2111/go-redis/internal/core"
 )
 
 func TestCFAdd(t *testing.T) {
@@ -41,7 +41,7 @@ func TestCFAddWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.CFAdd(cmd("CF.ADD", "k", "item1"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestCFAddNx(t *testing.T) {
@@ -77,7 +77,7 @@ func TestCFAddNxWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.CFAddNx(cmd("CF.ADDNX", "k", "item1"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestCFCount(t *testing.T) {
@@ -119,7 +119,7 @@ func TestCFCountWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.CFCount(cmd("CF.COUNT", "k", "item1"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestCFDel(t *testing.T) {
@@ -154,7 +154,7 @@ func TestCFDelNonExistingKey(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CFDel(cmd("CF.DEL", "cf", "item1"))
-	assert.Equal(t, constant.RESP_ERR_NO_SUCH_KEY, resp)
+	assert.Equal(t, core.RespErrNoSuchKey, resp)
 }
 
 func TestCFDelWrongArgs(t *testing.T) {
@@ -174,7 +174,7 @@ func TestCFDelWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.CFDel(cmd("CF.DEL", "k", "item1"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestCFExists(t *testing.T) {
@@ -211,7 +211,7 @@ func TestCFExistsWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.CFExists(cmd("CF.EXISTS", "k", "item1"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestCFInfo(t *testing.T) {
@@ -230,7 +230,7 @@ func TestCFInfoNonExistingKey(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CFInfo(cmd("CF.INFO", "cf"))
-	assert.Equal(t, constant.RESP_ERR_NO_SUCH_KEY, resp)
+	assert.Equal(t, core.RespErrNoSuchKey, resp)
 }
 
 func TestCFInfoWrongArgs(t *testing.T) {
@@ -250,7 +250,7 @@ func TestCFInfoWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.CFInfo(cmd("CF.INFO", "k"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestCFMExists(t *testing.T) {
@@ -285,14 +285,14 @@ func TestCFMExistsWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.CFMExists(cmd("CF.MEXISTS", "k", "item1"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestCFReserve(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CFReserve(cmd("CF.RESERVE", "cf", "1000"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	// Verify cuckoo filter was created by adding an item
 	resp = r.CFAdd(cmd("CF.ADD", "cf", "item1"))
@@ -303,35 +303,35 @@ func TestCFReserveWithBucketSize(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CFReserve(cmd("CF.RESERVE", "cf", "1000", "BUCKETSIZE", "2"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 }
 
 func TestCFReserveWithMaxIterations(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CFReserve(cmd("CF.RESERVE", "cf", "1000", "MAXITERATIONS", "100"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 }
 
 func TestCFReserveWithExpansion(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CFReserve(cmd("CF.RESERVE", "cf", "1000", "EXPANSION", "2"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 }
 
 func TestCFReserveWithAllOptions(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CFReserve(cmd("CF.RESERVE", "cf", "1000", "BUCKETSIZE", "2", "MAXITERATIONS", "100", "EXPANSION", "2"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 }
 
 func TestCFReserveCaseInsensitive(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CFReserve(cmd("CF.RESERVE", "cf", "1000", "bucketsize", "2", "maxiterations", "100", "expansion", "2"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 }
 
 func TestCFReserveWrongArgs(t *testing.T) {
@@ -348,7 +348,7 @@ func TestCFReserveWrongType(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.CFReserve(cmd("CF.RESERVE", "k", "1000"))
-	assert.Equal(t, constant.RESP_ITEM_EXISTS, resp)
+	assert.Equal(t, core.RespItemExists, resp)
 }
 
 func TestCFReserveItemExists(t *testing.T) {
@@ -359,14 +359,14 @@ func TestCFReserveItemExists(t *testing.T) {
 
 	// Try to reserve again
 	resp := r.CFReserve(cmd("CF.RESERVE", "cf", "1000"))
-	assert.Equal(t, constant.RESP_ITEM_EXISTS, resp)
+	assert.Equal(t, core.RespItemExists, resp)
 }
 
 func TestCFReserveBadCapacity(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CFReserve(cmd("CF.RESERVE", "cf", "invalid"))
-	assert.Equal(t, constant.RESP_BAD_CAPACITY, resp)
+	assert.Equal(t, core.RespBadCapacity, resp)
 }
 
 func TestCFReserveCapacityOutOfRange(t *testing.T) {
@@ -374,18 +374,18 @@ func TestCFReserveCapacityOutOfRange(t *testing.T) {
 
 	// Capacity < 1
 	resp := r.CFReserve(cmd("CF.RESERVE", "cf", "0"))
-	assert.Equal(t, constant.RESP_CAPACITY_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespCapacityInvalidRange, resp)
 
 	// Capacity > max (1048577)
 	resp = r.CFReserve(cmd("CF.RESERVE", "cf2", "1048577"))
-	assert.Equal(t, constant.RESP_CAPACITY_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespCapacityInvalidRange, resp)
 }
 
 func TestCFReserveBadBucketSize(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CFReserve(cmd("CF.RESERVE", "cf", "1000", "BUCKETSIZE", "invalid"))
-	assert.Equal(t, constant.RESP_BAD_BUCKET_SIZE, resp)
+	assert.Equal(t, core.RespBadBucketSize, resp)
 }
 
 func TestCFReserveBucketSizeOutOfRange(t *testing.T) {
@@ -393,18 +393,18 @@ func TestCFReserveBucketSizeOutOfRange(t *testing.T) {
 
 	// Bucket size < 1
 	resp := r.CFReserve(cmd("CF.RESERVE", "cf", "1000", "BUCKETSIZE", "0"))
-	assert.Equal(t, constant.RESP_BUCKET_SIZE_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespBucketSizeInvalidRange, resp)
 
 	// Bucket size > 255
 	resp = r.CFReserve(cmd("CF.RESERVE", "cf2", "1000", "BUCKETSIZE", "256"))
-	assert.Equal(t, constant.RESP_BUCKET_SIZE_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespBucketSizeInvalidRange, resp)
 }
 
 func TestCFReserveBadMaxIterations(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CFReserve(cmd("CF.RESERVE", "cf", "1000", "MAXITERATIONS", "invalid"))
-	assert.Equal(t, constant.RESP_BAD_MAX_ITERATIONS, resp)
+	assert.Equal(t, core.RespBadMaxIterations, resp)
 }
 
 func TestCFReserveMaxIterationsOutOfRange(t *testing.T) {
@@ -412,18 +412,18 @@ func TestCFReserveMaxIterationsOutOfRange(t *testing.T) {
 
 	// Max iterations < 1
 	resp := r.CFReserve(cmd("CF.RESERVE", "cf", "1000", "MAXITERATIONS", "0"))
-	assert.Equal(t, constant.RESP_MAX_ITERATIONS_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespMaxIterationsInvalidRange, resp)
 
 	// Max iterations > 65535
 	resp = r.CFReserve(cmd("CF.RESERVE", "cf2", "1000", "MAXITERATIONS", "65536"))
-	assert.Equal(t, constant.RESP_MAX_ITERATIONS_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespMaxIterationsInvalidRange, resp)
 }
 
 func TestCFReserveBadExpansion(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.CFReserve(cmd("CF.RESERVE", "cf", "1000", "EXPANSION", "invalid"))
-	assert.Equal(t, constant.RESP_BAD_EXPANSION, resp)
+	assert.Equal(t, core.RespBadExpansion, resp)
 }
 
 func TestCFReserveExpansionOutOfRange(t *testing.T) {
@@ -431,11 +431,11 @@ func TestCFReserveExpansionOutOfRange(t *testing.T) {
 
 	// Expansion < 0
 	resp := r.CFReserve(cmd("CF.RESERVE", "cf", "1000", "EXPANSION", "-1"))
-	assert.Equal(t, constant.RESP_EXPANSION_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespExpansionInvalidRange, resp)
 
 	// Expansion > 32768
 	resp = r.CFReserve(cmd("CF.RESERVE", "cf2", "1000", "EXPANSION", "32769"))
-	assert.Equal(t, constant.RESP_EXPANSION_INVALID_RANGE, resp)
+	assert.Equal(t, core.RespExpansionInvalidRange, resp)
 }
 
 func TestCFReserveSyntaxError(t *testing.T) {
@@ -443,7 +443,7 @@ func TestCFReserveSyntaxError(t *testing.T) {
 
 	// Invalid keyword
 	resp := r.CFReserve(cmd("CF.RESERVE", "cf", "1000", "INVALID", "4"))
-	assert.Equal(t, constant.RESP_SYNTAX_ERROR, resp)
+	assert.Equal(t, core.RespSyntaxError, resp)
 }
 
 func TestCFReserveMissingOptionValue(t *testing.T) {
@@ -470,7 +470,7 @@ func TestCFWorkflow(t *testing.T) {
 
 	// Reserve a cuckoo filter
 	resp := r.CFReserve(cmd("CF.RESERVE", "cf", "10000"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	// Add multiple items
 	r.CFAdd(cmd("CF.ADD", "cf", "apple"))

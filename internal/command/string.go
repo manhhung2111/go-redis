@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
@@ -71,11 +70,11 @@ func (redis *redis) Set(cmd core.RedisCmd) []byte {
 	exists := redis.Store.Exists(key)
 
 	if nx && exists {
-		return constant.RESP_NIL_BULK_STRING
+		return core.RespNilBulkString
 	}
 
 	if xx && !exists {
-		return constant.RESP_NIL_BULK_STRING
+		return core.RespNilBulkString
 	}
 
 	if expireSec > 0 {
@@ -84,7 +83,7 @@ func (redis *redis) Set(cmd core.RedisCmd) []byte {
 		redis.Store.Set(key, value)
 	}
 
-	return constant.RESP_OK
+	return core.RespOK
 }
 
 /* Supports `DEL key [key...]` */
@@ -132,7 +131,7 @@ func (redis *redis) MSet(cmd core.RedisCmd) []byte {
 		redis.Store.Set(args[i], args[i+1])
 	}
 
-	return constant.RESP_OK
+	return core.RespOK
 }
 
 /* Support INCR key */
@@ -159,7 +158,7 @@ func (redis *redis) IncrBy(cmd core.RedisCmd) []byte {
 
 	increment, err := strconv.ParseInt(args[1], 10, 64)
 	if err != nil {
-		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+		return core.RespValueNotIntegerOrOutOfRange
 	}
 
 	result, err := redis.Store.IncrBy(args[0], increment)
@@ -194,7 +193,7 @@ func (redis *redis) DecrBy(cmd core.RedisCmd) []byte {
 
 	decrement, err := strconv.ParseInt(args[1], 10, 64)
 	if err != nil {
-		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+		return core.RespValueNotIntegerOrOutOfRange
 	}
 
 	result, err := redis.Store.IncrBy(args[0], -decrement)

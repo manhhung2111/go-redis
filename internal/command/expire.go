@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
 	"github.com/manhhung2111/go-redis/internal/storage"
 	"github.com/manhhung2111/go-redis/internal/util"
@@ -18,12 +17,12 @@ func (redis *redis) TTL(cmd core.RedisCmd) []byte {
 
 	ttl := redis.Store.TTL(cmd.Args[0])
 
-	if ttl == constant.KEY_NOT_EXISTS {
-		return constant.RESP_TTL_KEY_NOT_EXIST
+	if ttl == core.KeyNotExists {
+		return core.RespTTLKeyNotExist
 	}
 
-	if ttl == constant.NO_EXPIRE {
-		return constant.RESP_TTL_KEY_EXIST_NO_EXPIRE
+	if ttl == core.NoExpire {
+		return core.RespTTLKeyExistNoExpire
 	}
 
 	return core.EncodeResp(ttl, false)
@@ -64,13 +63,13 @@ func (redis *redis) Expire(cmd core.RedisCmd) []byte {
 
 	// The GT, LT and NX options are mutually exclusive.
 	if (opt.NX && opt.XX) || (opt.GT && opt.LT) || (opt.NX && (opt.GT || opt.LT)) {
-		return constant.RESP_EXPIRE_OPTIONS_NOT_COMPATIBLE
+		return core.RespExpireOptionsNotCompatible
 	}
 
 	ok := redis.Store.Expire(key, ttlSeconds, opt)
 	if !ok {
-		return constant.RESP_EXPIRE_TIMEOUT_NOT_SET
+		return core.RespExpireTimeoutNotSet
 	}
 
-	return constant.RESP_EXPIRE_TIMEOUT_SET
+	return core.RespExpireTimeoutSet
 }

@@ -3,7 +3,6 @@ package command
 import (
 	"strconv"
 
-	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
@@ -21,7 +20,7 @@ func (redis *redis) HGet(cmd core.RedisCmd) []byte {
 	}
 
 	if result == nil {
-		return constant.RESP_NIL_BULK_STRING
+		return core.RespNilBulkString
 	}
 
 	return core.EncodeResp(result, false)
@@ -66,7 +65,7 @@ func (redis *redis) HIncrBy(cmd core.RedisCmd) []byte {
 
 	increment, err := strconv.ParseInt(args[2], 10, 64)
 	if err != nil {
-		return constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE
+		return core.RespValueNotIntegerOrOutOfRange
 	}
 
 	result, err := redis.Store.HIncrBy(args[0], args[1], increment)

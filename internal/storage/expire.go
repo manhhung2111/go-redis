@@ -3,7 +3,7 @@ package storage
 import (
 	"time"
 
-	"github.com/manhhung2111/go-redis/internal/constant"
+	"github.com/manhhung2111/go-redis/internal/core"
 )
 
 type ExpireOptions struct {
@@ -16,7 +16,7 @@ type ExpireOptions struct {
 func (s *store) TTL(key string) int64 {
 	result := s.access(key, ObjAny, false)
 	if result.expired || !result.exists {
-		return constant.KEY_NOT_EXISTS
+		return core.KeyNotExists
 	}
 
 	if expireAt, ok := s.expires.Get(key); ok {
@@ -24,7 +24,7 @@ func (s *store) TTL(key string) int64 {
 		return int64((expireAt - now) / 1000)
 	}
 
-	return constant.NO_EXPIRE
+	return core.NoExpire
 }
 
 func (s *store) Expire(key string, ttlSeconds int64, opt ExpireOptions) bool {

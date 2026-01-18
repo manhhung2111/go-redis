@@ -3,7 +3,6 @@ package command
 import (
 	"strconv"
 
-	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
@@ -21,7 +20,7 @@ func (redis *redis) CMSIncrBy(cmd core.RedisCmd) []byte {
 		item := args[i]
 		increment, err := strconv.ParseInt(args[i+1], 10, 64)
 		if err != nil || increment < 0 {
-			return constant.RESP_CMS_BAD_INCREMENT
+			return core.RespCMSBadIncrement
 		}
 		itemIncrement[item] += uint64(increment)
 	}
@@ -58,12 +57,12 @@ func (redis *redis) CMSInitByDim(cmd core.RedisCmd) []byte {
 
 	width, err := strconv.ParseInt(args[1], 10, 64)
 	if err != nil || width < 1 {
-		return constant.RESP_CMS_BAD_WIDTH
+		return core.RespCMSBadWidth
 	}
 
 	depth, err := strconv.ParseInt(args[2], 10, 64)
 	if err != nil || depth < 1 {
-		return constant.RESP_CMS_BAD_DEPTH
+		return core.RespCMSBadDepth
 	}
 
 	err = redis.Store.CMSInitByDim(args[0], uint64(width), uint64(depth))
@@ -71,7 +70,7 @@ func (redis *redis) CMSInitByDim(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(err, false)
 	}
 
-	return constant.RESP_OK
+	return core.RespOK
 }
 
 /* Support CMS.INITBYPROB key error probability */
@@ -83,20 +82,20 @@ func (redis *redis) CMSInitByProb(cmd core.RedisCmd) []byte {
 
 	errorRate, err := strconv.ParseFloat(args[1], 64)
 	if err != nil {
-		return constant.RESP_BAD_ERROR_RATE
+		return core.RespBadErrorRate
 	}
 
 	if errorRate <= 0 || errorRate >= 1 {
-		return constant.RESP_ERROR_RATE_INVALID_RANGE
+		return core.RespErrorRateInvalidRange
 	}
 
 	probability, err := strconv.ParseFloat(args[2], 64)
 	if err != nil {
-		return constant.RESP_CMS_BAD_PROBABILITY
+		return core.RespCMSBadProbability
 	}
 
 	if probability <= 0 || probability >= 1 {
-		return constant.RESP_CMS_PROBABILITY_INVALID_RANGE
+		return core.RespCMSProbabilityInvalidRange
 	}
 
 	err = redis.Store.CMSInitByProb(args[0], errorRate, probability)
@@ -104,7 +103,7 @@ func (redis *redis) CMSInitByProb(cmd core.RedisCmd) []byte {
 		return core.EncodeResp(err, false)
 	}
 
-	return constant.RESP_OK
+	return core.RespOK
 }
 
 /* Support CMS.QUERY key item [item ...] */

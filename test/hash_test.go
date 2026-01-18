@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
@@ -29,21 +28,21 @@ func TestHGet_InvalidArity_TooManyArgs(t *testing.T) {
 func TestHGet_KeyNotExist(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HGet(cmd("HGET", "missing", "field"))
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, resp)
+	assert.Equal(t, core.RespNilBulkString, resp)
 }
 
 func TestHGet_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HGet(cmd("HGET", "key", "field"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestHGet_FieldNotExist(t *testing.T) {
 	r := newTestRedis()
 	r.HSet(cmd("HSET", "key", "field1", "value1"))
 	resp := r.HGet(cmd("HGET", "key", "field2"))
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, resp)
+	assert.Equal(t, core.RespNilBulkString, resp)
 }
 
 func TestHGet_Success(t *testing.T) {
@@ -77,7 +76,7 @@ func TestHGetAll_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HGetAll(cmd("HGETALL", "key"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestHGetAll_Success(t *testing.T) {
@@ -108,7 +107,7 @@ func TestHMGet_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HMGet(cmd("HMGET", "key", "field1"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestHMGet_KeyNotExist(t *testing.T) {
@@ -158,13 +157,13 @@ func TestHIncrBy_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HIncrBy(cmd("HINCRBY", "key", "field", "5"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestHIncrBy_InvalidIncrement(t *testing.T) {
 	r := newTestRedis()
 	resp := r.HIncrBy(cmd("HINCRBY", "key", "field", "notanumber"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+	assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 }
 
 func TestHIncrBy_FieldNotInteger(t *testing.T) {
@@ -230,7 +229,7 @@ func TestHKeys_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HKeys(cmd("HKEYS", "key"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestHKeys_Success(t *testing.T) {
@@ -268,7 +267,7 @@ func TestHVals_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HVals(cmd("HVALS", "key"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestHVals_Success(t *testing.T) {
@@ -306,7 +305,7 @@ func TestHLen_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HLen(cmd("HLEN", "key"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestHLen_Success(t *testing.T) {
@@ -338,7 +337,7 @@ func TestHSet_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HSet(cmd("HSET", "key", "field", "value"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestHSet_NewFields(t *testing.T) {
@@ -401,7 +400,7 @@ func TestHSetNx_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HSetNx(cmd("HSETNX", "key", "field", "value"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestHSetNx_NewField(t *testing.T) {
@@ -456,7 +455,7 @@ func TestHDel_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HDel(cmd("HDEL", "key", "field"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestHDel_SingleField(t *testing.T) {
@@ -470,7 +469,7 @@ func TestHDel_SingleField(t *testing.T) {
 	
 	// Verify field was deleted
 	getResp := r.HGet(cmd("HGET", "key", "field1"))
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, getResp)
+	assert.Equal(t, core.RespNilBulkString, getResp)
 }
 
 func TestHDel_MultipleFields(t *testing.T) {
@@ -506,7 +505,7 @@ func TestHDel_RemovesKeyWhenEmpty(t *testing.T) {
 	
 	// Verify key was deleted
 	getResp := r.HGet(cmd("HGET", "key", "field1"))
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, getResp)
+	assert.Equal(t, core.RespNilBulkString, getResp)
 }
 
 // HEXISTS Tests
@@ -537,7 +536,7 @@ func TestHExists_WrongType(t *testing.T) {
 	r := newTestRedis()
 	r.Set(cmd("SET", "key", "value"))
 	resp := r.HExists(cmd("HEXISTS", "key", "field"))
-	assert.Equal(t, constant.RESP_WRONGTYPE_OPERATION_AGAINST_KEY, resp)
+	assert.Equal(t, core.RespWrongTypeOperation, resp)
 }
 
 func TestHExists_FieldExists(t *testing.T) {

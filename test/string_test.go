@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/manhhung2111/go-redis/internal/core"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
@@ -16,7 +15,7 @@ func TestGet(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.Get(cmd("GET", "a"))
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, resp)
+	assert.Equal(t, core.RespNilBulkString, resp)
 
 	r.Set(cmd("SET", "a", "hello"))
 	resp = r.Get(cmd("GET", "a"))
@@ -24,7 +23,7 @@ func TestGet(t *testing.T) {
 	assert.Equal(t, expected, resp)
 
 	resp = r.Get(cmd("GET", "b"))
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, resp)
+	assert.Equal(t, core.RespNilBulkString, resp)
 }
 
 func TestGet_InvalidArgs(t *testing.T) {
@@ -90,14 +89,14 @@ func TestSet(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.Set(cmd("SET", "a", "1"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	r.Set(cmd("SET", "foo", "bar"))
 	resp = r.Set(cmd("SET", "foo", "baz", "NX"))
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, resp)
+	assert.Equal(t, core.RespNilBulkString, resp)
 
 	resp = r.Set(cmd("SET", "foo", "bar", "XX"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 }
 
 func TestSet_InvalidArgs(t *testing.T) {
@@ -146,11 +145,11 @@ func TestIncr(t *testing.T) {
 
 	r.Set(cmd("SET", "b", "foo"))
 	resp = r.Incr(cmd("INCR", "b"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+	assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 
 	r.Set(cmd("SET", "c", "9223372036854775807"))
 	resp = r.Incr(cmd("INCR", "c"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+	assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 }
 
 func TestIncr_InvalidArgs(t *testing.T) {
@@ -182,11 +181,11 @@ func TestIncrBy(t *testing.T) {
 
 	r.Set(cmd("SET", "b", "foo"))
 	resp = r.IncrBy(cmd("INCRBY", "b", "1"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+	assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 
 	r.Set(cmd("SET", "c", "9223372036854775807"))
 	resp = r.IncrBy(cmd("INCRBY", "c", "1"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+	assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 }
 
 func TestIncrBy_InvalidArgs(t *testing.T) {
@@ -205,10 +204,10 @@ func TestIncrBy_InvalidIncrement(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.IncrBy(cmd("INCRBY", "a", "foo"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+	assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 
 	resp = r.IncrBy(cmd("INCRBY", "a", "1.5"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+	assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 }
 
 func TestDecr(t *testing.T) {
@@ -222,11 +221,11 @@ func TestDecr(t *testing.T) {
 
 	r.Set(cmd("SET", "b", "foo"))
 	resp = r.Decr(cmd("DECR", "b"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+	assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 
 	r.Set(cmd("SET", "c", "-9223372036854775808"))
 	resp = r.Decr(cmd("DECR", "c"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+	assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 }
 
 func TestDecr_InvalidArgs(t *testing.T) {
@@ -258,21 +257,21 @@ func TestDecrBy(t *testing.T) {
 
 	r.Set(cmd("SET", "b", "foo"))
 	resp = r.DecrBy(cmd("DECRBY", "b", "1"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+	assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 
 	r.Set(cmd("SET", "c", strconv.FormatInt(math.MinInt64, 10)))
 	resp = r.DecrBy(cmd("DECRBY", "c", "1"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+	assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 }
 
 func TestDecrBy_InvalidDecrement(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.DecrBy(cmd("DECRBY", "a", "foo"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+	assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 
 	resp = r.DecrBy(cmd("DECRBY", "a", "1.5"))
-	assert.Equal(t, constant.RESP_VALUE_IS_NOT_INTEGER_OR_OUT_OF_RANGE, resp)
+	assert.Equal(t, core.RespValueNotIntegerOrOutOfRange, resp)
 }
 
 func TestDecrBy_InvalidArgs(t *testing.T) {
@@ -315,7 +314,7 @@ func TestMSet_Valid(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.MSet(cmd("MSET", "a", "1", "b", "2"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	resp = r.MGet(cmd("MGET", "a", "b"))
 	expected := core.EncodeResp([]string{"1", "2"}, false)
@@ -328,7 +327,7 @@ func TestMSet_Overwrite(t *testing.T) {
 
 	r.MSet(cmd("MSET", "a", "1", "b", "2"))
 	resp := r.MSet(cmd("MSET", "a", "10", "b", "20"))
-	assert.Equal(t, constant.RESP_OK, resp)
+	assert.Equal(t, core.RespOK, resp)
 
 	resp = r.MGet(cmd("MGET", "a", "b"))
 	expected := core.EncodeResp([]string{"10", "20"}, false)

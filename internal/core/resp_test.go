@@ -4,7 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/manhhung2111/go-redis/internal/constant"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -219,7 +218,7 @@ func TestEncodeResp_Error(t *testing.T) {
 
 func TestEncodeResp_Nil(t *testing.T) {
 	out := EncodeResp(nil, false)
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, out)
+	assert.Equal(t, RespNilBulkString, out)
 }
 
 func TestEncodeResp_StringArray(t *testing.T) {
@@ -234,7 +233,7 @@ func TestEncodeResp_IntArray(t *testing.T) {
 
 func TestEncodeResp_UnsupportedType(t *testing.T) {
 	out := EncodeResp(struct{}{}, false)
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, out)
+	assert.Equal(t, RespNilBulkString, out)
 }
 
 func TestEncodeResp_Float64(t *testing.T) {
@@ -251,7 +250,7 @@ func TestEncodeResp_PtrFloat64(t *testing.T) {
 func TestEncodeResp_PtrFloat64_Nil(t *testing.T) {
 	var v *float64
 	out := EncodeResp(v, false)
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, out)
+	assert.Equal(t, RespNilBulkString, out)
 }
 
 func TestEncodeResp_Float64PtrArray(t *testing.T) {
@@ -328,7 +327,7 @@ func TestEncodeResp_StringPointerArray(t *testing.T) {
 func TestEncodeResp_StringPointer_Nil(t *testing.T) {
 	var s *string
 	out := EncodeResp(s, false)
-	assert.Equal(t, constant.RESP_NIL_BULK_STRING, out)
+	assert.Equal(t, RespNilBulkString, out)
 }
 
 func TestParseCmd_InvalidRoot(t *testing.T) {
