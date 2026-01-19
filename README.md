@@ -2,6 +2,11 @@
 
 A Redis-compatible server built from scratch in Go. The server is compatible with standard Redis clients including `redis-cli`, making it a drop-in replacement for development and learning purposes.
 
+## Acknowledgements
+
+This project was inspired by ideas from the
+[memkv](https://github.com/quangh33/memkv) project.
+
 ## Features
 
 - **High-Performance I/O Multiplexing**: Single-threaded, non-blocking TCP server using platform-native mechanisms: kqueue on macOS and epoll on Linux. Handles thousands of concurrent connections efficiently without threading overhead.
