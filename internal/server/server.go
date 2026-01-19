@@ -13,13 +13,11 @@ import (
 	"github.com/manhhung2111/go-redis/internal/protocol"
 )
 
-const activeExpireTimerIdent = 2003
-
 type Server struct {
-	config   *config.Config
-	redis    command.Redis
-	kQueueFd int
-	serverFd int
+	config    *config.Config
+	redis     command.Redis
+	eventLoop EventLoop
+	serverFd  int
 }
 
 func NewServer(cfg *config.Config, redis command.Redis) *Server {
@@ -39,21 +37,21 @@ func (s *Server) Start(sigCh chan os.Signal) error {
 	}
 	defer syscall.Close(s.serverFd)
 
-	s.kQueueFd, err = s.initKqueue()
-	if err != nil {
-		return fmt.Errorf("failed to initialize kqueue: %w", err)
+	s.eventLoop = NewEventLoop()
+	if err := s.eventLoop.Init(); err != nil {
+		return fmt.Errorf("failed to initialize event loop: %w", err)
 	}
-	defer syscall.Close(s.kQueueFd)
+	defer s.eventLoop.Close()
 
-	if err := s.registerServerSocket(); err != nil {
+	if err := s.eventLoop.RegisterServerSocket(s.serverFd); err != nil {
 		return fmt.Errorf("failed to register server socket: %w", err)
 	}
 
-	if err := s.registerActiveExpireTime(); err != nil {
+	if err := s.eventLoop.RegisterTimer(s.config.ActiveExpireCycleMs); err != nil {
 		return fmt.Errorf("failed to register active expire cycle event: %w", err)
 	}
 
-	return s.eventLoop()
+	return s.runEventLoop()
 }
 
 func (s *Server) createServerSocket() (int, error) {
@@ -97,60 +95,20 @@ func (s *Server) createServerSocket() (int, error) {
 	return serverFD, nil
 }
 
-func (s *Server) initKqueue() (int, error) {
-	kQueueFd, err := syscall.Kqueue()
-	if err != nil {
-		return 0, fmt.Errorf("kqueue creation failed: %w", err)
-	}
-	return kQueueFd, nil
-}
-
-func (s *Server) registerServerSocket() error {
-	event := syscall.Kevent_t{
-		Ident:  uint64(s.serverFd),
-		Filter: syscall.EVFILT_READ,
-		Flags:  syscall.EV_ADD,
-	}
-
-	_, err := syscall.Kevent(s.kQueueFd, []syscall.Kevent_t{event}, nil, nil)
-	if err != nil {
-		return fmt.Errorf("failed to register server socket with kqueue: %w", err)
-	}
-	return nil
-}
-
-func (s *Server) registerActiveExpireTime() error {
-	timerEvent := syscall.Kevent_t{
-		Ident:  uint64(activeExpireTimerIdent),
-		Filter: syscall.EVFILT_TIMER,
-		Flags:  syscall.EV_ADD | syscall.EV_ENABLE | syscall.EV_CLEAR,
-		Fflags: syscall.NOTE_USECONDS,
-		Data:   int64(s.config.ActiveExpireCycleMs) * 1000,
-	}
-
-	_, err := syscall.Kevent(s.kQueueFd, []syscall.Kevent_t{timerEvent}, nil, nil)
-	return err
-}
-
-func (s *Server) eventLoop() error {
-	events := make([]syscall.Kevent_t, s.config.MaxConnection)
-
+func (s *Server) runEventLoop() error {
 	for {
-		nEvents, err := syscall.Kevent(s.kQueueFd, nil, events, nil)
+		events, err := s.eventLoop.Wait(s.config.MaxConnection)
 		if err != nil {
 			if errors.Is(err, syscall.EBADF) {
-				log.Println("kqueue closed, shutting down")
+				log.Println("event loop closed, shutting down")
 				break
 			}
-			if errors.Is(err, syscall.EINTR) {
-				continue
-			}
-			log.Printf("kevent error: %v", err)
+			log.Printf("event loop error: %v", err)
 			continue
 		}
 
-		for i := 0; i < nEvents; i++ {
-			if err := s.handleEvent(events[i]); err != nil {
+		for _, event := range events {
+			if err := s.handleEvent(event); err != nil {
 				log.Printf("error handling event: %v", err)
 			}
 		}
@@ -160,16 +118,16 @@ func (s *Server) eventLoop() error {
 	return nil
 }
 
-func (s *Server) handleEvent(event syscall.Kevent_t) error {
-	if int(event.Ident) == activeExpireTimerIdent && event.Filter == syscall.EVFILT_TIMER {
+func (s *Server) handleEvent(event Event) error {
+	if event.IsTimer {
 		s.redis.ActiveExpireCycle()
 		return nil
 	}
 
-	if int(event.Ident) == s.serverFd {
+	if event.Fd == s.serverFd {
 		return s.acceptConnection()
 	}
-	return s.handleClientRequest(int(event.Ident))
+	return s.handleClientRequest(event.Fd)
 }
 
 func (s *Server) acceptConnection() error {
@@ -183,13 +141,7 @@ func (s *Server) acceptConnection() error {
 		return fmt.Errorf("failed to set client socket to non-blocking: %w", err)
 	}
 
-	clientReadEvent := syscall.Kevent_t{
-		Ident:  uint64(connFD),
-		Filter: syscall.EVFILT_READ,
-		Flags:  syscall.EV_ADD,
-	}
-
-	if _, err := syscall.Kevent(s.kQueueFd, []syscall.Kevent_t{clientReadEvent}, nil, nil); err != nil {
+	if err := s.eventLoop.RegisterClientSocket(connFD); err != nil {
 		syscall.Close(connFD)
 		return fmt.Errorf("failed to register client socket: %w", err)
 	}
@@ -229,5 +181,5 @@ func (s *Server) handleClientRequest(clientFD int) error {
 func (s *Server) WaitingForSignals(sigCh chan os.Signal) {
 	<-sigCh
 	log.Println("shutdown signal received")
-	syscall.Close(s.kQueueFd)
+	s.eventLoop.Close()
 }
