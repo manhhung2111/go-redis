@@ -139,11 +139,11 @@ func (redis *redis) BFReserve(cmd protocol.RedisCmd) []byte {
 		return protocol.RespBadCapacity
 	}
 
-	if capacity < int64(config.BF_MIN_CAPACITY) || capacity > int64(config.BF_MAX_CAPACITY) {
+	if capacity < int64(config.BFMinCapacity) || capacity > int64(config.BFMaxCapacity) {
 		return protocol.RespCapacityInvalidRange
 	}
 
-	expansion := config.BF_DEFAULT_EXPANSION
+	expansion := 2
 	if len(args) == 5 {
 		if strings.ToUpper(args[3]) != "EXPANSION" {
 			return protocol.RespSyntaxError
@@ -154,7 +154,7 @@ func (redis *redis) BFReserve(cmd protocol.RedisCmd) []byte {
 			return protocol.RespBadExpansion
 		}
 
-		if newExpansion < int64(config.BF_MIN_EXPANSION) || newExpansion > int64(config.BF_MAX_EXPANSION) {
+		if newExpansion < int64(config.BFMinExpansion) || newExpansion > int64(config.BFMaxExpansion) {
 			return protocol.RespExpansionInvalidRange
 		}
 

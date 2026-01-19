@@ -4,12 +4,17 @@ import (
 	"math"
 	"testing"
 
+	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
 	"github.com/stretchr/testify/assert"
 )
 
+func newTestStoreGeo() Store {
+	return NewStore(config.NewConfig())
+}
+
 func TestGeoAdd_NewKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 
 	got, err := s.GeoAdd("geo1", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "san_francisco"},
@@ -21,7 +26,7 @@ func TestGeoAdd_NewKey(t *testing.T) {
 }
 
 func TestGeoAdd_MultiplePoints(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 
 	got, err := s.GeoAdd("geo1", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "san_francisco"},
@@ -35,7 +40,7 @@ func TestGeoAdd_MultiplePoints(t *testing.T) {
 }
 
 func TestGeoAdd_ExistingKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("geo1", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "san_francisco"},
 	}, data_structure.ZAddOptions{})
@@ -50,7 +55,7 @@ func TestGeoAdd_ExistingKey(t *testing.T) {
 }
 
 func TestGeoAdd_UpdateExistingMember(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("geo1", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "city"},
 	}, data_structure.ZAddOptions{})
@@ -65,7 +70,7 @@ func TestGeoAdd_UpdateExistingMember(t *testing.T) {
 }
 
 func TestGeoAdd_NXOption(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("geo1", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "san_francisco"},
 	}, data_structure.ZAddOptions{})
@@ -81,7 +86,7 @@ func TestGeoAdd_NXOption(t *testing.T) {
 }
 
 func TestGeoAdd_XXOption(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("geo1", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "san_francisco"},
 	}, data_structure.ZAddOptions{})
@@ -97,7 +102,7 @@ func TestGeoAdd_XXOption(t *testing.T) {
 }
 
 func TestGeoAdd_WrongType(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.Set("mykey", "string_value")
 
 	got, err := s.GeoAdd("mykey", []data_structure.GeoPoint{
@@ -109,7 +114,7 @@ func TestGeoAdd_WrongType(t *testing.T) {
 }
 
 func TestGeoDist_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 
 	got, err := s.GeoDist("geo1", "city1", "city2", "m")
 	assert.NoError(t, err)
@@ -117,7 +122,7 @@ func TestGeoDist_NonExistentKey(t *testing.T) {
 }
 
 func TestGeoDist_MemberNotFound(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("geo1", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "san_francisco"},
 	}, data_structure.ZAddOptions{})
@@ -132,7 +137,7 @@ func TestGeoDist_MemberNotFound(t *testing.T) {
 }
 
 func TestGeoDist_InMeters(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("geo1", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "san_francisco"},
 		{Longitude: -118.2437, Latitude: 34.0522, Member: "los_angeles"},
@@ -145,7 +150,7 @@ func TestGeoDist_InMeters(t *testing.T) {
 }
 
 func TestGeoDist_InKilometers(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("geo1", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "san_francisco"},
 		{Longitude: -118.2437, Latitude: 34.0522, Member: "los_angeles"},
@@ -158,7 +163,7 @@ func TestGeoDist_InKilometers(t *testing.T) {
 }
 
 func TestGeoDist_InMiles(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("geo1", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "san_francisco"},
 		{Longitude: -118.2437, Latitude: 34.0522, Member: "los_angeles"},
@@ -171,7 +176,7 @@ func TestGeoDist_InMiles(t *testing.T) {
 }
 
 func TestGeoDist_SameMember(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("geo1", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "san_francisco"},
 	}, data_structure.ZAddOptions{})
@@ -183,7 +188,7 @@ func TestGeoDist_SameMember(t *testing.T) {
 }
 
 func TestGeoDist_WrongType(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.Set("mykey", "string_value")
 
 	got, err := s.GeoDist("mykey", "a", "b", "m")
@@ -192,7 +197,7 @@ func TestGeoDist_WrongType(t *testing.T) {
 }
 
 func TestGeoHash_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 
 	got, err := s.GeoHash("geo1", []string{"m1", "m2"})
 	assert.NoError(t, err)
@@ -202,7 +207,7 @@ func TestGeoHash_NonExistentKey(t *testing.T) {
 }
 
 func TestGeoHash_SomeMembersExist(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("geo1", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "san_francisco"},
 		{Longitude: -118.2437, Latitude: 34.0522, Member: "los_angeles"},
@@ -219,7 +224,7 @@ func TestGeoHash_SomeMembersExist(t *testing.T) {
 }
 
 func TestGeoHash_WrongType(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.Set("mykey", "string_value")
 
 	got, err := s.GeoHash("mykey", []string{"a"})
@@ -228,7 +233,7 @@ func TestGeoHash_WrongType(t *testing.T) {
 }
 
 func TestGeoPos_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 
 	got, err := s.GeoPos("geo1", []string{"m1", "m2"})
 	assert.NoError(t, err)
@@ -238,7 +243,7 @@ func TestGeoPos_NonExistentKey(t *testing.T) {
 }
 
 func TestGeoPos_SomeMembersExist(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("geo1", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "san_francisco"},
 		{Longitude: -118.2437, Latitude: 34.0522, Member: "los_angeles"},
@@ -253,7 +258,7 @@ func TestGeoPos_SomeMembersExist(t *testing.T) {
 }
 
 func TestGeoPos_Coordinates(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	originalLon := -122.4194
 	originalLat := 37.7749
 
@@ -270,7 +275,7 @@ func TestGeoPos_Coordinates(t *testing.T) {
 }
 
 func TestGeoPos_WrongType(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.Set("mykey", "string_value")
 
 	got, err := s.GeoPos("mykey", []string{"a"})
@@ -279,7 +284,7 @@ func TestGeoPos_WrongType(t *testing.T) {
 }
 
 func TestGeoSearch_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 
 	got, err := s.GeoSearch("geo1", data_structure.GeoSearchOptions{
 		FromLonLat: &data_structure.GeoPoint{Longitude: -122.0, Latitude: 37.0},
@@ -291,7 +296,7 @@ func TestGeoSearch_NonExistentKey(t *testing.T) {
 }
 
 func TestGeoSearch_ByRadiusFromLonLat(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("cities", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "san_francisco"},
 		{Longitude: -118.2437, Latitude: 34.0522, Member: "los_angeles"},
@@ -308,7 +313,7 @@ func TestGeoSearch_ByRadiusFromLonLat(t *testing.T) {
 }
 
 func TestGeoSearch_ByRadiusFromMember(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("cities", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "san_francisco"},
 		{Longitude: -121.8863, Latitude: 37.3382, Member: "san_jose"},
@@ -324,7 +329,7 @@ func TestGeoSearch_ByRadiusFromMember(t *testing.T) {
 }
 
 func TestGeoSearch_NonExistentMember(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("cities", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "san_francisco"},
 	}, data_structure.ZAddOptions{})
@@ -339,7 +344,7 @@ func TestGeoSearch_NonExistentMember(t *testing.T) {
 }
 
 func TestGeoSearch_WithCountLimit(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("cities", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "san_francisco"},
 		{Longitude: -121.8863, Latitude: 37.3382, Member: "san_jose"},
@@ -357,7 +362,7 @@ func TestGeoSearch_WithCountLimit(t *testing.T) {
 }
 
 func TestGeoSearch_Descending(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("cities", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "san_francisco"},
 		{Longitude: -121.8863, Latitude: 37.3382, Member: "san_jose"},
@@ -390,7 +395,7 @@ func TestGeoSearch_Descending(t *testing.T) {
 }
 
 func TestGeoSearch_ByBox(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("cities", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "san_francisco"},
 		{Longitude: -121.8863, Latitude: 37.3382, Member: "san_jose"},
@@ -409,7 +414,7 @@ func TestGeoSearch_ByBox(t *testing.T) {
 }
 
 func TestGeoSearch_WrongType(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.Set("mykey", "string_value")
 
 	got, err := s.GeoSearch("mykey", data_structure.GeoSearchOptions{
@@ -422,7 +427,7 @@ func TestGeoSearch_WrongType(t *testing.T) {
 }
 
 func TestGeoIntegration(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 
 	result, err := s.GeoAdd("locations", []data_structure.GeoPoint{
 		{Longitude: 13.361389, Latitude: 52.519444, Member: "berlin"},
@@ -460,7 +465,7 @@ func TestGeoIntegration(t *testing.T) {
 }
 
 func TestGeoSearchResultFields(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("cities", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "san_francisco"},
 	}, data_structure.ZAddOptions{})
@@ -483,7 +488,7 @@ func TestGeoSearchResultFields(t *testing.T) {
 }
 
 func TestGeoDistAllUnits(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("test", []data_structure.GeoPoint{
 		{Longitude: 0.0, Latitude: 0.0, Member: "a"},
 		{Longitude: 0.009, Latitude: 0.0, Member: "b"},
@@ -505,7 +510,7 @@ func TestGeoDistAllUnits(t *testing.T) {
 }
 
 func TestGeoHashFormat(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("test", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "sf"},
 	}, data_structure.ZAddOptions{})
@@ -524,7 +529,7 @@ func TestGeoHashFormat(t *testing.T) {
 }
 
 func TestGeoSearchNoResults(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("test", []data_structure.GeoPoint{
 		{Longitude: 0.0, Latitude: 0.0, Member: "origin"},
 	}, data_structure.ZAddOptions{})
@@ -540,7 +545,7 @@ func TestGeoSearchNoResults(t *testing.T) {
 }
 
 func TestGeoMath(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("us", []data_structure.GeoPoint{
 		{Longitude: -73.9352, Latitude: 40.7306, Member: "new_york"},
 		{Longitude: -118.2437, Latitude: 34.0522, Member: "los_angeles"},
@@ -553,7 +558,7 @@ func TestGeoMath(t *testing.T) {
 }
 
 func TestGeoSearchCountZero(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("test", []data_structure.GeoPoint{
 		{Longitude: 0.0, Latitude: 0.0, Member: "a"},
 		{Longitude: 0.001, Latitude: 0.0, Member: "b"},
@@ -572,7 +577,7 @@ func TestGeoSearchCountZero(t *testing.T) {
 }
 
 func TestGeoPosReturnsCorrectMember(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("test", []data_structure.GeoPoint{
 		{Longitude: -122.4194, Latitude: 37.7749, Member: "sf"},
 		{Longitude: -118.2437, Latitude: 34.0522, Member: "la"},
@@ -586,7 +591,7 @@ func TestGeoPosReturnsCorrectMember(t *testing.T) {
 }
 
 func TestGeoSearchInfinity(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("test", []data_structure.GeoPoint{
 		{Longitude: 0.0, Latitude: 0.0, Member: "origin"},
 		{Longitude: 179.0, Latitude: 85.0, Member: "far"},
@@ -603,7 +608,7 @@ func TestGeoSearchInfinity(t *testing.T) {
 }
 
 func TestGeoSearchRadiusBoundary(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 
 	s.GeoAdd("test", []data_structure.GeoPoint{
 		{Longitude: 0.0, Latitude: 0.0, Member: "origin"},
@@ -627,7 +632,7 @@ func TestGeoSearchRadiusBoundary(t *testing.T) {
 }
 
 func TestGeoSearchResultsContainCorrectDistance(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreGeo()
 	s.GeoAdd("test", []data_structure.GeoPoint{
 		{Longitude: 0.0, Latitude: 0.0, Member: "origin"},
 		{Longitude: 1.0, Latitude: 0.0, Member: "far"},

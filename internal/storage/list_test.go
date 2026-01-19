@@ -3,12 +3,17 @@ package storage
 import (
 	"testing"
 
+	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+func newTestStoreList() Store {
+	return NewStore(config.NewConfig())
+}
+
 func TestLPush_NewKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 
 	count, _ := s.LPush("mylist", "world", "hello")
 	assert.Equal(t, uint32(2), count)
@@ -18,7 +23,7 @@ func TestLPush_NewKey(t *testing.T) {
 }
 
 func TestLPush_ExistingKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.LPush("mylist", "world")
 
 	count, _ := s.LPush("mylist", "hello")
@@ -29,7 +34,7 @@ func TestLPush_ExistingKey(t *testing.T) {
 }
 
 func TestLPush_MultipleElements(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 
 	count, _ := s.LPush("mylist", "three", "two", "one")
 	assert.Equal(t, uint32(3), count)
@@ -39,7 +44,7 @@ func TestLPush_MultipleElements(t *testing.T) {
 }
 
 func TestLPush_WrongType(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.Set("mykey", "string_value")
 
 	count, err := s.LPush("mykey", "value")
@@ -48,7 +53,7 @@ func TestLPush_WrongType(t *testing.T) {
 }
 
 func TestRPush_NewKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 
 	count, _ := s.RPush("mylist", "hello", "world")
 	assert.Equal(t, uint32(2), count)
@@ -58,7 +63,7 @@ func TestRPush_NewKey(t *testing.T) {
 }
 
 func TestRPush_ExistingKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.RPush("mylist", "hello")
 
 	count, _ := s.RPush("mylist", "world")
@@ -69,7 +74,7 @@ func TestRPush_ExistingKey(t *testing.T) {
 }
 
 func TestRPush_WrongType(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.Set("mykey", "string_value")
 
 	count, _ := s.RPush("mykey", "value")
@@ -77,7 +82,7 @@ func TestRPush_WrongType(t *testing.T) {
 }
 
 func TestLPop_SingleElement(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.RPush("mylist", "one", "two", "three")
 
 	result, _ := s.LPop("mylist", 1)
@@ -88,7 +93,7 @@ func TestLPop_SingleElement(t *testing.T) {
 }
 
 func TestLPop_MultipleElements(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.RPush("mylist", "one", "two", "three", "four")
 
 	result, _ := s.LPop("mylist", 2)
@@ -96,7 +101,7 @@ func TestLPop_MultipleElements(t *testing.T) {
 }
 
 func TestLPop_DeleteKeyWhenEmpty(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.RPush("mylist", "one", "two")
 
 	s.LPop("mylist", 2)
@@ -105,14 +110,14 @@ func TestLPop_DeleteKeyWhenEmpty(t *testing.T) {
 }
 
 func TestLPop_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 
 	result, _ := s.LPop("nonexistent", 1)
 	assert.Nil(t, result)
 }
 
 func TestLPop_WrongType(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.Set("mykey", "string_value")
 
 	result, err := s.LPop("mykey", 1)
@@ -121,7 +126,7 @@ func TestLPop_WrongType(t *testing.T) {
 }
 
 func TestRPop_SingleElement(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.RPush("mylist", "one", "two", "three")
 
 	result, _ := s.RPop("mylist", 1)
@@ -129,7 +134,7 @@ func TestRPop_SingleElement(t *testing.T) {
 }
 
 func TestRPop_MultipleElements(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.RPush("mylist", "one", "two", "three", "four")
 
 	result, _ := s.RPop("mylist", 2)
@@ -137,7 +142,7 @@ func TestRPop_MultipleElements(t *testing.T) {
 }
 
 func TestRPop_DeleteKeyWhenEmpty(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.RPush("mylist", "one", "two")
 
 	s.RPop("mylist", 2)
@@ -146,14 +151,14 @@ func TestRPop_DeleteKeyWhenEmpty(t *testing.T) {
 }
 
 func TestRPop_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 
 	result, _ := s.RPop("nonexistent", 1)
 	assert.Nil(t, result)
 }
 
 func TestLRange_PositiveIndices(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.RPush("mylist", "one", "two", "three", "four", "five")
 
 	result, _ := s.LRange("mylist", 1, 3)
@@ -161,7 +166,7 @@ func TestLRange_PositiveIndices(t *testing.T) {
 }
 
 func TestLRange_NegativeIndices(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.RPush("mylist", "one", "two", "three", "four", "five")
 
 	result, _ := s.LRange("mylist", 0, -1)
@@ -169,14 +174,14 @@ func TestLRange_NegativeIndices(t *testing.T) {
 }
 
 func TestLRange_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 
 	result, _ := s.LRange("nonexistent", 0, -1)
 	assert.Empty(t, result)
 }
 
 func TestLRange_WrongType(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.Set("mykey", "string_value")
 
 	result, _ := s.LRange("mykey", 0, -1)
@@ -184,7 +189,7 @@ func TestLRange_WrongType(t *testing.T) {
 }
 
 func TestLIndex_PositiveIndex(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.RPush("mylist", "one", "two", "three")
 
 	val, err := s.LIndex("mylist", 0)
@@ -193,7 +198,7 @@ func TestLIndex_PositiveIndex(t *testing.T) {
 }
 
 func TestLIndex_NegativeIndex(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.RPush("mylist", "one", "two", "three")
 
 	val, err := s.LIndex("mylist", -1)
@@ -202,7 +207,7 @@ func TestLIndex_NegativeIndex(t *testing.T) {
 }
 
 func TestLIndex_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 
 	val, err := s.LIndex("nonexistent", 0)
 	assert.NoError(t, err)
@@ -210,7 +215,7 @@ func TestLIndex_NonExistentKey(t *testing.T) {
 }
 
 func TestLIndex_WrongType(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.Set("mykey", "string_value")
 
 	val, err := s.LIndex("mykey", 0)
@@ -219,7 +224,7 @@ func TestLIndex_WrongType(t *testing.T) {
 }
 
 func TestLLen_WithElements(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.RPush("mylist", "one", "two", "three")
 
 	listLen, err := s.LLen("mylist")
@@ -228,7 +233,7 @@ func TestLLen_WithElements(t *testing.T) {
 }
 
 func TestLLen_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 
 	listLen, err := s.LLen("nonexistent")
 	assert.Equal(t, uint32(0), listLen)
@@ -236,7 +241,7 @@ func TestLLen_NonExistentKey(t *testing.T) {
 }
 
 func TestLLen_WrongType(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.Set("mykey", "string_value")
 
 	listLen, err := s.LLen("mykey")
@@ -245,7 +250,7 @@ func TestLLen_WrongType(t *testing.T) {
 }
 
 func TestLRem_RemoveAll(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.RPush("mylist", "a", "b", "a", "c", "a")
 
 	removed, _ := s.LRem("mylist", 0, "a")
@@ -256,7 +261,7 @@ func TestLRem_RemoveAll(t *testing.T) {
 }
 
 func TestLRem_FromHead(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.RPush("mylist", "a", "b", "a", "c", "a")
 
 	removed, _ := s.LRem("mylist", 2, "a")
@@ -267,7 +272,7 @@ func TestLRem_FromHead(t *testing.T) {
 }
 
 func TestLRem_FromTail(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.RPush("mylist", "a", "b", "a", "c", "a")
 
 	removed, _ := s.LRem("mylist", -2, "a")
@@ -278,7 +283,7 @@ func TestLRem_FromTail(t *testing.T) {
 }
 
 func TestLSet_PositiveIndex(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.RPush("mylist", "one", "two", "three")
 
 	err := s.LSet("mylist", 1, "new")
@@ -289,7 +294,7 @@ func TestLSet_PositiveIndex(t *testing.T) {
 }
 
 func TestLSet_NegativeIndex(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.RPush("mylist", "one", "two", "three")
 
 	err := s.LSet("mylist", -1, "new")
@@ -300,14 +305,14 @@ func TestLSet_NegativeIndex(t *testing.T) {
 }
 
 func TestLSet_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 
 	err := s.LSet("nonexistent", 0, "value")
 	assert.Error(t, err)
 }
 
 func TestLSet_WrongType(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.Set("mykey", "string_value")
 
 	err := s.LSet("mykey", 0, "value")
@@ -315,7 +320,7 @@ func TestLSet_WrongType(t *testing.T) {
 }
 
 func TestLTrim_PositiveIndices(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.RPush("mylist", "one", "two", "three", "four", "five")
 
 	s.LTrim("mylist", 1, 3)
@@ -325,7 +330,7 @@ func TestLTrim_PositiveIndices(t *testing.T) {
 }
 
 func TestLTrim_NegativeIndices(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.RPush("mylist", "one", "two", "three", "four", "five")
 
 	s.LTrim("mylist", -3, -1)
@@ -335,7 +340,7 @@ func TestLTrim_NegativeIndices(t *testing.T) {
 }
 
 func TestLTrim_DeleteKeyWhenEmpty(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 	s.RPush("mylist", "one", "two", "three")
 
 	s.LTrim("mylist", 5, 10)
@@ -344,7 +349,7 @@ func TestLTrim_DeleteKeyWhenEmpty(t *testing.T) {
 }
 
 func TestListOperationsIntegration(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreList()
 
 	s.RPush("mylist", "a", "b", "c")
 	s.LPush("mylist", "z")

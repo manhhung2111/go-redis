@@ -5,9 +5,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func newTestStore() Store {
+	return NewStore(config.NewConfig())
+}
 
 func TestNewStringObjectInteger(t *testing.T) {
 	obj := newStringObject("123")
@@ -97,7 +102,7 @@ func TestNewStringObjectMixedContent(t *testing.T) {
 }
 
 func TestSetBasic(t *testing.T) {
-	s := NewStore()
+	s := newTestStore()
 
 	s.Set("key1", "value1")
 
@@ -107,7 +112,7 @@ func TestSetBasic(t *testing.T) {
 }
 
 func TestSetOverwrite(t *testing.T) {
-	s := NewStore()
+	s := newTestStore()
 
 	s.Set("key1", "value1")
 	s.Set("key1", "value2")
@@ -118,7 +123,7 @@ func TestSetOverwrite(t *testing.T) {
 }
 
 func TestSetClearsExpiration(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStore().(*store)
 
 	s.SetEx("key1", "value1", 10)
 	_, exists := s.expires.Get("key1")
@@ -130,7 +135,7 @@ func TestSetClearsExpiration(t *testing.T) {
 }
 
 func TestSetEmptyString(t *testing.T) {
-	s := NewStore()
+	s := newTestStore()
 
 	s.Set("key1", "")
 
@@ -140,7 +145,7 @@ func TestSetEmptyString(t *testing.T) {
 }
 
 func TestSetExBasic(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStore().(*store)
 
 	s.SetEx("key1", "value1", 10)
 
@@ -153,7 +158,7 @@ func TestSetExBasic(t *testing.T) {
 }
 
 func TestSetExExpires(t *testing.T) {
-	s := NewStore()
+	s := newTestStore()
 
 	s.SetEx("key1", "value1", 0)
 	time.Sleep(10 * time.Millisecond)
@@ -164,7 +169,7 @@ func TestSetExExpires(t *testing.T) {
 }
 
 func TestSetExOverwriteExpiration(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStore().(*store)
 
 	s.SetEx("key1", "value1", 5)
 	exp1, _ := s.expires.Get("key1")
@@ -178,7 +183,7 @@ func TestSetExOverwriteExpiration(t *testing.T) {
 }
 
 func TestGetExisting(t *testing.T) {
-	s := NewStore()
+	s := newTestStore()
 	s.Set("key1", "value1")
 
 	val, err := s.Get("key1")
@@ -187,7 +192,7 @@ func TestGetExisting(t *testing.T) {
 }
 
 func TestGetNonExisting(t *testing.T) {
-	s := NewStore()
+	s := newTestStore()
 
 	val, err := s.Get("key1")
 	require.Nil(t, err)
@@ -195,7 +200,7 @@ func TestGetNonExisting(t *testing.T) {
 }
 
 func TestGetExpiredKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStore()
 
 	s.SetEx("key1", "value1", 0)
 	time.Sleep(10 * time.Millisecond)
@@ -206,7 +211,7 @@ func TestGetExpiredKey(t *testing.T) {
 }
 
 func TestGetDeletesExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStore().(*store)
 
 	s.SetEx("key1", "value1", 0)
 	time.Sleep(10 * time.Millisecond)
@@ -219,20 +224,20 @@ func TestGetDeletesExpiredKey(t *testing.T) {
 }
 
 func TestDelExisting(t *testing.T) {
-	s := NewStore()
+	s := newTestStore()
 	s.Set("key1", "value1")
 
 	assert.True(t, s.Del("key1"))
 }
 
 func TestDelNonExisting(t *testing.T) {
-	s := NewStore()
+	s := newTestStore()
 
 	assert.False(t, s.Del("nonexistent"))
 }
 
 func TestIncrByIntEncoding(t *testing.T) {
-	s := NewStore()
+	s := newTestStore()
 
 	result, err := s.IncrBy("counter", 5)
 	require.Nil(t, err)
@@ -241,7 +246,7 @@ func TestIncrByIntEncoding(t *testing.T) {
 }
 
 func TestIncrByRawEncodingInvalid(t *testing.T) {
-	s := NewStore()
+	s := newTestStore()
 	s.Set("key", "not a number")
 
 	_, err := s.IncrBy("key", 5)
@@ -249,7 +254,7 @@ func TestIncrByRawEncodingInvalid(t *testing.T) {
 }
 
 func TestSetGetDelFlow(t *testing.T) {
-	s := NewStore()
+	s := newTestStore()
 
 	s.Set("key1", "value1")
 
@@ -265,7 +270,7 @@ func TestSetGetDelFlow(t *testing.T) {
 }
 
 func TestEncodingConversionThroughIncrBy(t *testing.T) {
-	s := NewStore()
+	s := newTestStore()
 
 	s.Set("counter", "10")
 	s.IncrBy("counter", 5)

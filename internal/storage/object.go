@@ -148,19 +148,21 @@ type Store interface {
 }
 
 type store struct {
+	config       *config.Config
 	data         Dict[string, *RObj]
 	expires      Dict[string, uint64]
 	evictionPool []*evictionPoolEntry
 	usedMemory   int64 // Memory usage in bytes, accounting only for data and expires dictionaries (excludes eviction pool)
 }
 
-func NewStore() Store {
+func NewStore(cfg *config.Config) Store {
 	data, delta1 := newDict[string, *RObj]()
 	expires, delta2 := newDict[string, uint64]()
 	return &store{
+		config:       cfg,
 		data:         data,
 		expires:      expires,
-		evictionPool: make([]*evictionPoolEntry, 0, config.EVICTION_POOL_SIZE),
+		evictionPool: make([]*evictionPoolEntry, 0, cfg.EvictionPoolSize),
 		usedMemory:   delta1 + delta2,
 	}
 }

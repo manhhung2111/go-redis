@@ -3,7 +3,6 @@ package storage
 import (
 	"errors"
 
-	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
 )
 
@@ -142,10 +141,10 @@ func (s *store) getOrCreateCuckooFilter(key string) (data_structure.CuckooFilter
 
 	// Create new cuckoo filter with default settings
 	scf := data_structure.NewCuckooFilter(
-		uint64(config.CF_DEFAULT_INITIAL_SIZE),
-		uint64(config.CF_DEFAULT_BUCKET_SIZE),
-		uint64(config.CF_DEFAULT_MAX_ITERATIONS),
-		config.CF_DEFAULT_EXPANSION_FACTOR,
+		uint64(s.config.CFDefaultInitialSize),
+		uint64(s.config.CFDefaultBucketSize),
+		uint64(s.config.CFDefaultMaxIterations),
+		s.config.CFDefaultExpansionFactor,
 	)
 
 	delta := s.data.Set(key, &RObj{

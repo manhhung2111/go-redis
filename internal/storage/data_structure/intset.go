@@ -5,7 +5,10 @@ import (
 	"strconv"
 
 	"github.com/DmitriyVTitov/size"
-	"github.com/manhhung2111/go-redis/internal/config"
+)
+
+const (
+	defaultMaxIntsetEntries = 512
 )
 
 type intSet struct {
@@ -14,7 +17,7 @@ type intSet struct {
 
 func NewIntSet() Set {
 	return &intSet{
-		contents: make([]int64, 0, config.SET_MAX_INTSET_ENTRIES),
+		contents: make([]int64, 0, defaultMaxIntsetEntries),
 	}
 }
 

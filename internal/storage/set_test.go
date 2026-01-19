@@ -9,8 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func newTestStoreSet() Store {
+	return NewStore(config.NewConfig())
+}
+
 func TestSAdd_IntSet_Creation(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 
 	added, err := s.SAdd("myset", "1", "2", "3")
 
@@ -24,7 +28,7 @@ func TestSAdd_IntSet_Creation(t *testing.T) {
 }
 
 func TestSAdd_SimpleSet_NonInteger(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	added, err := s.SAdd("myset", "hello", "world")
 
 	assert.NoError(t, err)
@@ -33,7 +37,7 @@ func TestSAdd_SimpleSet_NonInteger(t *testing.T) {
 }
 
 func TestSAdd_SimpleSet_MixedValues(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	added, err := s.SAdd("myset", "1", "hello", "2")
 
 	assert.NoError(t, err)
@@ -42,7 +46,7 @@ func TestSAdd_SimpleSet_MixedValues(t *testing.T) {
 }
 
 func TestSAdd_UpgradeToSimpleSet_NonInteger(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "1", "2", "3")
 	assertEncoding(t, s, "myset", EncIntSet)
 
@@ -74,31 +78,31 @@ func TestSAdd_UpgradeToSimpleSet_NonInteger(t *testing.T) {
 }
 
 func TestSAdd_UpgradeToSimpleSet_CapacityExceeded(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 
 	// Fill to capacity
-	members := make([]string, config.SET_MAX_INTSET_ENTRIES)
-	for i := 0; i < config.SET_MAX_INTSET_ENTRIES; i++ {
+	members := make([]string, config.NewConfig().SetMaxIntsetEntries)
+	for i := 0; i < config.NewConfig().SetMaxIntsetEntries; i++ {
 		members[i] = strconv.Itoa(i)
 	}
 	s.SAdd("myset", members...)
 	assertEncoding(t, s, "myset", EncIntSet)
 
 	// Exceed capacity
-	added, err := s.SAdd("myset", strconv.Itoa(config.SET_MAX_INTSET_ENTRIES))
+	added, err := s.SAdd("myset", strconv.Itoa(config.NewConfig().SetMaxIntsetEntries))
 	assert.Equal(t, added, int64(1), "members added")
 	assert.NoError(t, err)
 
 	assertEncoding(t, s, "myset", EncHashTable)
 	size, err := s.SCard("myset")
-	assert.Equal(t, size, int64(config.SET_MAX_INTSET_ENTRIES+1), "size after upgrade")
+	assert.Equal(t, size, int64(config.NewConfig().SetMaxIntsetEntries+1), "size after upgrade")
 	assert.NoError(t, err)
 }
 
 func TestSAdd_SimpleSet_InitialBatchExceedsCapacity(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 
-	members := make([]string, config.SET_MAX_INTSET_ENTRIES+5)
+	members := make([]string, config.NewConfig().SetMaxIntsetEntries+5)
 	for i := 0; i < len(members); i++ {
 		members[i] = strconv.Itoa(i)
 	}
@@ -108,7 +112,7 @@ func TestSAdd_SimpleSet_InitialBatchExceedsCapacity(t *testing.T) {
 }
 
 func TestSAdd_NoDuplicates_IntSet(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	added1, err1 := s.SAdd("myset", "1", "2", "3")
 	added2, err2 := s.SAdd("myset", "2", "3", "4")
 
@@ -125,7 +129,7 @@ func TestSAdd_NoDuplicates_IntSet(t *testing.T) {
 }
 
 func TestSAdd_NoDuplicates_SimpleSet(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	added1, err1 := s.SAdd("myset", "a", "b", "c")
 	added2, err2 := s.SAdd("myset", "b", "c", "d")
 
@@ -140,7 +144,7 @@ func TestSAdd_NoDuplicates_SimpleSet(t *testing.T) {
 }
 
 func TestSAdd_NegativeIntegers(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "-5", "-1", "0", "1", "5")
 
 	assertEncoding(t, s, "myset", EncIntSet)
@@ -151,14 +155,14 @@ func TestSAdd_NegativeIntegers(t *testing.T) {
 }
 
 func TestSCard_NonexistentKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	size, err := s.SCard("nonexistent")
 	assert.Equal(t, size, int64(0), "size")
 	assert.NoError(t, err)
 }
 
 func TestSCard_IntSet(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "1", "2", "3")
 	size, err := s.SCard("myset")
 	assert.Equal(t, size, int64(3), "size")
@@ -166,7 +170,7 @@ func TestSCard_IntSet(t *testing.T) {
 }
 
 func TestSCard_SimpleSet(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "a", "b", "c", "d")
 	size, err := s.SCard("myset")
 	assert.Equal(t, size, int64(4), "size")
@@ -174,7 +178,7 @@ func TestSCard_SimpleSet(t *testing.T) {
 }
 
 func TestSIsMember_IntSet(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "1", "2", "3", "5", "10")
 
 	isMember, err := s.SIsMember("myset", "1")
@@ -195,7 +199,7 @@ func TestSIsMember_IntSet(t *testing.T) {
 }
 
 func TestSIsMember_SimpleSet(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "hello", "world", "foo")
 
 	isMember, err := s.SIsMember("myset", "hello")
@@ -212,7 +216,7 @@ func TestSIsMember_SimpleSet(t *testing.T) {
 }
 
 func TestSIsMember_NonexistentKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 
 	isMember, err := s.SIsMember("nonexistent", "anything")
 	assert.False(t, isMember, "nonexistent key")
@@ -220,7 +224,7 @@ func TestSIsMember_NonexistentKey(t *testing.T) {
 }
 
 func TestSMIsMember_IntSet(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "1", "3", "5", "7", "9")
 
 	results, err := s.SMIsMember("myset", "1", "2", "3", "4", "5")
@@ -230,7 +234,7 @@ func TestSMIsMember_IntSet(t *testing.T) {
 }
 
 func TestSMIsMember_SimpleSet(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "apple", "banana", "cherry")
 
 	results, err := s.SMIsMember("myset", "apple", "orange", "banana")
@@ -240,7 +244,7 @@ func TestSMIsMember_SimpleSet(t *testing.T) {
 }
 
 func TestSMIsMember_Empty(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "1", "2")
 
 	results, err := s.SMIsMember("myset")
@@ -249,7 +253,7 @@ func TestSMIsMember_Empty(t *testing.T) {
 }
 
 func TestSMIsMember_NonexistentKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	results, err := s.SMIsMember("nonexistent", "a", "b", "c")
 	expected := []bool{false, false, false}
 	assert.Equal(t, results, expected, "nonexistent key")
@@ -257,7 +261,7 @@ func TestSMIsMember_NonexistentKey(t *testing.T) {
 }
 
 func TestSMIsMember_Duplicates(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "a", "b", "c")
 
 	results, err := s.SMIsMember("myset", "a", "a", "b", "d", "a")
@@ -267,7 +271,7 @@ func TestSMIsMember_Duplicates(t *testing.T) {
 }
 
 func TestSMembers_IntSet_Sorted(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "9", "3", "7", "1", "5")
 
 	members, err := s.SMembers("myset")
@@ -277,7 +281,7 @@ func TestSMembers_IntSet_Sorted(t *testing.T) {
 }
 
 func TestSMembers_SimpleSet(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "apple", "banana", "cherry")
 
 	members, err := s.SMembers("myset")
@@ -292,14 +296,14 @@ func TestSMembers_SimpleSet(t *testing.T) {
 }
 
 func TestSMembers_NonexistentKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	members, err := s.SMembers("nonexistent")
 	assert.Equal(t, len(members), 0, "empty result")
 	assert.NoError(t, err)
 }
 
 func TestSRem_IntSet(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "1", "2", "3", "4", "5")
 
 	removed, err := s.SRem("myset", "2", "4")
@@ -325,7 +329,7 @@ func TestSRem_IntSet(t *testing.T) {
 }
 
 func TestSRem_SimpleSet(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "a", "b", "c", "d")
 
 	removed, err := s.SRem("myset", "b", "d")
@@ -338,7 +342,7 @@ func TestSRem_SimpleSet(t *testing.T) {
 }
 
 func TestSRem_NonexistentMembers(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "1", "2", "3")
 
 	removed, err := s.SRem("myset", "4", "5")
@@ -351,7 +355,7 @@ func TestSRem_NonexistentMembers(t *testing.T) {
 }
 
 func TestSRem_MixedExistingNonexisting(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "1", "2", "3")
 
 	removed, err := s.SRem("myset", "2", "4", "3")
@@ -364,14 +368,14 @@ func TestSRem_MixedExistingNonexisting(t *testing.T) {
 }
 
 func TestSRem_NonexistentKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	removed, err := s.SRem("nonexistent", "1", "2")
 	assert.Equal(t, removed, int64(0), "removed count")
 	assert.NoError(t, err)
 }
 
 func TestSPop_Basic(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "1", "2", "3", "4", "5")
 
 	popped, err := s.SPop("myset", 2)
@@ -390,7 +394,7 @@ func TestSPop_Basic(t *testing.T) {
 }
 
 func TestSPop_EntireSet(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "1", "2", "3")
 
 	popped, err := s.SPop("myset", 10)
@@ -402,14 +406,14 @@ func TestSPop_EntireSet(t *testing.T) {
 }
 
 func TestSPop_NonexistentKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	popped, err := s.SPop("nonexistent", 5)
 	assert.Equal(t, len(popped), 0, "popped count")
 	assert.NoError(t, err)
 }
 
 func TestSPop_CountZero(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "1", "2", "3")
 
 	popped, err := s.SPop("myset", 0)
@@ -422,7 +426,7 @@ func TestSPop_CountZero(t *testing.T) {
 }
 
 func TestSRandMember_PositiveCount(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "1", "2", "3", "4", "5")
 
 	members, err := s.SRandMember("myset", 3)
@@ -446,7 +450,7 @@ func TestSRandMember_PositiveCount(t *testing.T) {
 }
 
 func TestSRandMember_CountExceedsSize(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "1", "2", "3")
 
 	members, err := s.SRandMember("myset", 10)
@@ -455,7 +459,7 @@ func TestSRandMember_CountExceedsSize(t *testing.T) {
 }
 
 func TestSRandMember_NegativeCount(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "1", "2", "3")
 
 	members, err := s.SRandMember("myset", -10)
@@ -470,7 +474,7 @@ func TestSRandMember_NegativeCount(t *testing.T) {
 }
 
 func TestSRandMember_CountZero(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	s.SAdd("myset", "1", "2", "3")
 
 	members, err := s.SRandMember("myset", 0)
@@ -479,14 +483,14 @@ func TestSRandMember_CountZero(t *testing.T) {
 }
 
 func TestSRandMember_NonexistentKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 	members, err := s.SRandMember("nonexistent", 5)
 	assert.Equal(t, len(members), 0, "empty result")
 	assert.NoError(t, err)
 }
 
 func TestIntegration_UpgradePreservesAllOperations(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 
 	// Build IntSet
 	s.SAdd("myset", "1", "2", "3", "4", "5")
@@ -512,7 +516,7 @@ func TestIntegration_UpgradePreservesAllOperations(t *testing.T) {
 }
 
 func TestIntegration_MultipleOperations(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreSet().(*store)
 
 	s.SAdd("myset", "10", "20", "30")
 	s.SRem("myset", "20")

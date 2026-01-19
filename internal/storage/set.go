@@ -4,7 +4,6 @@ import (
 	"math/rand"
 	"strconv"
 
-	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
@@ -48,7 +47,7 @@ func (s *store) SAdd(key string, members ...string) (int64, error) {
 	}
 
 	// Key doesn't exist - create new set
-	if canBeConvertedToInt64(members...) {
+	if s.canBeConvertedToInt64(members...) {
 		intset := data_structure.NewIntSet()
 		added, succeeded, _ := intset.Add(members...)
 		if succeeded {
@@ -240,8 +239,8 @@ func (s *store) SRandMember(key string, count int) ([]string, error) {
 	return selected, nil
 }
 
-func canBeConvertedToInt64(members ...string) bool {
-	if len(members) == 0 || len(members) > config.SET_MAX_INTSET_ENTRIES {
+func (s *store) canBeConvertedToInt64(members ...string) bool {
+	if len(members) == 0 || len(members) > s.config.SetMaxIntsetEntries {
 		return false
 	}
 

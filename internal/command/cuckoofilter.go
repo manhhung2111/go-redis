@@ -126,13 +126,13 @@ func (redis *redis) CFReserve(cmd protocol.RedisCmd) []byte {
 		return protocol.RespBadCapacity
 	}
 
-	if capacity < 1 || capacity > int64(config.CF_MAX_INITIAL_SIZE) {
+	if capacity < 1 || capacity > int64(config.CFMaxInitialSize) {
 		return protocol.RespCapacityInvalidRange
 	}
 
-	bucketSize := config.CF_DEFAULT_BUCKET_SIZE
-	maxIterations := config.CF_DEFAULT_MAX_ITERATIONS
-	expansion := config.CF_DEFAULT_EXPANSION_FACTOR
+	bucketSize := 4
+	maxIterations := 20
+	expansion := 1
 
 	// Parse optional arguments
 	i := 2
@@ -147,7 +147,7 @@ func (redis *redis) CFReserve(cmd protocol.RedisCmd) []byte {
 			if err != nil {
 				return protocol.RespBadBucketSize
 			}
-			if bs < int64(config.CF_MIN_BUCKET_SIZE) || bs > int64(config.CF_MAX_BUCKET_SIZE) {
+			if bs < int64(config.CFMinBucketSize) || bs > int64(config.CFMaxBucketSize) {
 				return protocol.RespBucketSizeInvalidRange
 			}
 			bucketSize = int(bs)
@@ -160,7 +160,7 @@ func (redis *redis) CFReserve(cmd protocol.RedisCmd) []byte {
 			if err != nil {
 				return protocol.RespBadMaxIterations
 			}
-			if mi < int64(config.CF_MIN_MAX_ITERATIONS) || mi > int64(config.CF_MAX_MAX_ITERATIONS) {
+			if mi < int64(config.CFMinMaxIterations) || mi > int64(config.CFMaxMaxIterations) {
 				return protocol.RespMaxIterationsInvalidRange
 			}
 			maxIterations = int(mi)
@@ -173,7 +173,7 @@ func (redis *redis) CFReserve(cmd protocol.RedisCmd) []byte {
 			if err != nil {
 				return protocol.RespBadExpansion
 			}
-			if exp < int64(config.CF_MIN_EXPANSION_FACTOR) || exp > int64(config.CF_MAX_EXPANSION_FACTOR) {
+			if exp < int64(config.CFMinExpansionFactor) || exp > int64(config.CFMaxExpansionFactor) {
 				return protocol.RespExpansionInvalidRange
 			}
 			expansion = int(exp)

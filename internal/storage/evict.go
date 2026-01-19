@@ -11,12 +11,12 @@ import (
 // sorted by idle time (ascending). The last entry has the highest idle time and is
 // the best candidate for eviction.
 func (s *store) evictionPoolPopulate() int {
-	if config.EVICTION_POLICY == config.NoEviction {
+	if s.config.EvictionPolicy == config.NoEviction {
 		return 0
 	}
 
 	// Check if we can sample keys based on policy
-	switch config.EVICTION_POLICY {
+	switch s.config.EvictionPolicy {
 	case config.VolatileLRU, config.VolatileLFU, config.VolatileTTL:
 		if s.expires.Empty() {
 			return 0
@@ -28,10 +28,10 @@ func (s *store) evictionPoolPopulate() int {
 	}
 
 	inserted := 0
-	for range config.MAXMEMORY_SAMPLES {
+	for range s.config.MaxmemorySamples {
 		// Sample a key based on eviction policy
 		var key string
-		switch config.EVICTION_POLICY {
+		switch s.config.EvictionPolicy {
 		case config.AllKeysLRU, config.AllKeysLFU:
 			key = s.data.GetRandomKey()
 		case config.VolatileLRU, config.VolatileLFU, config.VolatileTTL:
@@ -46,11 +46,11 @@ func (s *store) evictionPoolPopulate() int {
 		}
 
 		var idleTime uint32
-		switch config.EVICTION_POLICY {
+		switch s.config.EvictionPolicy {
 		case config.AllKeysLFU, config.VolatileLFU:
 			// For LFU: lower counter = less frequently used = should evict first
 			// Invert the counter so lower counter maps to higher idleTime
-			counter := rObj.LFUDecay()
+			counter := rObj.LFUDecay(s.config)
 			idleTime = uint32(255 - counter)
 		case config.VolatileTTL:
 			expireAt, _ := s.expires.Get(key)
@@ -75,7 +75,7 @@ func (s *store) evictionPoolPopulate() int {
 
 		// Skip if this key is already in the pool with same or higher idle time
 		// or if it's not better than the worst candidate when pool is full
-		if len(s.evictionPool) > 0 && len(s.evictionPool) >= config.EVICTION_POOL_SIZE {
+		if len(s.evictionPool) > 0 && len(s.evictionPool) >= s.config.EvictionPoolSize {
 			// Pool is full - only insert if this key has higher idle time than the worst (first) entry
 			if idleTime <= s.evictionPool[0].idle {
 				continue
@@ -94,7 +94,7 @@ func (s *store) evictionPoolPopulate() int {
 		}
 
 		// If pool is full, remove the first element (lowest idle time = worst candidate)
-		if len(s.evictionPool) >= config.EVICTION_POOL_SIZE {
+		if len(s.evictionPool) >= s.config.EvictionPoolSize {
 			s.evictionPool = s.evictionPool[1:]
 			low-- // Adjust position after removing first element
 			if low < 0 {
@@ -115,9 +115,9 @@ func (s *store) evictionPoolPopulate() int {
 	return inserted
 }
 
-// performEvictions evicts keys until memory usage is below MAXMEMORY_LIMIT.
+// performEvictions evicts keys until memory usage is below MaxmemoryLimit.
 func (s *store) performEvictions() {
-	for s.usedMemory > config.MAXMEMORY_LIMIT {
+	for s.usedMemory > s.config.MaxmemoryLimit {
 		// Try to find a key to evict
 		key := s.selectKeyToEvict()
 		if key == nil {
@@ -131,7 +131,7 @@ func (s *store) performEvictions() {
 // selectKeyToEvict selects the best key to evict from the eviction pool.
 // Returns nil if no suitable key is found.
 func (s *store) selectKeyToEvict() *string {
-	switch config.EVICTION_POLICY {
+	switch s.config.EvictionPolicy {
 	case config.AllKeysRandom:
 		if s.data.Empty() {
 			return nil
@@ -187,21 +187,21 @@ func getIdleTime(lruTime uint32) uint32 {
 	return now - lruTime
 }
 
-func LFULogIncr(counter uint8) uint8 {
+func LFULogIncr(counter uint8, cfg *config.Config) uint8 {
 	if counter == 255 {
 		return 255
 	}
 
 	r := rand.Float64()
-	baseval := max(0, int(counter)-int(config.LFU_INIT_VAL))
-	p := 1.0 / (float64(baseval)*float64(config.LFU_LOG_FACTOR) + 1)
+	baseval := max(0, int(counter)-int(cfg.LFUInitVal))
+	p := 1.0 / (float64(baseval)*float64(cfg.LFULogFactor) + 1)
 	if r < p {
 		counter++
 	}
 	return counter
 }
 
-func (rObj *RObj) LFUDecay() uint8 {
+func (rObj *RObj) LFUDecay(cfg *config.Config) uint8 {
 	counter := uint8(rObj.lru & 0xFF)
 	lastAccessTime := rObj.lru >> 8
 	nowMinutes := uint32(time.Now().Unix()/60) & ((1 << 24) - 1)
@@ -215,8 +215,8 @@ func (rObj *RObj) LFUDecay() uint8 {
 		elapsedMinutes = (1 << 24) - lastAccessTime + nowMinutes
 	}
 
-	if elapsedMinutes > 0 && config.LFU_DECAY_TIME > 0 {
-		decayAmount := elapsedMinutes / config.LFU_DECAY_TIME
+	if elapsedMinutes > 0 && cfg.LFUDecayTime > 0 {
+		decayAmount := elapsedMinutes / cfg.LFUDecayTime
 		newCounter := max(0, int(counter)-int(decayAmount))
 		counter = uint8(newCounter)
 		rObj.lru = (nowMinutes << 8) | uint32(counter)

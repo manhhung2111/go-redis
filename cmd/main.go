@@ -10,14 +10,14 @@ import (
 	"github.com/manhhung2111/go-redis/internal/wiring"
 )
 
-func init() {
-	flag.StringVar(&config.HOST, "host", "0.0.0.0", "host")
-	flag.IntVar(&config.PORT, "port", 6379, "port")
-	flag.Parse()
-}
-
 func main() {
-	server, err := wiring.InitializeServer()
+	cfg := config.NewConfig()
+
+	flag.StringVar(&cfg.Host, "host", cfg.Host, "host")
+	flag.IntVar(&cfg.Port, "port", cfg.Port, "port")
+	flag.Parse()
+
+	server, err := wiring.InitializeServer(cfg)
 	if err != nil {
 		panic(err)
 	}

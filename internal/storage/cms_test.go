@@ -3,12 +3,17 @@ package storage
 import (
 	"testing"
 
+	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+func newTestStoreCMS() Store {
+	return NewStore(config.NewConfig())
+}
+
 func TestCMSInitByDim_NewKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
@@ -29,7 +34,7 @@ func TestCMSInitByDim_NewKey(t *testing.T) {
 }
 
 func TestCMSInitByDim_KeyExists(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	// Create CMS
 	err := s.CMSInitByDim("cms", 100, 5)
@@ -48,7 +53,7 @@ func TestCMSInitByDim_KeyExists(t *testing.T) {
 }
 
 func TestCMSInitByDim_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	// Create CMS and expire it
 	err := s.CMSInitByDim("cms", 100, 5)
@@ -67,7 +72,7 @@ func TestCMSInitByDim_ExpiredKey(t *testing.T) {
 }
 
 func TestCMSInitByProb_NewKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByProb("cms", 0.01, 0.01)
 	require.NoError(t, err)
@@ -88,7 +93,7 @@ func TestCMSInitByProb_NewKey(t *testing.T) {
 }
 
 func TestCMSInitByProb_KeyExists(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByProb("cms", 0.01, 0.01)
 	require.NoError(t, err)
@@ -100,7 +105,7 @@ func TestCMSInitByProb_KeyExists(t *testing.T) {
 }
 
 func TestCMSInitByProb_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByProb("cms", 0.01, 0.01)
 	require.NoError(t, err)
@@ -112,7 +117,7 @@ func TestCMSInitByProb_ExpiredKey(t *testing.T) {
 }
 
 func TestCMSIncrBy_SingleItem(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
@@ -124,7 +129,7 @@ func TestCMSIncrBy_SingleItem(t *testing.T) {
 }
 
 func TestCMSIncrBy_MultipleItems(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
@@ -146,7 +151,7 @@ func TestCMSIncrBy_MultipleItems(t *testing.T) {
 }
 
 func TestCMSIncrBy_IncrementSameItem(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
@@ -168,7 +173,7 @@ func TestCMSIncrBy_IncrementSameItem(t *testing.T) {
 }
 
 func TestCMSIncrBy_NonExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	result, err := s.CMSIncrBy("nonexistent", map[string]uint64{"item1": 1})
 	assert.Nil(t, result)
@@ -176,7 +181,7 @@ func TestCMSIncrBy_NonExistingKey(t *testing.T) {
 }
 
 func TestCMSIncrBy_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	// Create a string key
 	s.Set("mykey", "value")
@@ -186,7 +191,7 @@ func TestCMSIncrBy_WrongType(t *testing.T) {
 }
 
 func TestCMSIncrBy_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
@@ -200,7 +205,7 @@ func TestCMSIncrBy_ExpiredKey(t *testing.T) {
 }
 
 func TestCMSIncrBy_EmptyMap(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
@@ -211,7 +216,7 @@ func TestCMSIncrBy_EmptyMap(t *testing.T) {
 }
 
 func TestCMSIncrBy_UpdatesTotalCount(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
@@ -226,7 +231,7 @@ func TestCMSIncrBy_UpdatesTotalCount(t *testing.T) {
 }
 
 func TestCMSQuery_SingleItem(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
@@ -240,7 +245,7 @@ func TestCMSQuery_SingleItem(t *testing.T) {
 }
 
 func TestCMSQuery_MultipleItems(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
@@ -260,7 +265,7 @@ func TestCMSQuery_MultipleItems(t *testing.T) {
 }
 
 func TestCMSQuery_NonExistentItem(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
@@ -275,14 +280,14 @@ func TestCMSQuery_NonExistentItem(t *testing.T) {
 }
 
 func TestCMSQuery_NonExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	_, err := s.CMSQuery("nonexistent", []string{"item1", "item2", "item3"})
 	assert.Error(t, err)
 }
 
 func TestCMSQuery_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	// Create a list key
 	s.LPush("mylist", "value")
@@ -292,7 +297,7 @@ func TestCMSQuery_WrongType(t *testing.T) {
 }
 
 func TestCMSQuery_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
@@ -305,7 +310,7 @@ func TestCMSQuery_ExpiredKey(t *testing.T) {
 }
 
 func TestCMSQuery_EmptySlice(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
@@ -316,7 +321,7 @@ func TestCMSQuery_EmptySlice(t *testing.T) {
 }
 
 func TestCMSInfo_ValidKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByDim("cms", 200, 10)
 	require.NoError(t, err)
@@ -336,7 +341,7 @@ func TestCMSInfo_ValidKey(t *testing.T) {
 }
 
 func TestCMSInfo_NonExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	info, err := s.CMSInfo("nonexistent")
 	assert.Nil(t, info)
@@ -344,7 +349,7 @@ func TestCMSInfo_NonExistingKey(t *testing.T) {
 }
 
 func TestCMSInfo_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	s.Set("mykey", "value")
 
@@ -353,7 +358,7 @@ func TestCMSInfo_WrongType(t *testing.T) {
 }
 
 func TestCMSInfo_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
@@ -365,7 +370,7 @@ func TestCMSInfo_ExpiredKey(t *testing.T) {
 }
 
 func TestCMS_Workflow(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	// Initialize CMS
 	err := s.CMSInitByDim("pageviews", 1000, 5)
@@ -397,7 +402,7 @@ func TestCMS_Workflow(t *testing.T) {
 }
 
 func TestCMS_MultipleKeys(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	// Create multiple CMS instances
 	err := s.CMSInitByDim("cms1", 100, 5)
@@ -418,7 +423,7 @@ func TestCMS_MultipleKeys(t *testing.T) {
 }
 
 func TestCMS_SpecialCharacters(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
@@ -442,7 +447,7 @@ func TestCMS_SpecialCharacters(t *testing.T) {
 }
 
 func TestCMS_LargeIncrement(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
@@ -458,7 +463,7 @@ func TestCMS_LargeIncrement(t *testing.T) {
 }
 
 func TestGetCountMinSketch_ValidKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)
@@ -469,7 +474,7 @@ func TestGetCountMinSketch_ValidKey(t *testing.T) {
 }
 
 func TestGetCountMinSketch_NonExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	cms, err := s.getCountMinSketch("nonexistent", false)
 	assert.Error(t, err)
@@ -477,7 +482,7 @@ func TestGetCountMinSketch_NonExistingKey(t *testing.T) {
 }
 
 func TestGetCountMinSketch_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	s.Set("mykey", "value")
 
@@ -486,7 +491,7 @@ func TestGetCountMinSketch_WrongType(t *testing.T) {
 }
 
 func TestGetCountMinSketch_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCMS().(*store)
 
 	err := s.CMSInitByDim("cms", 100, 5)
 	require.NoError(t, err)

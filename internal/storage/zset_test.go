@@ -3,14 +3,19 @@ package storage
 import (
 	"testing"
 
+	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+func newTestStoreZSet() Store {
+	return NewStore(config.NewConfig())
+}
+
 // TestZAdd
 func TestZAdd_NewKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 
 	added, err := s.ZAdd("z", map[string]float64{"a": 1, "b": 2}, data_structure.ZAddOptions{})
 	assert.NoError(t, err)
@@ -18,7 +23,7 @@ func TestZAdd_NewKey(t *testing.T) {
 }
 
 func TestZAdd_ExistingKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1}, data_structure.ZAddOptions{})
 
 	added, err := s.ZAdd("z", map[string]float64{"b": 2, "c": 3}, data_structure.ZAddOptions{})
@@ -27,7 +32,7 @@ func TestZAdd_ExistingKey(t *testing.T) {
 }
 
 func TestZAdd_UpdateExistingMember(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1}, data_structure.ZAddOptions{})
 
 	added, err := s.ZAdd("z", map[string]float64{"a": 5}, data_structure.ZAddOptions{})
@@ -39,7 +44,7 @@ func TestZAdd_UpdateExistingMember(t *testing.T) {
 }
 
 func TestZAdd_NXOption(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1}, data_structure.ZAddOptions{})
 
 	added, err := s.ZAdd("z", map[string]float64{"a": 2}, data_structure.ZAddOptions{NX: true})
@@ -51,7 +56,7 @@ func TestZAdd_NXOption(t *testing.T) {
 }
 
 func TestZAdd_XXOption(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1}, data_structure.ZAddOptions{})
 
 	added, err := s.ZAdd("z", map[string]float64{"a": 2, "b": 3}, data_structure.ZAddOptions{XX: true})
@@ -66,7 +71,7 @@ func TestZAdd_XXOption(t *testing.T) {
 }
 
 func TestZAdd_GTOption(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 5}, data_structure.ZAddOptions{})
 
 	added, _ := s.ZAdd("z", map[string]float64{"a": 3}, data_structure.ZAddOptions{GT: true})
@@ -83,7 +88,7 @@ func TestZAdd_GTOption(t *testing.T) {
 }
 
 func TestZAdd_LTOption(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 5}, data_structure.ZAddOptions{})
 
 	added, _ := s.ZAdd("z", map[string]float64{"a": 10}, data_structure.ZAddOptions{LT: true})
@@ -100,7 +105,7 @@ func TestZAdd_LTOption(t *testing.T) {
 }
 
 func TestZAdd_CHOption(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1}, data_structure.ZAddOptions{})
 
 	added, _ := s.ZAdd("z", map[string]float64{"a": 2, "b": 3}, data_structure.ZAddOptions{CH: true})
@@ -108,7 +113,7 @@ func TestZAdd_CHOption(t *testing.T) {
 }
 
 func TestZAdd_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreZSet().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	added, err := s.ZAdd("key1", map[string]float64{"a": 1}, data_structure.ZAddOptions{})
@@ -118,7 +123,7 @@ func TestZAdd_WrongType(t *testing.T) {
 
 // TestZCard
 func TestZCard_ExistingKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2, "c": 3}, data_structure.ZAddOptions{})
 
 	card, err := s.ZCard("z")
@@ -127,7 +132,7 @@ func TestZCard_ExistingKey(t *testing.T) {
 }
 
 func TestZCard_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 
 	card, err := s.ZCard("nonexistent")
 	assert.NoError(t, err)
@@ -135,7 +140,7 @@ func TestZCard_NonExistentKey(t *testing.T) {
 }
 
 func TestZCard_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreZSet().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	card, err := s.ZCard("key1")
@@ -145,7 +150,7 @@ func TestZCard_WrongType(t *testing.T) {
 
 // TestZCount
 func TestZCount_InRange(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2, "c": 3, "d": 4}, data_structure.ZAddOptions{})
 
 	count, err := s.ZCount("z", 2, 3)
@@ -154,7 +159,7 @@ func TestZCount_InRange(t *testing.T) {
 }
 
 func TestZCount_NoMembersInRange(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2}, data_structure.ZAddOptions{})
 
 	count, err := s.ZCount("z", 5, 10)
@@ -163,7 +168,7 @@ func TestZCount_NoMembersInRange(t *testing.T) {
 }
 
 func TestZCount_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 
 	count, err := s.ZCount("nonexistent", 0, 10)
 	assert.NoError(t, err)
@@ -171,7 +176,7 @@ func TestZCount_NonExistentKey(t *testing.T) {
 }
 
 func TestZCount_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreZSet().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	count, err := s.ZCount("key1", 0, 10)
@@ -181,7 +186,7 @@ func TestZCount_WrongType(t *testing.T) {
 
 // TestZIncrBy
 func TestZIncrBy_NewMember(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 
 	score, err := s.ZIncrBy("z", "a", 5)
 	assert.NoError(t, err)
@@ -189,7 +194,7 @@ func TestZIncrBy_NewMember(t *testing.T) {
 }
 
 func TestZIncrBy_ExistingMember(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 3}, data_structure.ZAddOptions{})
 
 	score, err := s.ZIncrBy("z", "a", 2)
@@ -198,7 +203,7 @@ func TestZIncrBy_ExistingMember(t *testing.T) {
 }
 
 func TestZIncrBy_NegativeIncrement(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 10}, data_structure.ZAddOptions{})
 
 	score, err := s.ZIncrBy("z", "a", -3)
@@ -207,7 +212,7 @@ func TestZIncrBy_NegativeIncrement(t *testing.T) {
 }
 
 func TestZIncrBy_InfinityResult(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1e308}, data_structure.ZAddOptions{})
 
 	_, err := s.ZIncrBy("z", "a", 1e308)
@@ -215,7 +220,7 @@ func TestZIncrBy_InfinityResult(t *testing.T) {
 }
 
 func TestZIncrBy_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreZSet().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	score, err := s.ZIncrBy("key1", "a", 5)
@@ -225,7 +230,7 @@ func TestZIncrBy_WrongType(t *testing.T) {
 
 // TestZScore
 func TestZScore_ExistingMember(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 5.5}, data_structure.ZAddOptions{})
 
 	score, err := s.ZScore("z", "a")
@@ -235,7 +240,7 @@ func TestZScore_ExistingMember(t *testing.T) {
 }
 
 func TestZScore_NonExistentMember(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1}, data_structure.ZAddOptions{})
 
 	score, err := s.ZScore("z", "b")
@@ -244,7 +249,7 @@ func TestZScore_NonExistentMember(t *testing.T) {
 }
 
 func TestZScore_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 
 	score, err := s.ZScore("nonexistent", "a")
 	assert.NoError(t, err)
@@ -252,7 +257,7 @@ func TestZScore_NonExistentKey(t *testing.T) {
 }
 
 func TestZScore_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreZSet().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	score, err := s.ZScore("key1", "a")
@@ -262,7 +267,7 @@ func TestZScore_WrongType(t *testing.T) {
 
 // TestZMScore
 func TestZMScore_AllExisting(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2, "c": 3}, data_structure.ZAddOptions{})
 
 	scores, err := s.ZMScore("z", []string{"a", "b", "c"})
@@ -274,7 +279,7 @@ func TestZMScore_AllExisting(t *testing.T) {
 }
 
 func TestZMScore_MixedExistingAndMissing(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "c": 3}, data_structure.ZAddOptions{})
 
 	scores, err := s.ZMScore("z", []string{"a", "b", "c"})
@@ -286,7 +291,7 @@ func TestZMScore_MixedExistingAndMissing(t *testing.T) {
 }
 
 func TestZMScore_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 
 	scores, err := s.ZMScore("nonexistent", []string{"a", "b"})
 	assert.NoError(t, err)
@@ -296,7 +301,7 @@ func TestZMScore_NonExistentKey(t *testing.T) {
 }
 
 func TestZMScore_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreZSet().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	scores, err := s.ZMScore("key1", []string{"a", "b"})
@@ -306,7 +311,7 @@ func TestZMScore_WrongType(t *testing.T) {
 
 // TestZRem
 func TestZRem_ExistingMembers(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2, "c": 3}, data_structure.ZAddOptions{})
 
 	removed, err := s.ZRem("z", []string{"a", "b"})
@@ -318,7 +323,7 @@ func TestZRem_ExistingMembers(t *testing.T) {
 }
 
 func TestZRem_MixedExistingAndMissing(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2}, data_structure.ZAddOptions{})
 
 	removed, err := s.ZRem("z", []string{"a", "c"})
@@ -327,7 +332,7 @@ func TestZRem_MixedExistingAndMissing(t *testing.T) {
 }
 
 func TestZRem_NonExistentMembers(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1}, data_structure.ZAddOptions{})
 
 	removed, err := s.ZRem("z", []string{"b", "c"})
@@ -336,7 +341,7 @@ func TestZRem_NonExistentMembers(t *testing.T) {
 }
 
 func TestZRem_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 
 	removed, err := s.ZRem("nonexistent", []string{"a"})
 	assert.NoError(t, err)
@@ -344,7 +349,7 @@ func TestZRem_NonExistentKey(t *testing.T) {
 }
 
 func TestZRem_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreZSet().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	removed, err := s.ZRem("key1", []string{"a"})
@@ -354,7 +359,7 @@ func TestZRem_WrongType(t *testing.T) {
 
 // TestZRank
 func TestZRank_ExistingMember(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2, "c": 3}, data_structure.ZAddOptions{})
 
 	rank, err := s.ZRank("z", "b", false)
@@ -364,7 +369,7 @@ func TestZRank_ExistingMember(t *testing.T) {
 }
 
 func TestZRank_WithScore(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2, "c": 3}, data_structure.ZAddOptions{})
 
 	rank, err := s.ZRank("z", "b", true)
@@ -374,7 +379,7 @@ func TestZRank_WithScore(t *testing.T) {
 }
 
 func TestZRank_NonExistentMember(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1}, data_structure.ZAddOptions{})
 
 	rank, err := s.ZRank("z", "x", false)
@@ -383,7 +388,7 @@ func TestZRank_NonExistentMember(t *testing.T) {
 }
 
 func TestZRank_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 
 	rank, err := s.ZRank("nonexistent", "a", false)
 	assert.NoError(t, err)
@@ -391,7 +396,7 @@ func TestZRank_NonExistentKey(t *testing.T) {
 }
 
 func TestZRank_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreZSet().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	rank, err := s.ZRank("key1", "a", false)
@@ -401,7 +406,7 @@ func TestZRank_WrongType(t *testing.T) {
 
 // TestZRevRank
 func TestZRevRank_ExistingMember(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2, "c": 3}, data_structure.ZAddOptions{})
 
 	rank, err := s.ZRevRank("z", "b", false)
@@ -411,7 +416,7 @@ func TestZRevRank_ExistingMember(t *testing.T) {
 }
 
 func TestZRevRank_WithScore(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2, "c": 3}, data_structure.ZAddOptions{})
 
 	rank, err := s.ZRevRank("z", "b", true)
@@ -421,7 +426,7 @@ func TestZRevRank_WithScore(t *testing.T) {
 }
 
 func TestZRevRank_NonExistentMember(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1}, data_structure.ZAddOptions{})
 
 	rank, err := s.ZRevRank("z", "x", false)
@@ -430,7 +435,7 @@ func TestZRevRank_NonExistentMember(t *testing.T) {
 }
 
 func TestZRevRank_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 
 	rank, err := s.ZRevRank("nonexistent", "a", false)
 	assert.NoError(t, err)
@@ -438,7 +443,7 @@ func TestZRevRank_NonExistentKey(t *testing.T) {
 }
 
 func TestZRevRank_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreZSet().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	rank, err := s.ZRevRank("key1", "a", false)
@@ -448,7 +453,7 @@ func TestZRevRank_WrongType(t *testing.T) {
 
 // TestZRangeByRank
 func TestZRangeByRank_WithoutScores(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2, "c": 3}, data_structure.ZAddOptions{})
 
 	result, err := s.ZRangeByRank("z", 0, 1, false)
@@ -457,7 +462,7 @@ func TestZRangeByRank_WithoutScores(t *testing.T) {
 }
 
 func TestZRangeByRank_WithScores(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2}, data_structure.ZAddOptions{})
 
 	result, err := s.ZRangeByRank("z", 0, -1, true)
@@ -466,7 +471,7 @@ func TestZRangeByRank_WithScores(t *testing.T) {
 }
 
 func TestZRangeByRank_NegativeIndices(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2, "c": 3}, data_structure.ZAddOptions{})
 
 	result, err := s.ZRangeByRank("z", -2, -1, false)
@@ -475,7 +480,7 @@ func TestZRangeByRank_NegativeIndices(t *testing.T) {
 }
 
 func TestZRangeByRank_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 
 	result, err := s.ZRangeByRank("nonexistent", 0, -1, false)
 	assert.NoError(t, err)
@@ -483,7 +488,7 @@ func TestZRangeByRank_NonExistentKey(t *testing.T) {
 }
 
 func TestZRangeByRank_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreZSet().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	result, err := s.ZRangeByRank("key1", 0, -1, false)
@@ -493,7 +498,7 @@ func TestZRangeByRank_WrongType(t *testing.T) {
 
 // TestZRangeByScore
 func TestZRangeByScore_WithoutScores(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2, "c": 3}, data_structure.ZAddOptions{})
 
 	result, err := s.ZRangeByScore("z", 1.5, 3.0, false)
@@ -502,7 +507,7 @@ func TestZRangeByScore_WithoutScores(t *testing.T) {
 }
 
 func TestZRangeByScore_WithScores(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2}, data_structure.ZAddOptions{})
 
 	result, err := s.ZRangeByScore("z", 0, 10, true)
@@ -511,7 +516,7 @@ func TestZRangeByScore_WithScores(t *testing.T) {
 }
 
 func TestZRangeByScore_NoMembersInRange(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2}, data_structure.ZAddOptions{})
 
 	result, err := s.ZRangeByScore("z", 5, 10, false)
@@ -520,7 +525,7 @@ func TestZRangeByScore_NoMembersInRange(t *testing.T) {
 }
 
 func TestZRangeByScore_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 
 	result, err := s.ZRangeByScore("nonexistent", 0, 10, false)
 	assert.NoError(t, err)
@@ -528,7 +533,7 @@ func TestZRangeByScore_NonExistentKey(t *testing.T) {
 }
 
 func TestZRangeByScore_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreZSet().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	result, err := s.ZRangeByScore("key1", 0, 10, false)
@@ -538,7 +543,7 @@ func TestZRangeByScore_WrongType(t *testing.T) {
 
 // TestZRevRangeByRank
 func TestZRevRangeByRank_WithoutScores(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2, "c": 3}, data_structure.ZAddOptions{})
 
 	result, err := s.ZRevRangeByRank("z", 0, 1, false)
@@ -547,7 +552,7 @@ func TestZRevRangeByRank_WithoutScores(t *testing.T) {
 }
 
 func TestZRevRangeByRank_WithScores(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2}, data_structure.ZAddOptions{})
 
 	result, err := s.ZRevRangeByRank("z", 0, -1, true)
@@ -556,7 +561,7 @@ func TestZRevRangeByRank_WithScores(t *testing.T) {
 }
 
 func TestZRevRangeByRank_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 
 	result, err := s.ZRevRangeByRank("nonexistent", 0, -1, false)
 	assert.NoError(t, err)
@@ -564,7 +569,7 @@ func TestZRevRangeByRank_NonExistentKey(t *testing.T) {
 }
 
 func TestZRevRangeByRank_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreZSet().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	result, err := s.ZRevRangeByRank("key1", 0, -1, false)
@@ -574,7 +579,7 @@ func TestZRevRangeByRank_WrongType(t *testing.T) {
 
 // TestZRevRangeByScore
 func TestZRevRangeByScore_WithoutScores(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2, "c": 3}, data_structure.ZAddOptions{})
 
 	result, err := s.ZRevRangeByScore("z", 3, 1.5, false)
@@ -583,7 +588,7 @@ func TestZRevRangeByScore_WithoutScores(t *testing.T) {
 }
 
 func TestZRevRangeByScore_WithScores(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2}, data_structure.ZAddOptions{})
 
 	result, err := s.ZRevRangeByScore("z", 10, 0, true)
@@ -592,7 +597,7 @@ func TestZRevRangeByScore_WithScores(t *testing.T) {
 }
 
 func TestZRevRangeByScore_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 
 	result, err := s.ZRevRangeByScore("nonexistent", 10, 0, false)
 	assert.NoError(t, err)
@@ -600,7 +605,7 @@ func TestZRevRangeByScore_NonExistentKey(t *testing.T) {
 }
 
 func TestZRevRangeByScore_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreZSet().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	result, err := s.ZRevRangeByScore("key1", 10, 0, false)
@@ -610,7 +615,7 @@ func TestZRevRangeByScore_WrongType(t *testing.T) {
 
 // TestZPopMin
 func TestZPopMin_SingleElement(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2, "c": 3}, data_structure.ZAddOptions{})
 
 	result, err := s.ZPopMin("z", 1)
@@ -622,7 +627,7 @@ func TestZPopMin_SingleElement(t *testing.T) {
 }
 
 func TestZPopMin_MultipleElements(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2, "c": 3}, data_structure.ZAddOptions{})
 
 	result, err := s.ZPopMin("z", 2)
@@ -634,7 +639,7 @@ func TestZPopMin_MultipleElements(t *testing.T) {
 }
 
 func TestZPopMin_MoreThanAvailable(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2}, data_structure.ZAddOptions{})
 
 	result, err := s.ZPopMin("z", 5)
@@ -643,7 +648,7 @@ func TestZPopMin_MoreThanAvailable(t *testing.T) {
 }
 
 func TestZPopMin_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 
 	result, err := s.ZPopMin("nonexistent", 1)
 	assert.NoError(t, err)
@@ -651,7 +656,7 @@ func TestZPopMin_NonExistentKey(t *testing.T) {
 }
 
 func TestZPopMin_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreZSet().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	result, err := s.ZPopMin("key1", 1)
@@ -661,7 +666,7 @@ func TestZPopMin_WrongType(t *testing.T) {
 
 // TestZPopMax
 func TestZPopMax_SingleElement(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2, "c": 3}, data_structure.ZAddOptions{})
 
 	result, err := s.ZPopMax("z", 1)
@@ -673,7 +678,7 @@ func TestZPopMax_SingleElement(t *testing.T) {
 }
 
 func TestZPopMax_MultipleElements(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2, "c": 3}, data_structure.ZAddOptions{})
 
 	result, err := s.ZPopMax("z", 2)
@@ -685,7 +690,7 @@ func TestZPopMax_MultipleElements(t *testing.T) {
 }
 
 func TestZPopMax_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 
 	result, err := s.ZPopMax("nonexistent", 1)
 	assert.NoError(t, err)
@@ -693,7 +698,7 @@ func TestZPopMax_NonExistentKey(t *testing.T) {
 }
 
 func TestZPopMax_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreZSet().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	result, err := s.ZPopMax("key1", 1)
@@ -703,7 +708,7 @@ func TestZPopMax_WrongType(t *testing.T) {
 
 // TestZRandMember
 func TestZRandMember_WithoutScores(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2}, data_structure.ZAddOptions{})
 
 	result, err := s.ZRandMember("z", 1, false)
@@ -712,7 +717,7 @@ func TestZRandMember_WithoutScores(t *testing.T) {
 }
 
 func TestZRandMember_WithScores(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2}, data_structure.ZAddOptions{})
 
 	result, err := s.ZRandMember("z", 1, true)
@@ -721,7 +726,7 @@ func TestZRandMember_WithScores(t *testing.T) {
 }
 
 func TestZRandMember_NegativeCountAllowsDuplicates(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 1}, data_structure.ZAddOptions{})
 
 	result, err := s.ZRandMember("z", -5, false)
@@ -730,7 +735,7 @@ func TestZRandMember_NegativeCountAllowsDuplicates(t *testing.T) {
 }
 
 func TestZRandMember_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 
 	result, err := s.ZRandMember("nonexistent", 1, false)
 	assert.NoError(t, err)
@@ -738,7 +743,7 @@ func TestZRandMember_NonExistentKey(t *testing.T) {
 }
 
 func TestZRandMember_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreZSet().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	result, err := s.ZRandMember("key1", 1, false)
@@ -748,7 +753,7 @@ func TestZRandMember_WrongType(t *testing.T) {
 
 // TestZLexCount
 func TestZLexCount_InRange(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"apple": 0, "banana": 0, "cherry": 0, "date": 0}, data_structure.ZAddOptions{})
 
 	count, err := s.ZLexCount("z", "a", "c")
@@ -757,7 +762,7 @@ func TestZLexCount_InRange(t *testing.T) {
 }
 
 func TestZLexCount_AllMembers(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 0, "b": 0, "c": 0}, data_structure.ZAddOptions{})
 
 	count, err := s.ZLexCount("z", "", "~")
@@ -766,7 +771,7 @@ func TestZLexCount_AllMembers(t *testing.T) {
 }
 
 func TestZLexCount_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 
 	count, err := s.ZLexCount("nonexistent", "a", "z")
 	assert.NoError(t, err)
@@ -774,7 +779,7 @@ func TestZLexCount_NonExistentKey(t *testing.T) {
 }
 
 func TestZLexCount_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreZSet().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	count, err := s.ZLexCount("key1", "a", "z")
@@ -784,7 +789,7 @@ func TestZLexCount_WrongType(t *testing.T) {
 
 // TestZRangeByLex
 func TestZRangeByLex_InRange(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"apple": 0, "banana": 0, "cherry": 0, "date": 0}, data_structure.ZAddOptions{})
 
 	result, err := s.ZRangeByLex("z", "b", "d")
@@ -793,7 +798,7 @@ func TestZRangeByLex_InRange(t *testing.T) {
 }
 
 func TestZRangeByLex_AllMembers(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 0, "b": 0, "c": 0}, data_structure.ZAddOptions{})
 
 	result, err := s.ZRangeByLex("z", "", "~")
@@ -802,7 +807,7 @@ func TestZRangeByLex_AllMembers(t *testing.T) {
 }
 
 func TestZRangeByLex_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 
 	result, err := s.ZRangeByLex("nonexistent", "a", "z")
 	assert.NoError(t, err)
@@ -810,7 +815,7 @@ func TestZRangeByLex_NonExistentKey(t *testing.T) {
 }
 
 func TestZRangeByLex_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreZSet().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	result, err := s.ZRangeByLex("key1", "a", "z")
@@ -820,7 +825,7 @@ func TestZRangeByLex_WrongType(t *testing.T) {
 
 // TestZRevRangeByLex
 func TestZRevRangeByLex_InRange(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"apple": 0, "banana": 0, "cherry": 0, "date": 0}, data_structure.ZAddOptions{})
 
 	result, err := s.ZRevRangeByLex("z", "d", "b")
@@ -829,7 +834,7 @@ func TestZRevRangeByLex_InRange(t *testing.T) {
 }
 
 func TestZRevRangeByLex_AllMembersReversed(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 	s.ZAdd("z", map[string]float64{"a": 0, "b": 0, "c": 0}, data_structure.ZAddOptions{})
 
 	result, err := s.ZRevRangeByLex("z", "~", "")
@@ -838,7 +843,7 @@ func TestZRevRangeByLex_AllMembersReversed(t *testing.T) {
 }
 
 func TestZRevRangeByLex_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 
 	result, err := s.ZRevRangeByLex("nonexistent", "z", "a")
 	assert.NoError(t, err)
@@ -846,7 +851,7 @@ func TestZRevRangeByLex_NonExistentKey(t *testing.T) {
 }
 
 func TestZRevRangeByLex_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreZSet().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	result, err := s.ZRevRangeByLex("key1", "z", "a")
@@ -856,7 +861,7 @@ func TestZRevRangeByLex_WrongType(t *testing.T) {
 
 // Integration tests
 func TestZSetOperationsIntegration(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreZSet()
 
 	s.ZAdd("z", map[string]float64{"a": 1, "b": 2, "c": 3, "d": 4, "e": 5}, data_structure.ZAddOptions{})
 

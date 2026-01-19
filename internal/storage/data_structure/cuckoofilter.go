@@ -2,7 +2,6 @@ package data_structure
 
 import (
 	"github.com/DmitriyVTitov/size"
-	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/spaolacci/murmur3"
 )
 
@@ -11,6 +10,7 @@ const (
 	defaultFingerprintSize     = 16
 	defaultMaxKicks            = 500
 	defaultCuckooExpansionRate = 2
+	defaultMaxExpansions       = 32
 )
 
 /*
@@ -98,7 +98,7 @@ func (scf *scalableCuckooFilter) addNewFilter() bool {
 	filterIndex := len(scf.filters)
 
 	// Default max expansions reached, should not expand any more
-	if filterIndex >= config.CF_DEFAULT_MAX_EXPANSIONS {
+	if filterIndex >= defaultMaxExpansions {
 		return false
 	}
 

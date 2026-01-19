@@ -19,14 +19,14 @@ func (s *store) access(key string, expectedType ObjectType, isWrite bool) storag
 	result := storageAccessResult{}
 
 	// Check memory limit for write operations before proceeding
-	if isWrite && s.usedMemory > config.MAXMEMORY_LIMIT {
-		if config.EVICTION_POLICY == config.NoEviction {
+	if isWrite && s.usedMemory > s.config.MaxmemoryLimit {
+		if s.config.EvictionPolicy == config.NoEviction {
 			result.err = ErrOutOfMemoryError
 			return result
 		}
 		s.performEvictions()
 		// Check again after eviction
-		if s.usedMemory > config.MAXMEMORY_LIMIT {
+		if s.usedMemory > s.config.MaxmemoryLimit {
 			result.err = ErrOutOfMemoryError
 			return result
 		}
@@ -42,14 +42,14 @@ func (s *store) access(key string, expectedType ObjectType, isWrite bool) storag
 
 	obj, exists := s.data.Get(key)
 	if exists {
-		switch config.EVICTION_POLICY {
+		switch s.config.EvictionPolicy {
 		case config.AllKeysLRU, config.VolatileLRU:
 			obj.lru = uint32(time.Now().Unix())
 		case config.AllKeysLFU, config.VolatileLFU:
 			// First decay the counter based on elapsed time, then increment
 			// LFUDecay() updates obj.lru with decayed counter and current time
-			counter := obj.LFUDecay()
-			counter = LFULogIncr(counter)
+			counter := obj.LFUDecay(s.config)
+			counter = LFULogIncr(counter, s.config)
 			// Update only the counter portion, keep the time from LFUDecay
 			obj.lru = (obj.lru & 0xFFFFFF00) | uint32(counter)
 		}

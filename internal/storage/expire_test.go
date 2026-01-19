@@ -5,12 +5,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+func newTestStoreExpire() Store {
+	return NewStore(config.NewConfig())
+}
+
 func TestTTL_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreExpire()
 
 	ttl := s.TTL("nonexistent")
 
@@ -18,7 +23,7 @@ func TestTTL_NonExistentKey(t *testing.T) {
 }
 
 func TestTTL_KeyWithoutExpire(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreExpire()
 	s.Set("mykey", "value")
 
 	ttl := s.TTL("mykey")
@@ -27,7 +32,7 @@ func TestTTL_KeyWithoutExpire(t *testing.T) {
 }
 
 func TestTTL_RemainingSeconds(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreExpire()
 	s.Set("mykey", "value")
 	s.Expire("mykey", 10, ExpireOptions{})
 
@@ -37,7 +42,7 @@ func TestTTL_RemainingSeconds(t *testing.T) {
 }
 
 func TestTTL_DeletesExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreExpire().(*store)
 	s.Set("mykey", "value")
 	s.expires.Set("mykey", uint64(time.Now().UnixMilli()-1000))
 
@@ -51,7 +56,7 @@ func TestTTL_DeletesExpiredKey(t *testing.T) {
 }
 
 func TestTTL_AfterNaturalExpiration(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreExpire()
 	s.Set("mykey", "value")
 	s.Expire("mykey", 1, ExpireOptions{})
 
@@ -61,7 +66,7 @@ func TestTTL_AfterNaturalExpiration(t *testing.T) {
 }
 
 func TestExpire_NonExistentKey(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreExpire()
 
 	ok := s.Expire("nonexistent", 10, ExpireOptions{})
 
@@ -69,7 +74,7 @@ func TestExpire_NonExistentKey(t *testing.T) {
 }
 
 func TestExpire_SetsExpiration(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreExpire()
 	s.Set("mykey", "value")
 
 	ok := s.Expire("mykey", 10, ExpireOptions{})
@@ -79,7 +84,7 @@ func TestExpire_SetsExpiration(t *testing.T) {
 }
 
 func TestExpire_UpdateExistingExpiration(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreExpire()
 	s.Set("mykey", "value")
 	s.Expire("mykey", 10, ExpireOptions{})
 
@@ -90,7 +95,7 @@ func TestExpire_UpdateExistingExpiration(t *testing.T) {
 }
 
 func TestExpireNX_KeyWithoutExpire(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreExpire()
 	s.Set("mykey", "value")
 
 	ok := s.Expire("mykey", 10, ExpireOptions{NX: true})
@@ -100,7 +105,7 @@ func TestExpireNX_KeyWithoutExpire(t *testing.T) {
 }
 
 func TestExpireNX_KeyWithExpire(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreExpire()
 	s.Set("mykey", "value")
 	s.Expire("mykey", 20, ExpireOptions{})
 
@@ -111,7 +116,7 @@ func TestExpireNX_KeyWithExpire(t *testing.T) {
 }
 
 func TestExpireXX_KeyWithExpire(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreExpire()
 	s.Set("mykey", "value")
 	s.Expire("mykey", 20, ExpireOptions{})
 
@@ -122,7 +127,7 @@ func TestExpireXX_KeyWithExpire(t *testing.T) {
 }
 
 func TestExpireXX_KeyWithoutExpire(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreExpire()
 	s.Set("mykey", "value")
 
 	ok := s.Expire("mykey", 10, ExpireOptions{XX: true})
@@ -132,7 +137,7 @@ func TestExpireXX_KeyWithoutExpire(t *testing.T) {
 }
 
 func TestExpireGT_NewTTLGreater(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreExpire()
 	s.Set("mykey", "value")
 	s.Expire("mykey", 10, ExpireOptions{})
 
@@ -143,7 +148,7 @@ func TestExpireGT_NewTTLGreater(t *testing.T) {
 }
 
 func TestExpireGT_NewTTLLessOrEqual(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreExpire()
 	s.Set("mykey", "value")
 	s.Expire("mykey", 20, ExpireOptions{})
 
@@ -154,7 +159,7 @@ func TestExpireGT_NewTTLLessOrEqual(t *testing.T) {
 }
 
 func TestExpireLT_NewTTLLess(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreExpire()
 	s.Set("mykey", "value")
 	s.Expire("mykey", 20, ExpireOptions{})
 
@@ -165,7 +170,7 @@ func TestExpireLT_NewTTLLess(t *testing.T) {
 }
 
 func TestExpire_AlreadyExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreExpire().(*store)
 	s.Set("mykey", "value")
 	s.expires.Set("mykey", uint64(time.Now().UnixMilli()-1000))
 
@@ -179,7 +184,7 @@ func TestExpire_AlreadyExpiredKey(t *testing.T) {
 }
 
 func TestExpire_ZeroTTL(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreExpire()
 	s.Set("mykey", "value")
 
 	ok := s.Expire("mykey", 0, ExpireOptions{})
@@ -189,7 +194,7 @@ func TestExpire_ZeroTTL(t *testing.T) {
 }
 
 func TestExpire_NegativeTTL(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreExpire()
 	s.Set("mykey", "value")
 
 	ok := s.Expire("mykey", -5, ExpireOptions{})
@@ -199,7 +204,7 @@ func TestExpire_NegativeTTL(t *testing.T) {
 }
 
 func TestExpireIntegration_ComplexScenario(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreExpire()
 
 	s.Set("mykey", "value")
 	assert.Equal(t, int64(-1), s.TTL("mykey"))
@@ -222,7 +227,7 @@ func TestExpireIntegration_ComplexScenario(t *testing.T) {
 }
 
 func TestExpireIntegration_DifferentDataTypes(t *testing.T) {
-	s := NewStore()
+	s := newTestStoreExpire()
 
 	s.Set("string_key", "value")
 	s.Expire("string_key", 10, ExpireOptions{})
@@ -239,7 +244,7 @@ func TestExpireIntegration_DifferentDataTypes(t *testing.T) {
 // Active Expiration Cycle Tests
 
 func TestActiveExpireCycle_ExpiresKeys(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreExpire().(*store)
 
 	// Create keys with past expiration
 	for i := 0; i < 10; i++ {
@@ -255,7 +260,7 @@ func TestActiveExpireCycle_ExpiresKeys(t *testing.T) {
 }
 
 func TestActiveExpireCycle_PartialExpiration(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreExpire().(*store)
 
 	// 5 expired keys
 	for i := 0; i < 5; i++ {
@@ -280,7 +285,7 @@ func TestActiveExpireCycle_PartialExpiration(t *testing.T) {
 }
 
 func TestActiveExpireCycle_EmptyStore(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreExpire().(*store)
 
 	expired := s.ActiveExpireCycle()
 
@@ -288,7 +293,7 @@ func TestActiveExpireCycle_EmptyStore(t *testing.T) {
 }
 
 func TestActiveExpireCycle_NoExpiredKeys(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreExpire().(*store)
 
 	for i := 0; i < 10; i++ {
 		key := fmt.Sprintf("key%d", i)
@@ -302,7 +307,7 @@ func TestActiveExpireCycle_NoExpiredKeys(t *testing.T) {
 }
 
 func TestActiveExpireCycle_DataStructureConsistency(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreExpire().(*store)
 
 	// Mix of expired and valid keys
 	for i := 0; i < 20; i++ {
@@ -335,7 +340,7 @@ func TestActiveExpireCycle_DataStructureConsistency(t *testing.T) {
 }
 
 func TestDelete_MaintainsIndexConsistency(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreExpire().(*store)
 
 	// Create 5 keys with expiration
 	keys := []string{"a", "b", "c", "d", "e"}

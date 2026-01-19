@@ -4,12 +4,17 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+func newTestStoreHLL() Store {
+	return NewStore(config.NewConfig())
+}
+
 func TestPFAdd_NewKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	result, err := s.PFAdd("hll", []string{"item1"})
 	assert.Equal(t, 1, result, "should return 1 for new key")
@@ -23,7 +28,7 @@ func TestPFAdd_NewKey(t *testing.T) {
 }
 
 func TestPFAdd_NewKeyNoItems(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	// Creating empty HLL should return 1 (key was created)
 	result, err := s.PFAdd("hll", []string{})
@@ -37,7 +42,7 @@ func TestPFAdd_NewKeyNoItems(t *testing.T) {
 }
 
 func TestPFAdd_ExistingKeyNoItems(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	// Create HLL first
 	s.PFAdd("hll", []string{"item1"})
@@ -49,7 +54,7 @@ func TestPFAdd_ExistingKeyNoItems(t *testing.T) {
 }
 
 func TestPFAdd_ExistingKeyNewItem(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	s.PFAdd("hll", []string{"item1"})
 
@@ -60,7 +65,7 @@ func TestPFAdd_ExistingKeyNewItem(t *testing.T) {
 }
 
 func TestPFAdd_ExistingKeyDuplicateItem(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	s.PFAdd("hll", []string{"item1"})
 
@@ -71,7 +76,7 @@ func TestPFAdd_ExistingKeyDuplicateItem(t *testing.T) {
 }
 
 func TestPFAdd_MultipleItems(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	items := []string{"apple", "banana", "cherry", "date", "elderberry"}
 	result, err := s.PFAdd("hll", items)
@@ -85,7 +90,7 @@ func TestPFAdd_MultipleItems(t *testing.T) {
 }
 
 func TestPFAdd_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	// Create a string key
 	s.Set("mykey", "value")
@@ -95,7 +100,7 @@ func TestPFAdd_WrongType(t *testing.T) {
 }
 
 func TestPFAdd_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	// Create HLL and set it as expired
 	s.PFAdd("hll", []string{"old_item"})
@@ -113,7 +118,7 @@ func TestPFAdd_ExpiredKey(t *testing.T) {
 }
 
 func TestPFCount_NonExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	count, err := s.PFCount([]string{"nonexistent"})
 	require.NoError(t, err)
@@ -121,7 +126,7 @@ func TestPFCount_NonExistingKey(t *testing.T) {
 }
 
 func TestPFCount_EmptyKeys(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	count, err := s.PFCount([]string{})
 	require.NoError(t, err)
@@ -129,7 +134,7 @@ func TestPFCount_EmptyKeys(t *testing.T) {
 }
 
 func TestPFCount_SingleKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	// Add 100 unique items
 	for i := 0; i < 100; i++ {
@@ -142,7 +147,7 @@ func TestPFCount_SingleKey(t *testing.T) {
 }
 
 func TestPFCount_MultipleKeys(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	// Add different items to each HLL
 	for i := 0; i < 50; i++ {
@@ -162,7 +167,7 @@ func TestPFCount_MultipleKeys(t *testing.T) {
 }
 
 func TestPFCount_MultipleKeysWithOverlap(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	// Add overlapping items
 	for i := 0; i < 100; i++ {
@@ -179,7 +184,7 @@ func TestPFCount_MultipleKeysWithOverlap(t *testing.T) {
 }
 
 func TestPFCount_MixedExistingAndNonExisting(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	for i := 0; i < 50; i++ {
 		s.PFAdd("hll1", []string{fmt.Sprintf("item%d", i)})
@@ -192,7 +197,7 @@ func TestPFCount_MixedExistingAndNonExisting(t *testing.T) {
 }
 
 func TestPFCount_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	s.Set("mykey", "value")
 
@@ -202,7 +207,7 @@ func TestPFCount_WrongType(t *testing.T) {
 }
 
 func TestPFCount_OneWrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	s.PFAdd("hll", []string{"item1"})
 	s.Set("mykey", "value")
@@ -214,7 +219,7 @@ func TestPFCount_OneWrongType(t *testing.T) {
 }
 
 func TestPFCount_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	s.PFAdd("hll", []string{"item1"})
 	s.expires.Set("hll", 1) // expired
@@ -225,7 +230,7 @@ func TestPFCount_ExpiredKey(t *testing.T) {
 }
 
 func TestPFCount_DoesNotModifyHLLs(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	for i := 0; i < 50; i++ {
 		s.PFAdd("hll1", []string{fmt.Sprintf("a%d", i)})
@@ -249,7 +254,7 @@ func TestPFCount_DoesNotModifyHLLs(t *testing.T) {
 }
 
 func TestPFMerge_NewDestKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	for i := 0; i < 50; i++ {
 		s.PFAdd("src1", []string{fmt.Sprintf("a%d", i)})
@@ -272,7 +277,7 @@ func TestPFMerge_NewDestKey(t *testing.T) {
 }
 
 func TestPFMerge_ExistingDestKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	// Create dest with some items
 	for i := 0; i < 30; i++ {
@@ -293,7 +298,7 @@ func TestPFMerge_ExistingDestKey(t *testing.T) {
 }
 
 func TestPFMerge_EmptySourceKeys(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	// Merge with no sources - should just create empty dest
 	err := s.PFMerge("dest", []string{})
@@ -309,7 +314,7 @@ func TestPFMerge_EmptySourceKeys(t *testing.T) {
 }
 
 func TestPFMerge_NonExistingSources(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	// Create one source
 	s.PFAdd("src1", []string{"item1", "item2"})
@@ -324,7 +329,7 @@ func TestPFMerge_NonExistingSources(t *testing.T) {
 }
 
 func TestPFMerge_DestIsAlsoSource(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	// Create dest with items
 	for i := 0; i < 50; i++ {
@@ -346,7 +351,7 @@ func TestPFMerge_DestIsAlsoSource(t *testing.T) {
 }
 
 func TestPFMerge_WrongTypeInDest(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	s.Set("mykey", "value")
 
@@ -356,7 +361,7 @@ func TestPFMerge_WrongTypeInDest(t *testing.T) {
 }
 
 func TestPFMerge_WrongTypeInSource(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	s.PFAdd("hll", []string{"item1"})
 	s.Set("mykey", "value")
@@ -367,7 +372,7 @@ func TestPFMerge_WrongTypeInSource(t *testing.T) {
 }
 
 func TestPFMerge_DoesNotModifySources(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	for i := 0; i < 50; i++ {
 		s.PFAdd("src", []string{fmt.Sprintf("item%d", i)})
@@ -383,7 +388,7 @@ func TestPFMerge_DoesNotModifySources(t *testing.T) {
 }
 
 func TestPFMerge_ExpiredDestKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	// Create dest and expire it
 	s.PFAdd("dest", []string{"old_item"})
@@ -401,7 +406,7 @@ func TestPFMerge_ExpiredDestKey(t *testing.T) {
 }
 
 func TestPFMerge_ExpiredSourceKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	// Create and expire source
 	s.PFAdd("src", []string{"item1"})
@@ -416,7 +421,7 @@ func TestPFMerge_ExpiredSourceKey(t *testing.T) {
 }
 
 func TestGetHyperLogLog_NonExisting(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	hll, err := s.getHyperLogLog("nonexistent", false)
 	require.NoError(t, err)
@@ -424,7 +429,7 @@ func TestGetHyperLogLog_NonExisting(t *testing.T) {
 }
 
 func TestGetHyperLogLog_Existing(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	s.PFAdd("hll", []string{"item1"})
 
@@ -434,7 +439,7 @@ func TestGetHyperLogLog_Existing(t *testing.T) {
 }
 
 func TestGetHyperLogLog_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	s.Set("mykey", "value")
 
@@ -445,7 +450,7 @@ func TestGetHyperLogLog_WrongType(t *testing.T) {
 }
 
 func TestGetHyperLogLog_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	s.PFAdd("hll", []string{"item1"})
 	s.expires.Set("hll", 1) // expired
@@ -456,7 +461,7 @@ func TestGetHyperLogLog_ExpiredKey(t *testing.T) {
 }
 
 func TestHyperLogLog_FullWorkflow(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	// Add items to multiple HLLs
 	users := []string{"user:1", "user:2", "user:3", "user:4", "user:5"}
@@ -488,7 +493,7 @@ func TestHyperLogLog_FullWorkflow(t *testing.T) {
 }
 
 func TestHyperLogLog_LargeDataset(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	// Add 10000 unique items
 	for i := 0; i < 10000; i++ {
@@ -507,7 +512,7 @@ func TestHyperLogLog_LargeDataset(t *testing.T) {
 }
 
 func TestHyperLogLog_MultipleMerges(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHLL().(*store)
 
 	// Create 5 HLLs with 20 items each
 	for batch := 0; batch < 5; batch++ {
@@ -526,8 +531,8 @@ func TestHyperLogLog_MultipleMerges(t *testing.T) {
 }
 
 func TestHyperLogLog_Deterministic(t *testing.T) {
-	s1 := NewStore().(*store)
-	s2 := NewStore().(*store)
+	s1 := newTestStoreHLL().(*store)
+	s2 := newTestStoreHLL().(*store)
 
 	items := []string{"a", "b", "c", "d", "e"}
 

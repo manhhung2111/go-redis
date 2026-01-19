@@ -9,6 +9,7 @@ package wiring
 import (
 	"github.com/google/wire"
 	"github.com/manhhung2111/go-redis/internal/command"
+	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/manhhung2111/go-redis/internal/server"
 	"github.com/manhhung2111/go-redis/internal/storage"
 )
@@ -19,7 +20,7 @@ var WireSet = wire.NewSet(
 	server.WireSet,
 )
 
-func InitializeServer() (*server.Server, error) {
+func InitializeServer(cfg *config.Config) (*server.Server, error) {
 	wire.Build(WireSet)
 	return nil, nil
 }

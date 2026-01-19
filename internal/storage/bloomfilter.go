@@ -3,7 +3,6 @@ package storage
 import (
 	"errors"
 
-	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
 )
 
@@ -128,9 +127,9 @@ func (s *store) getOrCreateBloomFilter(key string) (data_structure.ScalableBloom
 
 	// Create new bloom filter with default settings
 	sbf := data_structure.NewScalableBloomFilter(
-		config.BF_DEFAULT_ERROR_RATE,
-		uint64(config.BF_DEFAULT_CAPACITY),
-		config.BF_DEFAULT_EXPANSION,
+		s.config.BFDefaultErrorRate,
+		uint64(s.config.BFDefaultCapacity),
+		s.config.BFDefaultExpansion,
 	)
 
 	delta := s.data.Set(key, &RObj{

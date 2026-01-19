@@ -3,13 +3,18 @@ package storage
 import (
 	"testing"
 
+	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+func newTestStoreHash() Store {
+	return NewStore(config.NewConfig())
+}
+
 func TestHGet_GetExistingField(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	hash.Set(map[string]string{"field1": "value1"})
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
@@ -20,7 +25,7 @@ func TestHGet_GetExistingField(t *testing.T) {
 }
 
 func TestHGet_GetNonExistentField(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	hash.Set(map[string]string{"field1": "value1"})
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
@@ -31,7 +36,7 @@ func TestHGet_GetNonExistentField(t *testing.T) {
 }
 
 func TestHGet_GetFromNonExistentKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 
 	value, err := s.HGet("key1", "field1")
 	assert.NoError(t, err)
@@ -39,7 +44,7 @@ func TestHGet_GetFromNonExistentKey(t *testing.T) {
 }
 
 func TestHGet_GetFromWrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string value"})
 
 	value, err := s.HGet("key1", "field1")
@@ -48,7 +53,7 @@ func TestHGet_GetFromWrongType(t *testing.T) {
 }
 
 func TestHGetAll_GetAllFields(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	hash.Set(map[string]string{"field1": "value1", "field2": "value2"})
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
@@ -62,7 +67,7 @@ func TestHGetAll_GetAllFields(t *testing.T) {
 }
 
 func TestHGetAll_EmptyHash(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
 
@@ -71,14 +76,14 @@ func TestHGetAll_EmptyHash(t *testing.T) {
 }
 
 func TestHGetAll_NonExistentKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 
 	result, _ := s.HGetAll("key1")
 	assert.Empty(t, result)
 }
 
 func TestHGetAll_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string value"})
 
 	result, _ := s.HGetAll("key1")
@@ -86,7 +91,7 @@ func TestHGetAll_WrongType(t *testing.T) {
 }
 
 func TestHMGet_GetMultipleExistingFields(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	hash.Set(map[string]string{
 		"field1": "value1",
@@ -102,7 +107,7 @@ func TestHMGet_GetMultipleExistingFields(t *testing.T) {
 }
 
 func TestHMGet_MixExistingAndMissingFields(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	hash.Set(map[string]string{"field1": "value1"})
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
@@ -115,7 +120,7 @@ func TestHMGet_MixExistingAndMissingFields(t *testing.T) {
 }
 
 func TestHMGet_NonExistentKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 
 	result, _ := s.HMGet("key1", []string{"field1", "field2"})
 	require.Len(t, result, 2)
@@ -124,7 +129,7 @@ func TestHMGet_NonExistentKey(t *testing.T) {
 }
 
 func TestHMGet_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string value"})
 
 	_, err := s.HMGet("key1", []string{"field1", "field2"})
@@ -132,14 +137,14 @@ func TestHMGet_WrongType(t *testing.T) {
 }
 
 func TestHMGet_EmptyFieldsSlice(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 
 	result, _ := s.HMGet("key1", []string{})
 	assert.Empty(t, result)
 }
 
 func TestHIncrBy_ExistingField(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	hash.Set(map[string]string{"counter": "10"})
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
@@ -150,7 +155,7 @@ func TestHIncrBy_ExistingField(t *testing.T) {
 }
 
 func TestHIncrBy_NewFieldExistingHash(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
 
@@ -160,7 +165,7 @@ func TestHIncrBy_NewFieldExistingHash(t *testing.T) {
 }
 
 func TestHIncrBy_NewHashCreated(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 
 	result, err := s.HIncrBy("key1", "counter", 5)
 	assert.NoError(t, err)
@@ -172,7 +177,7 @@ func TestHIncrBy_NewHashCreated(t *testing.T) {
 }
 
 func TestHIncrBy_NegativeIncrement(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	hash.Set(map[string]string{"counter": "10"})
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
@@ -183,7 +188,7 @@ func TestHIncrBy_NegativeIncrement(t *testing.T) {
 }
 
 func TestHIncrBy_NonIntegerValue(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	hash.Set(map[string]string{"counter": "not a number"})
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
@@ -194,7 +199,7 @@ func TestHIncrBy_NonIntegerValue(t *testing.T) {
 }
 
 func TestHIncrBy_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string value"})
 
 	result, err := s.HIncrBy("key1", "counter", 5)
@@ -203,7 +208,7 @@ func TestHIncrBy_WrongType(t *testing.T) {
 }
 
 func TestHKeys_Normal(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	hash.Set(map[string]string{"field1": "value1", "field2": "value2"})
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
@@ -215,7 +220,7 @@ func TestHKeys_Normal(t *testing.T) {
 }
 
 func TestHKeys_EmptyHash(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
 
@@ -224,14 +229,14 @@ func TestHKeys_EmptyHash(t *testing.T) {
 }
 
 func TestHKeys_NonExistentKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 
 	result, _ := s.HKeys("key1")
 	assert.Empty(t, result)
 }
 
 func TestHKeys_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string value"})
 
 	result, _ := s.HKeys("key1")
@@ -239,7 +244,7 @@ func TestHKeys_WrongType(t *testing.T) {
 }
 
 func TestHVals_Normal(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	hash.Set(map[string]string{"field1": "value1", "field2": "value2"})
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
@@ -251,7 +256,7 @@ func TestHVals_Normal(t *testing.T) {
 }
 
 func TestHVals_EmptyHash(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
 
@@ -260,14 +265,14 @@ func TestHVals_EmptyHash(t *testing.T) {
 }
 
 func TestHVals_NonExistentKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 
 	result, _ := s.HVals("key1")
 	assert.Empty(t, result)
 }
 
 func TestHVals_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string value"})
 
 	result, _ := s.HVals("key1")
@@ -275,7 +280,7 @@ func TestHVals_WrongType(t *testing.T) {
 }
 
 func TestHLen_Normal(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	hash.Set(map[string]string{"f1": "v1", "f2": "v2", "f3": "v3"})
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
@@ -285,7 +290,7 @@ func TestHLen_Normal(t *testing.T) {
 }
 
 func TestHLen_EmptyHash(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
 
@@ -294,14 +299,14 @@ func TestHLen_EmptyHash(t *testing.T) {
 }
 
 func TestHLen_NonExistentKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 
 	result, _ := s.HLen("key1")
 	assert.Equal(t, uint32(0), result)
 }
 
 func TestHLen_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string value"})
 
 	result, _ := s.HLen("key1")
@@ -309,14 +314,14 @@ func TestHLen_WrongType(t *testing.T) {
 }
 
 func TestHSet_NewHash(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 
 	added, _ := s.HSet("key1", map[string]string{"f1": "v1", "f2": "v2"})
 	assert.Equal(t, int64(2), added)
 }
 
 func TestHSet_ExistingHash(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	hash.Set(map[string]string{"f1": "v1"})
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
@@ -326,7 +331,7 @@ func TestHSet_ExistingHash(t *testing.T) {
 }
 
 func TestHSet_UpdateExistingField(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	hash.Set(map[string]string{"f1": "v1", "f2": "v2"})
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
@@ -336,14 +341,14 @@ func TestHSet_UpdateExistingField(t *testing.T) {
 }
 
 func TestHSet_EmptyMap(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 
 	added, _ := s.HSet("key1", map[string]string{})
 	assert.Equal(t, int64(0), added)
 }
 
 func TestHSet_PanicWrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	_, err := s.HSet("key1", map[string]string{"f": "v"})
@@ -351,14 +356,14 @@ func TestHSet_PanicWrongType(t *testing.T) {
 }
 
 func TestHSetNx_NewHash(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 
 	result, _ := s.HSetNx("key1", "field1", "value1")
 	assert.Equal(t, int64(1), result)
 }
 
 func TestHSetNx_NewField(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	hash.Set(map[string]string{"field1": "value1"})
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
@@ -368,7 +373,7 @@ func TestHSetNx_NewField(t *testing.T) {
 }
 
 func TestHSetNx_ExistingField(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	hash.Set(map[string]string{"field1": "value1"})
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
@@ -378,7 +383,7 @@ func TestHSetNx_ExistingField(t *testing.T) {
 }
 
 func TestHSetNx_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	result, _ := s.HSetNx("key1", "field1", "value1")
@@ -386,7 +391,7 @@ func TestHSetNx_WrongType(t *testing.T) {
 }
 
 func TestHDel_DeleteExistingFields(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	hash.Set(map[string]string{"f1": "v1", "f2": "v2", "f3": "v3"})
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
@@ -396,7 +401,7 @@ func TestHDel_DeleteExistingFields(t *testing.T) {
 }
 
 func TestHDel_DeleteAllFieldsRemovesKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	hash.Set(map[string]string{"f1": "v1", "f2": "v2"})
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
@@ -408,14 +413,14 @@ func TestHDel_DeleteAllFieldsRemovesKey(t *testing.T) {
 }
 
 func TestHDel_NonExistentKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 
 	deleted, _ := s.HDel("key1", []string{"f"})
 	assert.Equal(t, int64(0), deleted)
 }
 
 func TestHDel_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	deleted, _ := s.HDel("key1", []string{"f"})
@@ -423,7 +428,7 @@ func TestHDel_WrongType(t *testing.T) {
 }
 
 func TestHExists_FieldExists(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	hash.Set(map[string]string{"field1": "value1"})
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
@@ -433,7 +438,7 @@ func TestHExists_FieldExists(t *testing.T) {
 }
 
 func TestHExists_FieldMissing(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	hash := data_structure.NewHash()
 	hash.Set(map[string]string{"field1": "value1"})
 	s.data.Set("key1", &RObj{objType: ObjHash, encoding: EncHashTable, value: hash})
@@ -443,14 +448,14 @@ func TestHExists_FieldMissing(t *testing.T) {
 }
 
 func TestHExists_NonExistentKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 
 	result, _ := s.HExists("key1", "field1")
 	assert.Equal(t, int64(0), result)
 }
 
 func TestHExists_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreHash().(*store)
 	s.data.Set("key1", &RObj{objType: ObjString, encoding: EncRaw, value: "string"})
 
 	result, _ := s.HExists("key1", "field1")

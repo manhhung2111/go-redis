@@ -1,26 +1,14 @@
 package data_structure
 
 import (
-	"github.com/dustin/go-humanize"
-	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
 
 const (
-	sliceHeaderSize  uint64 = 24
-	stringHeaderSize uint64 = 16
-	defaultMaxSize   uint64 = 8 * 1024
+	sliceHeaderSize      uint64 = 24
+	stringHeaderSize     uint64 = 16
+	listPackMaxSizeBytes uint64 = 8 * 1024 // 8KiB default
 )
-
-var listPackMaxSizeBytes uint64
-
-func init() {
-	if size, err := humanize.ParseBytes(config.LIST_MAX_LISTPACK_SIZE); err != nil {
-		listPackMaxSizeBytes = defaultMaxSize
-	} else {
-		listPackMaxSizeBytes = size
-	}
-}
 
 type listPack struct {
 	data []string

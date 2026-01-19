@@ -3,12 +3,17 @@ package storage
 import (
 	"testing"
 
+	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+func newTestStoreCF() Store {
+	return NewStore(config.NewConfig())
+}
+
 func TestCFAdd_NewKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	result, err := s.CFAdd("cf", "item1")
 	assert.Equal(t, 1, result, "should return 1 for new item")
@@ -22,7 +27,7 @@ func TestCFAdd_NewKey(t *testing.T) {
 }
 
 func TestCFAdd_ExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	// Add first item
 	result1, err := s.CFAdd("cf", "item1")
@@ -41,7 +46,7 @@ func TestCFAdd_ExistingKey(t *testing.T) {
 }
 
 func TestCFAdd_MultipleItems(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	items := []string{"apple", "banana", "cherry"}
 	for _, item := range items {
@@ -57,7 +62,7 @@ func TestCFAdd_MultipleItems(t *testing.T) {
 }
 
 func TestCFAdd_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	// Create a string key
 	s.Set("mykey", "value")
@@ -67,7 +72,7 @@ func TestCFAdd_WrongType(t *testing.T) {
 }
 
 func TestCFAdd_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	// Create cuckoo filter and set it as expired
 	s.CFAdd("cf", "old_item")
@@ -87,7 +92,7 @@ func TestCFAdd_ExpiredKey(t *testing.T) {
 }
 
 func TestCFAddNx_NewKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	result, err := s.CFAddNx("cf", "item1")
 	assert.Equal(t, 1, result, "should return 1 for new item")
@@ -100,7 +105,7 @@ func TestCFAddNx_NewKey(t *testing.T) {
 }
 
 func TestCFAddNx_ExistingItem(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	// Add first item
 	result1, err := s.CFAddNx("cf", "item1")
@@ -119,7 +124,7 @@ func TestCFAddNx_ExistingItem(t *testing.T) {
 }
 
 func TestCFAddNx_MultipleItems(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	items := []string{"a", "b", "c", "d"}
 	for _, item := range items {
@@ -137,7 +142,7 @@ func TestCFAddNx_MultipleItems(t *testing.T) {
 }
 
 func TestCFAddNx_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	// Create a list key
 	s.LPush("mylist", "value")
@@ -147,7 +152,7 @@ func TestCFAddNx_WrongType(t *testing.T) {
 }
 
 func TestCFAddNx_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.CFAdd("cf", "item1")
 	s.expires.Set("cf", 1) // expired
@@ -159,7 +164,7 @@ func TestCFAddNx_ExpiredKey(t *testing.T) {
 }
 
 func TestCFCount_NonExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	result, err := s.CFCount("nonexistent", "item")
 	assert.Equal(t, 0, result)
@@ -167,7 +172,7 @@ func TestCFCount_NonExistingKey(t *testing.T) {
 }
 
 func TestCFCount_ExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.CFAdd("cf", "item1")
 	count, err := s.CFCount("cf", "item1")
@@ -182,7 +187,7 @@ func TestCFCount_ExistingKey(t *testing.T) {
 }
 
 func TestCFCount_ItemNotExists(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.CFAdd("cf", "item1")
 	count, err := s.CFCount("cf", "item2")
@@ -191,7 +196,7 @@ func TestCFCount_ItemNotExists(t *testing.T) {
 }
 
 func TestCFCount_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.Set("mykey", "value")
 
@@ -200,7 +205,7 @@ func TestCFCount_WrongType(t *testing.T) {
 }
 
 func TestCFCount_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.CFAdd("cf", "item1")
 	s.CFAdd("cf", "item1")
@@ -212,7 +217,7 @@ func TestCFCount_ExpiredKey(t *testing.T) {
 }
 
 func TestCFDel_NonExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	result, err := s.CFDel("nonexistent", "item")
 	assert.Equal(t, 0, result)
@@ -220,7 +225,7 @@ func TestCFDel_NonExistingKey(t *testing.T) {
 }
 
 func TestCFDel_ExistingItem(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.CFAdd("cf", "item1")
 	exists, err := s.CFExists("cf", "item1")
@@ -235,7 +240,7 @@ func TestCFDel_ExistingItem(t *testing.T) {
 }
 
 func TestCFDel_ItemNotExists(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.CFAdd("cf", "item1")
 
@@ -244,7 +249,7 @@ func TestCFDel_ItemNotExists(t *testing.T) {
 }
 
 func TestCFDel_MultipleItems(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	// Add items
 	items := []string{"a", "b", "c", "d", "e"}
@@ -279,7 +284,7 @@ func TestCFDel_MultipleItems(t *testing.T) {
 }
 
 func TestCFDel_Duplicates(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	// Add same item twice
 	s.CFAdd("cf", "item1")
@@ -302,7 +307,7 @@ func TestCFDel_Duplicates(t *testing.T) {
 }
 
 func TestCFDel_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.Set("mykey", "value")
 
@@ -311,7 +316,7 @@ func TestCFDel_WrongType(t *testing.T) {
 }
 
 func TestCFDel_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.CFAdd("cf", "item1")
 	s.expires.Set("cf", 1) // expired
@@ -321,14 +326,14 @@ func TestCFDel_ExpiredKey(t *testing.T) {
 }
 
 func TestCFExists_NonExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	result, _ := s.CFExists("nonexistent", "item")
 	assert.Equal(t, 0, result)
 }
 
 func TestCFExists_ItemExists(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.CFAdd("cf", "item1")
 
@@ -338,7 +343,7 @@ func TestCFExists_ItemExists(t *testing.T) {
 }
 
 func TestCFExists_ItemNotExists(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.CFAdd("cf", "item1")
 
@@ -348,7 +353,7 @@ func TestCFExists_ItemNotExists(t *testing.T) {
 }
 
 func TestCFExists_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.Set("mykey", "value")
 
@@ -357,7 +362,7 @@ func TestCFExists_WrongType(t *testing.T) {
 }
 
 func TestCFExists_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.CFAdd("cf", "item1")
 	s.expires.Set("cf", 1) // expired
@@ -367,14 +372,14 @@ func TestCFExists_ExpiredKey(t *testing.T) {
 }
 
 func TestCFInfo_NonExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	result, _ := s.CFInfo("nonexistent")
 	assert.Nil(t, result)
 }
 
 func TestCFInfo_ExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.CFAdd("cf", "item1")
 	s.CFAdd("cf", "item2")
@@ -399,7 +404,7 @@ func TestCFInfo_ExistingKey(t *testing.T) {
 }
 
 func TestCFInfo_Size(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.CFAdd("cf", "item1")
 
@@ -410,7 +415,7 @@ func TestCFInfo_Size(t *testing.T) {
 }
 
 func TestCFInfo_NumBuckets(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.CFAdd("cf", "item1")
 
@@ -421,7 +426,7 @@ func TestCFInfo_NumBuckets(t *testing.T) {
 }
 
 func TestCFInfo_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.Set("mykey", "value")
 
@@ -430,7 +435,7 @@ func TestCFInfo_WrongType(t *testing.T) {
 }
 
 func TestCFInfo_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.CFAdd("cf", "item1")
 	s.expires.Set("cf", 1) // expired
@@ -441,7 +446,7 @@ func TestCFInfo_ExpiredKey(t *testing.T) {
 }
 
 func TestCFMExists_NonExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	items := []string{"item1", "item2", "item3"}
 	results, err := s.CFMExists("nonexistent", items)
@@ -452,7 +457,7 @@ func TestCFMExists_NonExistingKey(t *testing.T) {
 }
 
 func TestCFMExists_ExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.CFAdd("cf", "item1")
 	s.CFAdd("cf", "item3")
@@ -466,7 +471,7 @@ func TestCFMExists_ExistingKey(t *testing.T) {
 }
 
 func TestCFMExists_Empty(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.CFAdd("cf", "item1")
 
@@ -476,7 +481,7 @@ func TestCFMExists_Empty(t *testing.T) {
 }
 
 func TestCFMExists_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.Set("mykey", "value")
 
@@ -485,7 +490,7 @@ func TestCFMExists_WrongType(t *testing.T) {
 }
 
 func TestCFMExists_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	s.CFAdd("cf", "item1")
 	s.expires.Set("cf", 1) // expired
@@ -497,7 +502,7 @@ func TestCFMExists_ExpiredKey(t *testing.T) {
 }
 
 func TestCFReserve_NewKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	err := s.CFReserve("cf", 1000, 4, 500, 2)
 	require.NoError(t, err)
@@ -517,7 +522,7 @@ func TestCFReserve_NewKey(t *testing.T) {
 }
 
 func TestCFReserve_ExistingCuckooFilter(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	// Create first cuckoo filter
 	err := s.CFReserve("cf", 100, 4, 500, 2)
@@ -530,7 +535,7 @@ func TestCFReserve_ExistingCuckooFilter(t *testing.T) {
 }
 
 func TestCFReserve_ExistingOtherType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreCF().(*store)
 
 	// Create a string key
 	s.Set("mykey", "value")

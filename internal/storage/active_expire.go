@@ -2,14 +2,12 @@ package storage
 
 import (
 	"time"
-
-	"github.com/manhhung2111/go-redis/internal/config"
 )
 
 // ActiveExpireCycle runs one bounded expiration cycle
 // Returns number of expired keys
 func (s *store) ActiveExpireCycle() int {
-	deadlineUs := time.Now().UnixMicro() + int64(config.ACTIVE_EXPIRE_CYCLE_TIME_LIMIT_USAGE)
+	deadlineUs := time.Now().UnixMicro() + int64(s.config.ActiveExpireCycleTimeLimitUsage)
 	totalExpired := 0
 
 	for {
@@ -17,10 +15,10 @@ func (s *store) ActiveExpireCycle() int {
 			break
 		}
 
-		sampled, expired := s.sampleAndExpire(config.ACTIVE_EXPIRE_CYCLE_KEYS_PER_LOOP)
+		sampled, expired := s.sampleAndExpire(s.config.ActiveExpireCycleKeysPerLoop)
 		totalExpired += expired
 
-		if sampled == 0 || expired*100/sampled < config.ACTIVE_EXPIRE_CYCLE_THRESHOLD_PERCENT {
+		if sampled == 0 || expired*100/sampled < s.config.ActiveExpireCycleThresholdPercent {
 			break
 		}
 	}

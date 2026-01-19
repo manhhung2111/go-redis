@@ -16,19 +16,21 @@ import (
 const activeExpireTimerIdent = 2003
 
 type Server struct {
+	config   *config.Config
 	redis    command.Redis
 	kQueueFd int
 	serverFd int
 }
 
-func NewServer(redis command.Redis) *Server {
+func NewServer(cfg *config.Config, redis command.Redis) *Server {
 	return &Server{
-		redis: redis,
+		config: cfg,
+		redis:  redis,
 	}
 }
 
 func (s *Server) Start(sigCh chan os.Signal) error {
-	log.Printf("starting TCP server on %s:%d", config.HOST, config.PORT)
+	log.Printf("starting TCP server on %s:%d", s.config.Host, s.config.Port)
 
 	var err error
 	s.serverFd, err = s.createServerSocket()
@@ -65,23 +67,23 @@ func (s *Server) createServerSocket() (int, error) {
 		return 0, fmt.Errorf("failed to set non-blocking mode: %w", err)
 	}
 
-	ipV4 := net.ParseIP(config.HOST)
+	ipV4 := net.ParseIP(s.config.Host)
 	if ipV4 == nil {
 		syscall.Close(serverFD)
-		return 0, fmt.Errorf("invalid IP address: %s", config.HOST)
+		return 0, fmt.Errorf("invalid IP address: %s", s.config.Host)
 	}
 
 	sockAddr := &syscall.SockaddrInet4{
-		Port: config.PORT,
+		Port: s.config.Port,
 		Addr: [4]byte{ipV4[0], ipV4[1], ipV4[2], ipV4[3]},
 	}
 
 	if err := syscall.Bind(serverFD, sockAddr); err != nil {
 		syscall.Close(serverFD)
-		return 0, fmt.Errorf("bind to port %d failed: %w", config.PORT, err)
+		return 0, fmt.Errorf("bind to port %d failed: %w", s.config.Port, err)
 	}
 
-	if err := syscall.Listen(serverFD, config.MAX_CONNECTION); err != nil {
+	if err := syscall.Listen(serverFD, s.config.MaxConnection); err != nil {
 		syscall.Close(serverFD)
 		return 0, fmt.Errorf("listen failed: %w", err)
 	}
@@ -116,8 +118,8 @@ func (s *Server) registerActiveExpireTime() error {
 		Ident:  uint64(activeExpireTimerIdent),
 		Filter: syscall.EVFILT_TIMER,
 		Flags:  syscall.EV_ADD | syscall.EV_ENABLE | syscall.EV_CLEAR,
-		Fflags: syscall.NOTE_USECONDS, //
-		Data:   int64(config.ACTIVE_EXPIRE_CYCLE_MS) * 1000,
+		Fflags: syscall.NOTE_USECONDS,
+		Data:   int64(s.config.ActiveExpireCycleMs) * 1000,
 	}
 
 	_, err := syscall.Kevent(s.kQueueFd, []syscall.Kevent_t{timerEvent}, nil, nil)
@@ -125,7 +127,7 @@ func (s *Server) registerActiveExpireTime() error {
 }
 
 func (s *Server) eventLoop() error {
-	events := make([]syscall.Kevent_t, config.MAX_CONNECTION)
+	events := make([]syscall.Kevent_t, s.config.MaxConnection)
 
 	for {
 		nEvents, err := syscall.Kevent(s.kQueueFd, nil, events, nil)

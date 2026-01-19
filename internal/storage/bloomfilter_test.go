@@ -3,14 +3,19 @@ package storage
 import (
 	"testing"
 
+	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+func newTestStoreBF() Store {
+	return NewStore(config.NewConfig())
+}
+
 // TestBFAdd
 func TestBFAdd_NewKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	result, err := s.BFAdd("bf", "item1")
 	assert.NoError(t, err)
@@ -23,7 +28,7 @@ func TestBFAdd_NewKey(t *testing.T) {
 }
 
 func TestBFAdd_ExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	result1, err := s.BFAdd("bf", "item1")
 	assert.NoError(t, err)
@@ -39,7 +44,7 @@ func TestBFAdd_ExistingKey(t *testing.T) {
 }
 
 func TestBFAdd_MultipleItems(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	items := []string{"apple", "banana", "cherry"}
 	for _, item := range items {
@@ -55,7 +60,7 @@ func TestBFAdd_MultipleItems(t *testing.T) {
 }
 
 func TestBFAdd_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.Set("mykey", "value")
 
@@ -65,7 +70,7 @@ func TestBFAdd_WrongType(t *testing.T) {
 }
 
 func TestBFAdd_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.BFAdd("bf", "old_item")
 	s.expires.Set("bf", 1)
@@ -82,7 +87,7 @@ func TestBFAdd_ExpiredKey(t *testing.T) {
 
 // TestBFCard
 func TestBFCard_NonExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	result, err := s.BFCard("nonexistent")
 	assert.NoError(t, err)
@@ -90,7 +95,7 @@ func TestBFCard_NonExistingKey(t *testing.T) {
 }
 
 func TestBFCard_ExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.BFAdd("bf", "item1")
 	s.BFAdd("bf", "item2")
@@ -102,7 +107,7 @@ func TestBFCard_ExistingKey(t *testing.T) {
 }
 
 func TestBFCard_WithDuplicates(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.BFAdd("bf", "item1")
 	s.BFAdd("bf", "item1")
@@ -114,7 +119,7 @@ func TestBFCard_WithDuplicates(t *testing.T) {
 }
 
 func TestBFCard_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.Set("mykey", "value")
 
@@ -124,7 +129,7 @@ func TestBFCard_WrongType(t *testing.T) {
 }
 
 func TestBFCard_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.BFAdd("bf", "item1")
 	s.expires.Set("bf", 1)
@@ -136,7 +141,7 @@ func TestBFCard_ExpiredKey(t *testing.T) {
 
 // TestBFExists
 func TestBFExists_NonExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	result, err := s.BFExists("nonexistent", "item")
 	assert.NoError(t, err)
@@ -144,7 +149,7 @@ func TestBFExists_NonExistingKey(t *testing.T) {
 }
 
 func TestBFExists_ItemExists(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.BFAdd("bf", "item1")
 
@@ -154,7 +159,7 @@ func TestBFExists_ItemExists(t *testing.T) {
 }
 
 func TestBFExists_ItemNotExists(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.BFAdd("bf", "item1")
 
@@ -164,7 +169,7 @@ func TestBFExists_ItemNotExists(t *testing.T) {
 }
 
 func TestBFExists_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.Set("mykey", "value")
 
@@ -174,7 +179,7 @@ func TestBFExists_WrongType(t *testing.T) {
 }
 
 func TestBFExists_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.BFAdd("bf", "item1")
 	s.expires.Set("bf", 1)
@@ -186,7 +191,7 @@ func TestBFExists_ExpiredKey(t *testing.T) {
 
 // TestBFInfo
 func TestBFInfo_NonExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	info, err := s.BFInfo("nonexistent", data_structure.BloomFilterInfoAll)
 	assert.Error(t, err)
@@ -194,7 +199,7 @@ func TestBFInfo_NonExistingKey(t *testing.T) {
 }
 
 func TestBFInfo_Capacity(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.BFReserve("bf", 0.01, 1000, 2)
 
@@ -205,7 +210,7 @@ func TestBFInfo_Capacity(t *testing.T) {
 }
 
 func TestBFInfo_Size(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.BFAdd("bf", "item1")
 
@@ -219,7 +224,7 @@ func TestBFInfo_Size(t *testing.T) {
 }
 
 func TestBFInfo_Filters(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.BFAdd("bf", "item1")
 
@@ -230,7 +235,7 @@ func TestBFInfo_Filters(t *testing.T) {
 }
 
 func TestBFInfo_Items(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.BFAdd("bf", "item1")
 	s.BFAdd("bf", "item2")
@@ -242,7 +247,7 @@ func TestBFInfo_Items(t *testing.T) {
 }
 
 func TestBFInfo_Expansion(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.BFReserve("bf", 0.01, 100, 4)
 
@@ -253,7 +258,7 @@ func TestBFInfo_Expansion(t *testing.T) {
 }
 
 func TestBFInfo_All(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.BFAdd("bf", "item1")
 
@@ -269,7 +274,7 @@ func TestBFInfo_All(t *testing.T) {
 }
 
 func TestBFInfo_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.Set("mykey", "value")
 
@@ -280,7 +285,7 @@ func TestBFInfo_WrongType(t *testing.T) {
 
 // TestBFMAdd
 func TestBFMAdd_NewKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	items := []string{"item1", "item2", "item3"}
 	results, err := s.BFMAdd("bf", items)
@@ -293,7 +298,7 @@ func TestBFMAdd_NewKey(t *testing.T) {
 }
 
 func TestBFMAdd_ExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.BFAdd("bf", "item1")
 
@@ -306,7 +311,7 @@ func TestBFMAdd_ExistingKey(t *testing.T) {
 }
 
 func TestBFMAdd_Empty(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	results, err := s.BFMAdd("bf", []string{})
 	assert.NoError(t, err)
@@ -314,7 +319,7 @@ func TestBFMAdd_Empty(t *testing.T) {
 }
 
 func TestBFMAdd_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.LPush("mylist", "value")
 
@@ -325,7 +330,7 @@ func TestBFMAdd_WrongType(t *testing.T) {
 
 // TestBFMExists
 func TestBFMExists_NonExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	items := []string{"item1", "item2", "item3"}
 	results, err := s.BFMExists("nonexistent", items)
@@ -336,7 +341,7 @@ func TestBFMExists_NonExistingKey(t *testing.T) {
 }
 
 func TestBFMExists_ExistingKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.BFAdd("bf", "item1")
 	s.BFAdd("bf", "item3")
@@ -350,7 +355,7 @@ func TestBFMExists_ExistingKey(t *testing.T) {
 }
 
 func TestBFMExists_Empty(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.BFAdd("bf", "item1")
 
@@ -360,7 +365,7 @@ func TestBFMExists_Empty(t *testing.T) {
 }
 
 func TestBFMExists_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.Set("mykey", "value")
 
@@ -370,7 +375,7 @@ func TestBFMExists_WrongType(t *testing.T) {
 }
 
 func TestBFMExists_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.BFAdd("bf", "item1")
 	s.expires.Set("bf", 1)
@@ -383,7 +388,7 @@ func TestBFMExists_ExpiredKey(t *testing.T) {
 
 // TestBFReserve
 func TestBFReserve_NewKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	err := s.BFReserve("bf", 0.001, 5000, 4)
 	require.NoError(t, err)
@@ -401,7 +406,7 @@ func TestBFReserve_NewKey(t *testing.T) {
 }
 
 func TestBFReserve_ExistingBloomFilter(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	err := s.BFReserve("bf", 0.01, 100, 2)
 	require.NoError(t, err)
@@ -412,7 +417,7 @@ func TestBFReserve_ExistingBloomFilter(t *testing.T) {
 }
 
 func TestBFReserve_ExistingOtherType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.Set("mykey", "value")
 
@@ -422,7 +427,7 @@ func TestBFReserve_ExistingOtherType(t *testing.T) {
 }
 
 func TestBFReserve_CustomSettings(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	err := s.BFReserve("bf", 0.0001, 10000, 3)
 	require.NoError(t, err)
@@ -435,7 +440,7 @@ func TestBFReserve_CustomSettings(t *testing.T) {
 }
 
 func TestBFReserve_ExpiredKey(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.BFAdd("bf", "item1")
 	s.expires.Set("bf", 1)
@@ -446,7 +451,7 @@ func TestBFReserve_ExpiredKey(t *testing.T) {
 
 // TestGetBloomFilter
 func TestGetBloomFilter_NonExisting(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	sbf, err := s.getBloomFilter("nonexistent")
 	assert.NoError(t, err)
@@ -454,7 +459,7 @@ func TestGetBloomFilter_NonExisting(t *testing.T) {
 }
 
 func TestGetBloomFilter_Existing(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.BFAdd("bf", "item1")
 
@@ -465,7 +470,7 @@ func TestGetBloomFilter_Existing(t *testing.T) {
 }
 
 func TestGetBloomFilter_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.Set("mykey", "value")
 
@@ -476,7 +481,7 @@ func TestGetBloomFilter_WrongType(t *testing.T) {
 
 // TestGetOrCreateBloomFilter
 func TestGetOrCreateBloomFilter_Create(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	sbf, err := s.getOrCreateBloomFilter("bf")
 	assert.NoError(t, err)
@@ -488,7 +493,7 @@ func TestGetOrCreateBloomFilter_Create(t *testing.T) {
 }
 
 func TestGetOrCreateBloomFilter_Existing(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	sbf1, _ := s.getOrCreateBloomFilter("bf")
 	sbf1.Add("item1")
@@ -499,7 +504,7 @@ func TestGetOrCreateBloomFilter_Existing(t *testing.T) {
 }
 
 func TestGetOrCreateBloomFilter_WrongType(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.Set("mykey", "value")
 
@@ -510,7 +515,7 @@ func TestGetOrCreateBloomFilter_WrongType(t *testing.T) {
 
 // Integration tests
 func TestBloomFilter_FullWorkflow(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	err := s.BFReserve("myfilter", 0.01, 1000, 2)
 	require.NoError(t, err)
@@ -536,7 +541,7 @@ func TestBloomFilter_FullWorkflow(t *testing.T) {
 }
 
 func TestBloomFilter_MAddAndMExists(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	items := []string{"a", "b", "c", "d", "e"}
 	results, err := s.BFMAdd("bf", items)
@@ -555,7 +560,7 @@ func TestBloomFilter_MAddAndMExists(t *testing.T) {
 }
 
 func TestBloomFilter_DefaultSettings(t *testing.T) {
-	s := NewStore().(*store)
+	s := newTestStoreBF().(*store)
 
 	s.BFAdd("bf", "item1")
 
