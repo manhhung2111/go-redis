@@ -62,6 +62,12 @@ func (s *Server) createServerSocket() (int, error) {
 		return 0, fmt.Errorf("socket creation failed: %w", err)
 	}
 
+	// Allow quick port reuse after server restart
+	if err := syscall.SetsockoptInt(serverFD, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1); err != nil {
+		syscall.Close(serverFD)
+		return 0, fmt.Errorf("failed to set SO_REUSEADDR: %w", err)
+	}
+
 	if err := syscall.SetNonblock(serverFD, true); err != nil {
 		syscall.Close(serverFD)
 		return 0, fmt.Errorf("failed to set non-blocking mode: %w", err)
@@ -135,6 +141,9 @@ func (s *Server) eventLoop() error {
 			if errors.Is(err, syscall.EBADF) {
 				log.Println("kqueue closed, shutting down")
 				break
+			}
+			if errors.Is(err, syscall.EINTR) {
+				continue
 			}
 			log.Printf("kevent error: %v", err)
 			continue
