@@ -11,7 +11,7 @@ This project was inspired by ideas from the
 
 - **High-Performance I/O Multiplexing**: Single-threaded, non-blocking TCP server using platform-native mechanisms: kqueue on macOS and epoll on Linux. Handles thousands of concurrent connections efficiently without threading overhead.
 - **RESP Compliant**: Full implementation of Redis Serialization Protocol (RESP), ensuring compatibility with all standard Redis clients including `redis-cli`.
-- **Core Data Structures**: Strings, Lists, Sets, Hashes, Sorted Sets, and Geo indexes with full command support.
+- **Core Data Structures**: Strings, Lists, Sets, Hashes, Sorted Sets, and Geo indexes with extensive command support.
 - **Probabilistic Data Structures**:
   - **Bloom Filter**: Space-efficient membership testing with configurable false positive rate
   - **Cuckoo Filter**: Membership testing with deletion support and better space efficiency
@@ -34,10 +34,10 @@ This project was inspired by ideas from the
 
 ```bash
 # Pull the image
-docker pull manhhung2111/redis:1.0.0
+docker pull manhhung2111/go-redis:1.0.0
 
 # Run the server
-docker run -d --name go-redis -p 6379:6379 manhhung2111/redis:1.0.0
+docker run -d --name go-redis -p 6379:6379 manhhung2111/go-redis:1.0.0
 
 # Interact with the server using redis-cli
 docker exec -it go-redis redis-cli
