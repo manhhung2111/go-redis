@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"strconv"
 
-	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
+	"github.com/manhhung2111/go-redis/internal/storage/types"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
 
@@ -20,11 +20,11 @@ func (s *store) SAdd(key string, members ...string) (int64, error) {
 			// Upgrade to SimpleSet if one of the following condition holds:
 			// members contain an element can not be converted to int64
 			// adding members resulting in exceeding the config.SET_MAX_INTSET_ENTRIES
-			intset := rObj.value.(data_structure.Set)
+			intset := rObj.value.(types.Set)
 			added, succeeded, delta := intset.Add(members...)
 			if !succeeded {
 				// Upgrade to SimpleSet
-				simpleSet := data_structure.NewSimpleSet()
+				simpleSet := types.NewSimpleSet()
 				simpleSet.Add(intset.Members()...)
 				added, _, delta := simpleSet.Add(members...)
 
@@ -40,7 +40,7 @@ func (s *store) SAdd(key string, members ...string) (int64, error) {
 			}
 		}
 
-		simpleSet := rObj.value.(data_structure.Set)
+		simpleSet := rObj.value.(types.Set)
 		added, _, delta := simpleSet.Add(members...)
 		s.usedMemory += delta
 		return added, nil
@@ -48,7 +48,7 @@ func (s *store) SAdd(key string, members ...string) (int64, error) {
 
 	// Key doesn't exist - create new set
 	if s.canBeConvertedToInt64(members...) {
-		intset := data_structure.NewIntSet()
+		intset := types.NewIntSet()
 		added, succeeded, _ := intset.Add(members...)
 		if succeeded {
 			delta := s.data.Set(key, &RObj{
@@ -62,7 +62,7 @@ func (s *store) SAdd(key string, members ...string) (int64, error) {
 		// If IntSet failed (capacity), fall through to SimpleSet
 	}
 
-	simpleSet := data_structure.NewSimpleSet()
+	simpleSet := types.NewSimpleSet()
 	added, _, _ := simpleSet.Add(members...)
 
 	delta := s.data.Set(key, &RObj{
@@ -85,7 +85,7 @@ func (s *store) SCard(key string) (int64, error) {
 		return 0, result.err
 	}
 
-	set := result.object.value.(data_structure.Set)
+	set := result.object.value.(types.Set)
 	return set.Size(), nil
 }
 
@@ -99,7 +99,7 @@ func (s *store) SIsMember(key string, member string) (bool, error) {
 		return false, result.err
 	}
 
-	set := result.object.value.(data_structure.Set)
+	set := result.object.value.(types.Set)
 	return set.IsMember(member), nil
 }
 
@@ -113,7 +113,7 @@ func (s *store) SMembers(key string) ([]string, error) {
 		return []string{}, result.err
 	}
 
-	set := result.object.value.(data_structure.Set)
+	set := result.object.value.(types.Set)
 	return set.Members(), nil
 }
 
@@ -129,7 +129,7 @@ func (s *store) SMIsMember(key string, members ...string) ([]bool, error) {
 		return nil, accessResult.err
 	}
 
-	set := accessResult.object.value.(data_structure.Set)
+	set := accessResult.object.value.(types.Set)
 	return set.MIsMember(members...), nil
 }
 
@@ -143,7 +143,7 @@ func (s *store) SRem(key string, members ...string) (int64, error) {
 		return 0, result.err
 	}
 
-	set := result.object.value.(data_structure.Set)
+	set := result.object.value.(types.Set)
 	removed, delta := set.Delete(members...)
 	s.usedMemory += delta
 	return removed, nil
@@ -159,7 +159,7 @@ func (s *store) SPop(key string, count int) ([]string, error) {
 		return []string{}, result.err
 	}
 
-	set := result.object.value.(data_structure.Set)
+	set := result.object.value.(types.Set)
 	setLen := int(set.Size())
 
 	if setLen == 0 {
@@ -203,7 +203,7 @@ func (s *store) SRandMember(key string, count int) ([]string, error) {
 		return []string{}, nil
 	}
 
-	set := result.object.value.(data_structure.Set)
+	set := result.object.value.(types.Set)
 	setLen := int(set.Size())
 	if setLen == 0 {
 		return []string{}, nil

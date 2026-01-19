@@ -1,17 +1,17 @@
 package storage
 
 import (
-	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
+	"github.com/manhhung2111/go-redis/internal/storage/types"
 )
 
-func (s *store) ZAdd(key string, scoreMember map[string]float64, options data_structure.ZAddOptions) (*uint32, error) {
+func (s *store) ZAdd(key string, scoreMember map[string]float64, options types.ZAddOptions) (*uint32, error) {
 	result := s.access(key, ObjZSet, true)
 	if result.err != nil {
 		return nil, result.err
 	}
 
 	if !result.exists {
-		zset := data_structure.NewZSet()
+		zset := types.NewZSet()
 		added, _ := zset.ZAdd(scoreMember, options)
 		delta := s.data.Set(key, &RObj{
 			objType:  ObjZSet,
@@ -22,7 +22,7 @@ func (s *store) ZAdd(key string, scoreMember map[string]float64, options data_st
 		return added, nil
 	}
 
-	zset := result.object.value.(data_structure.ZSet)
+	zset := result.object.value.(types.ZSet)
 	added, delta := zset.ZAdd(scoreMember, options)
 	s.usedMemory += delta
 	return added, nil
@@ -61,7 +61,7 @@ func (s *store) ZIncrBy(key string, member string, increment float64) (float64, 
 	}
 
 	if !result.exists {
-		zset := data_structure.NewZSet()
+		zset := types.NewZSet()
 		res, succeeded, _ := zset.ZIncrBy(member, increment)
 
 		if !succeeded {
@@ -78,7 +78,7 @@ func (s *store) ZIncrBy(key string, member string, increment float64) (float64, 
 		return res, nil
 	}
 
-	zset := result.object.value.(data_structure.ZSet)
+	zset := result.object.value.(types.ZSet)
 	res, succeeded, delta := zset.ZIncrBy(member, increment)
 
 	if !succeeded {
@@ -291,7 +291,7 @@ func (s *store) ZScore(key string, member string) (*float64, error) {
 }
 
 // getZSet is a helper that uses centralized access for expiration and type checking
-func (s *store) getZSet(key string, isWrite bool) (data_structure.ZSet, error) {
+func (s *store) getZSet(key string, isWrite bool) (types.ZSet, error) {
 	result := s.access(key, ObjZSet, isWrite)
 	if result.err != nil {
 		return nil, result.err
@@ -301,6 +301,6 @@ func (s *store) getZSet(key string, isWrite bool) (data_structure.ZSet, error) {
 		return nil, nil
 	}
 
-	zset := result.object.value.(data_structure.ZSet)
+	zset := result.object.value.(types.ZSet)
 	return zset, nil
 }

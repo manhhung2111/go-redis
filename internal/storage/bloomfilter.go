@@ -3,7 +3,7 @@ package storage
 import (
 	"errors"
 
-	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
+	"github.com/manhhung2111/go-redis/internal/storage/types"
 )
 
 func (s *store) BFAdd(key string, item string) (int, error) {
@@ -88,7 +88,7 @@ func (s *store) BFReserve(key string, errorRate float64, capacity uint32, expans
 		return errors.New("item exists")
 	}
 
-	sbf := data_structure.NewScalableBloomFilter(errorRate, uint64(capacity), int(expansion))
+	sbf := types.NewScalableBloomFilter(errorRate, uint64(capacity), int(expansion))
 
 	delta := s.data.Set(key, &RObj{
 		objType:  ObjBloomFilter,
@@ -100,7 +100,7 @@ func (s *store) BFReserve(key string, errorRate float64, capacity uint32, expans
 	return nil
 }
 
-func (s *store) getBloomFilter(key string) (data_structure.ScalableBloomFilter, error) {
+func (s *store) getBloomFilter(key string) (types.ScalableBloomFilter, error) {
 	result := s.access(key, ObjBloomFilter, false)
 	if result.err != nil {
 		return nil, result.err
@@ -110,23 +110,23 @@ func (s *store) getBloomFilter(key string) (data_structure.ScalableBloomFilter, 
 		return nil, nil
 	}
 
-	sbf := result.object.value.(data_structure.ScalableBloomFilter)
+	sbf := result.object.value.(types.ScalableBloomFilter)
 	return sbf, nil
 }
 
 // getOrCreateBloomFilter returns the bloom filter for the key, creating one with default settings if it doesn't exist.
-func (s *store) getOrCreateBloomFilter(key string) (data_structure.ScalableBloomFilter, error) {
+func (s *store) getOrCreateBloomFilter(key string) (types.ScalableBloomFilter, error) {
 	result := s.access(key, ObjBloomFilter, true)
 	if result.err != nil {
 		return nil, result.err
 	}
 
 	if result.exists {
-		return result.object.value.(data_structure.ScalableBloomFilter), nil
+		return result.object.value.(types.ScalableBloomFilter), nil
 	}
 
 	// Create new bloom filter with default settings
-	sbf := data_structure.NewScalableBloomFilter(
+	sbf := types.NewScalableBloomFilter(
 		s.config.BFDefaultErrorRate,
 		uint64(s.config.BFDefaultCapacity),
 		s.config.BFDefaultExpansion,

@@ -1,4 +1,4 @@
-package data_structure
+package types
 
 type Set interface {
 	Add(members ...string) (int64, bool, int64)

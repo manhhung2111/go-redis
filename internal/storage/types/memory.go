@@ -1,4 +1,4 @@
-package data_structure
+package types
 
 // Memory size constants for delta calculation
 // These are approximations based on Go's memory model (64-bit systems)

@@ -4,7 +4,7 @@ import (
 	"math/rand/v2"
 
 	"github.com/DmitriyVTitov/size"
-	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
+	"github.com/manhhung2111/go-redis/internal/storage/types"
 )
 
 type Dict[K comparable, V any] interface {
@@ -50,7 +50,7 @@ func (d *dict[K, V]) Set(key K, value V) int64 {
 		// Add key to keyIndex map (key + int index + map overhead)
 		delta += int64(size.Of(key))
 		delta += int64(size.Of(0)) // int index
-		delta += data_structure.MapOverheadPerKey
+		delta += types.MapOverheadPerKey
 
 		// Add key to keys slice
 		oldCap := cap(d.keys)
@@ -67,7 +67,7 @@ func (d *dict[K, V]) Set(key K, value V) int64 {
 		// Add key-value to contents map (key + value + map overhead)
 		delta += int64(size.Of(key))
 		delta += int64(size.Of(value))
-		delta += data_structure.MapOverheadPerKey
+		delta += types.MapOverheadPerKey
 	}
 
 	d.contents[key] = value
@@ -86,12 +86,12 @@ func (d *dict[K, V]) Delete(key K) (bool, int64) {
 	// Memory freed from contents map (key + value + map overhead)
 	delta -= int64(size.Of(key))
 	delta -= int64(size.Of(value))
-	delta -= data_structure.MapOverheadPerKey
+	delta -= types.MapOverheadPerKey
 
 	// Memory freed from keyIndex map (key + int + map overhead)
 	delta -= int64(size.Of(key))
 	delta -= int64(size.Of(0)) // int index
-	delta -= data_structure.MapOverheadPerKey
+	delta -= types.MapOverheadPerKey
 
 	delete(d.contents, key)
 

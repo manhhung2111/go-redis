@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/manhhung2111/go-redis/internal/config"
-	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
+	"github.com/manhhung2111/go-redis/internal/storage/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -193,7 +193,7 @@ func TestBFExists_ExpiredKey(t *testing.T) {
 func TestBFInfo_NonExistingKey(t *testing.T) {
 	s := newTestStoreBF().(*store)
 
-	info, err := s.BFInfo("nonexistent", data_structure.BloomFilterInfoAll)
+	info, err := s.BFInfo("nonexistent", types.BloomFilterInfoAll)
 	assert.Error(t, err)
 	assert.Nil(t, info)
 }
@@ -203,7 +203,7 @@ func TestBFInfo_Capacity(t *testing.T) {
 
 	s.BFReserve("bf", 0.01, 1000, 2)
 
-	info, err := s.BFInfo("bf", data_structure.BloomFilterInfoCapacity)
+	info, err := s.BFInfo("bf", types.BloomFilterInfoCapacity)
 	assert.NoError(t, err)
 	require.Len(t, info, 1)
 	assert.Equal(t, uint64(1000), info[0])
@@ -214,7 +214,7 @@ func TestBFInfo_Size(t *testing.T) {
 
 	s.BFAdd("bf", "item1")
 
-	info, err := s.BFInfo("bf", data_structure.BloomFilterInfoSize)
+	info, err := s.BFInfo("bf", types.BloomFilterInfoSize)
 	assert.NoError(t, err)
 	require.Len(t, info, 1)
 
@@ -228,7 +228,7 @@ func TestBFInfo_Filters(t *testing.T) {
 
 	s.BFAdd("bf", "item1")
 
-	info, err := s.BFInfo("bf", data_structure.BloomFilterInfoFilters)
+	info, err := s.BFInfo("bf", types.BloomFilterInfoFilters)
 	assert.NoError(t, err)
 	require.Len(t, info, 1)
 	assert.Equal(t, 1, info[0])
@@ -240,7 +240,7 @@ func TestBFInfo_Items(t *testing.T) {
 	s.BFAdd("bf", "item1")
 	s.BFAdd("bf", "item2")
 
-	info, err := s.BFInfo("bf", data_structure.BloomFilterInfoItems)
+	info, err := s.BFInfo("bf", types.BloomFilterInfoItems)
 	assert.NoError(t, err)
 	require.Len(t, info, 1)
 	assert.Equal(t, uint64(2), info[0])
@@ -251,7 +251,7 @@ func TestBFInfo_Expansion(t *testing.T) {
 
 	s.BFReserve("bf", 0.01, 100, 4)
 
-	info, err := s.BFInfo("bf", data_structure.BloomFilterInfoExpansion)
+	info, err := s.BFInfo("bf", types.BloomFilterInfoExpansion)
 	assert.NoError(t, err)
 	require.Len(t, info, 1)
 	assert.Equal(t, 4, info[0])
@@ -262,7 +262,7 @@ func TestBFInfo_All(t *testing.T) {
 
 	s.BFAdd("bf", "item1")
 
-	info, err := s.BFInfo("bf", data_structure.BloomFilterInfoAll)
+	info, err := s.BFInfo("bf", types.BloomFilterInfoAll)
 	assert.NoError(t, err)
 	require.Len(t, info, 10)
 
@@ -278,7 +278,7 @@ func TestBFInfo_WrongType(t *testing.T) {
 
 	s.Set("mykey", "value")
 
-	info, err := s.BFInfo("mykey", data_structure.BloomFilterInfoAll)
+	info, err := s.BFInfo("mykey", types.BloomFilterInfoAll)
 	assert.Error(t, err)
 	assert.Nil(t, info)
 }
@@ -398,10 +398,10 @@ func TestBFReserve_NewKey(t *testing.T) {
 	assert.Equal(t, ObjBloomFilter, rObj.objType)
 	assert.Equal(t, EncBloomFilter, rObj.encoding)
 
-	info, _ := s.BFInfo("bf", data_structure.BloomFilterInfoCapacity)
+	info, _ := s.BFInfo("bf", types.BloomFilterInfoCapacity)
 	assert.Equal(t, uint64(5000), info[0])
 
-	info, _ = s.BFInfo("bf", data_structure.BloomFilterInfoExpansion)
+	info, _ = s.BFInfo("bf", types.BloomFilterInfoExpansion)
 	assert.Equal(t, 4, info[0])
 }
 
@@ -536,7 +536,7 @@ func TestBloomFilter_FullWorkflow(t *testing.T) {
 	card, _ := s.BFCard("myfilter")
 	assert.Equal(t, 3, card)
 
-	info, _ := s.BFInfo("myfilter", data_structure.BloomFilterInfoItems)
+	info, _ := s.BFInfo("myfilter", types.BloomFilterInfoItems)
 	assert.Equal(t, uint64(3), info[0])
 }
 
@@ -564,7 +564,7 @@ func TestBloomFilter_DefaultSettings(t *testing.T) {
 
 	s.BFAdd("bf", "item1")
 
-	info, err := s.BFInfo("bf", data_structure.BloomFilterInfoExpansion)
+	info, err := s.BFInfo("bf", types.BloomFilterInfoExpansion)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, info[0])
 }

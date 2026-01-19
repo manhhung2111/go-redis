@@ -3,7 +3,7 @@ package storage
 import (
 	"errors"
 
-	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
+	"github.com/manhhung2111/go-redis/internal/storage/types"
 )
 
 func (s *store) CFAdd(key string, item string) (int, error) {
@@ -103,7 +103,7 @@ func (s *store) CFReserve(key string, capacity uint64, bucketSize uint64, maxIte
 		return errors.New("item exists")
 	}
 
-	scf := data_structure.NewCuckooFilter(capacity, bucketSize, maxIterations, expansionRate)
+	scf := types.NewCuckooFilter(capacity, bucketSize, maxIterations, expansionRate)
 
 	delta := s.data.Set(key, &RObj{
 		objType:  ObjCuckooFilter,
@@ -115,7 +115,7 @@ func (s *store) CFReserve(key string, capacity uint64, bucketSize uint64, maxIte
 	return nil
 }
 
-func (s *store) getCuckooFilter(key string, isWrite bool) (data_structure.CuckooFilter, error) {
+func (s *store) getCuckooFilter(key string, isWrite bool) (types.CuckooFilter, error) {
 	result := s.access(key, ObjCuckooFilter, isWrite)
 	if result.err != nil {
 		return nil, result.err
@@ -125,22 +125,22 @@ func (s *store) getCuckooFilter(key string, isWrite bool) (data_structure.Cuckoo
 		return nil, nil
 	}
 
-	scf := result.object.value.(data_structure.CuckooFilter)
+	scf := result.object.value.(types.CuckooFilter)
 	return scf, nil
 }
 
-func (s *store) getOrCreateCuckooFilter(key string) (data_structure.CuckooFilter, error) {
+func (s *store) getOrCreateCuckooFilter(key string) (types.CuckooFilter, error) {
 	result := s.access(key, ObjCuckooFilter, true)
 	if result.err != nil {
 		return nil, result.err
 	}
 
 	if result.exists {
-		return result.object.value.(data_structure.CuckooFilter), nil
+		return result.object.value.(types.CuckooFilter), nil
 	}
 
 	// Create new cuckoo filter with default settings
-	scf := data_structure.NewCuckooFilter(
+	scf := types.NewCuckooFilter(
 		uint64(s.config.CFDefaultInitialSize),
 		uint64(s.config.CFDefaultBucketSize),
 		uint64(s.config.CFDefaultMaxIterations),

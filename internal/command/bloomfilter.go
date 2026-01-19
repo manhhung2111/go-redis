@@ -6,7 +6,7 @@ import (
 
 	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/manhhung2111/go-redis/internal/protocol"
-	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
+	"github.com/manhhung2111/go-redis/internal/storage/types"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
 
@@ -62,19 +62,19 @@ func (redis *redis) BFInfo(cmd protocol.RedisCmd) []byte {
 		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	option := data_structure.BloomFilterInfoAll
+	option := types.BloomFilterInfoAll
 	if len(args) == 2 {
 		switch strings.ToUpper(args[1]) {
 		case "CAPACITY":
-			option = data_structure.BloomFilterInfoCapacity
+			option = types.BloomFilterInfoCapacity
 		case "SIZE":
-			option = data_structure.BloomFilterInfoSize
+			option = types.BloomFilterInfoSize
 		case "FILTERS":
-			option = data_structure.BloomFilterInfoFilters
+			option = types.BloomFilterInfoFilters
 		case "ITEMS":
-			option = data_structure.BloomFilterInfoItems
+			option = types.BloomFilterInfoItems
 		case "EXPANSION":
-			option = data_structure.BloomFilterInfoExpansion
+			option = types.BloomFilterInfoExpansion
 		default:
 			return protocol.EncodeResp(util.InvalidCommandOption(strings.ToUpper(args[1]), cmd.Cmd), false)
 		}

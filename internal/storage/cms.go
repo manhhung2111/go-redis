@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
+	"github.com/manhhung2111/go-redis/internal/storage/types"
 )
 
 func (s *store) CMSIncrBy(key string, itemIncrement map[string]uint64) ([]uint64, error) {
@@ -29,7 +29,7 @@ func (s *store) CMSInitByDim(key string, width uint64, depth uint64) error {
 		return ErrCmSKeyAlreadyExistsError
 	}
 
-	cms := data_structure.NewCountMinSketchByDim(int(width), int(depth))
+	cms := types.NewCountMinSketchByDim(int(width), int(depth))
 	delta := s.data.Set(key, &RObj{
 		objType:  ObjCountMinSketch,
 		encoding: EncCountMinSketch,
@@ -47,7 +47,7 @@ func (s *store) CMSInitByProb(key string, errorRate float64, probability float64
 		return ErrCmSKeyAlreadyExistsError
 	}
 
-	cms := data_structure.NewCountMinSketchByProb(errorRate, probability)
+	cms := types.NewCountMinSketchByProb(errorRate, probability)
 	delta := s.data.Set(key, &RObj{
 		objType:  ObjCountMinSketch,
 		encoding: EncCountMinSketch,
@@ -67,7 +67,7 @@ func (s *store) CMSQuery(key string, items []string) ([]uint64, error) {
 	return cms.Query(items), nil
 }
 
-func (s *store) getCountMinSketch(key string, isWrite bool) (data_structure.CountMinSketch, error) {
+func (s *store) getCountMinSketch(key string, isWrite bool) (types.CountMinSketch, error) {
 	result := s.access(key, ObjCountMinSketch, isWrite)
 	if result.err != nil {
 		return nil, result.err
@@ -77,6 +77,6 @@ func (s *store) getCountMinSketch(key string, isWrite bool) (data_structure.Coun
 		return nil, ErrCmSKeyDoesNotExistError
 	}
 
-	cms := result.object.value.(data_structure.CountMinSketch)
+	cms := result.object.value.(types.CountMinSketch)
 	return cms, nil
 }

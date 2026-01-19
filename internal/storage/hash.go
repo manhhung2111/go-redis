@@ -1,6 +1,6 @@
 package storage
 
-import "github.com/manhhung2111/go-redis/internal/storage/data_structure"
+import "github.com/manhhung2111/go-redis/internal/storage/types"
 
 func (s *store) HGet(key string, field string) (*string, error) {
 	result := s.access(key, ObjHash, false)
@@ -12,7 +12,7 @@ func (s *store) HGet(key string, field string) (*string, error) {
 		return nil, nil
 	}
 
-	hash := result.object.value.(data_structure.Hash)
+	hash := result.object.value.(types.Hash)
 	val, ok := hash.Get(field)
 	if !ok {
 		return nil, nil
@@ -31,7 +31,7 @@ func (s *store) HGetAll(key string) ([]string, error) {
 		return []string{}, nil
 	}
 
-	hash := result.object.value.(data_structure.Hash)
+	hash := result.object.value.(types.Hash)
 	return hash.GetAll(), nil
 }
 
@@ -47,7 +47,7 @@ func (s *store) HMGet(key string, fields []string) ([]*string, error) {
 		return nilResult, nil
 	}
 
-	hash := result.object.value.(data_structure.Hash)
+	hash := result.object.value.(types.Hash)
 	return hash.MGet(fields...), nil
 }
 
@@ -58,7 +58,7 @@ func (s *store) HIncrBy(key string, field string, increment int64) (int64, error
 	}
 
 	if !result.exists {
-		hash := data_structure.NewHash()
+		hash := types.NewHash()
 		res, _, err := hash.IncBy(field, increment)
 		if err != nil {
 			return 0, err
@@ -74,7 +74,7 @@ func (s *store) HIncrBy(key string, field string, increment int64) (int64, error
 		return res, nil
 	}
 
-	hash := result.object.value.(data_structure.Hash)
+	hash := result.object.value.(types.Hash)
 	res, delta, err := hash.IncBy(field, increment)
 	s.usedMemory += delta
 	return res, err
@@ -90,7 +90,7 @@ func (s *store) HKeys(key string) ([]string, error) {
 		return []string{}, nil
 	}
 
-	hash := result.object.value.(data_structure.Hash)
+	hash := result.object.value.(types.Hash)
 	return hash.GetKeys(), nil
 }
 
@@ -104,7 +104,7 @@ func (s *store) HVals(key string) ([]string, error) {
 		return []string{}, nil
 	}
 
-	hash := result.object.value.(data_structure.Hash)
+	hash := result.object.value.(types.Hash)
 	return hash.GetValues(), nil
 }
 
@@ -118,7 +118,7 @@ func (s *store) HLen(key string) (uint32, error) {
 		return 0, nil
 	}
 
-	hash := result.object.value.(data_structure.Hash)
+	hash := result.object.value.(types.Hash)
 	return hash.Size(), nil
 }
 
@@ -129,7 +129,7 @@ func (s *store) HSet(key string, fieldValue map[string]string) (int64, error) {
 	}
 
 	if !result.exists {
-		hash := data_structure.NewHash()
+		hash := types.NewHash()
 		added, _ := hash.Set(fieldValue)
 		delta := s.data.Set(key, &RObj{
 			objType:  ObjHash,
@@ -141,7 +141,7 @@ func (s *store) HSet(key string, fieldValue map[string]string) (int64, error) {
 		return added, nil
 	}
 
-	hash := result.object.value.(data_structure.Hash)
+	hash := result.object.value.(types.Hash)
 	added, delta := hash.Set(fieldValue)
 	s.usedMemory += delta
 	return added, nil
@@ -154,7 +154,7 @@ func (s *store) HSetNx(key string, field string, value string) (int64, error) {
 	}
 
 	if !result.exists {
-		hash := data_structure.NewHash()
+		hash := types.NewHash()
 		hash.SetNX(field, value)
 		delta := s.data.Set(key, &RObj{
 			objType:  ObjHash,
@@ -166,7 +166,7 @@ func (s *store) HSetNx(key string, field string, value string) (int64, error) {
 		return 1, nil
 	}
 
-	hash := result.object.value.(data_structure.Hash)
+	hash := result.object.value.(types.Hash)
 	canSet, delta := hash.SetNX(field, value)
 	if canSet {
 		s.usedMemory += delta
@@ -185,7 +185,7 @@ func (s *store) HDel(key string, fields []string) (int64, error) {
 		return 0, nil
 	}
 
-	hash := result.object.value.(data_structure.Hash)
+	hash := result.object.value.(types.Hash)
 	deleted, delta := hash.Delete(fields...)
 	s.usedMemory += delta
 	if hash.Size() == 0 {
@@ -204,7 +204,7 @@ func (s *store) HExists(key, field string) (int64, error) {
 		return 0, nil
 	}
 
-	hash := result.object.value.(data_structure.Hash)
+	hash := result.object.value.(types.Hash)
 	if hash.Exists(field) {
 		return 1, nil
 	}

@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/manhhung2111/go-redis/internal/protocol"
-	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
+	"github.com/manhhung2111/go-redis/internal/storage/types"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
 
@@ -16,7 +16,7 @@ func (redis *redis) GeoAdd(cmd protocol.RedisCmd) []byte {
 		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	options := data_structure.ZAddOptions{}
+	options := types.ZAddOptions{}
 	i := 1
 
 	// Parse options
@@ -48,7 +48,7 @@ func (redis *redis) GeoAdd(cmd protocol.RedisCmd) []byte {
 		return protocol.RespSyntaxError
 	}
 
-	items := make([]data_structure.GeoPoint, 0, remaining/3)
+	items := make([]types.GeoPoint, 0, remaining/3)
 
 	for i < len(args) {
 		longitude, err := strconv.ParseFloat(args[i], 64)
@@ -61,12 +61,12 @@ func (redis *redis) GeoAdd(cmd protocol.RedisCmd) []byte {
 			return protocol.RespValueNotValidFloat
 		}
 
-		if !data_structure.ValidateCoordinates(longitude, latitude) {
+		if !types.ValidateCoordinates(longitude, latitude) {
 			return protocol.RespInvalidLongitudeLatitude
 		}
 
 		member := args[i+2]
-		items = append(items, data_structure.GeoPoint{
+		items = append(items, types.GeoPoint{
 			Longitude: longitude,
 			Latitude:  latitude,
 			Member:    member,
@@ -169,7 +169,7 @@ func (redis *redis) GeoSearch(cmd protocol.RedisCmd) []byte {
 		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	options := data_structure.GeoSearchOptions{
+	options := types.GeoSearchOptions{
 		Unit: "m", // Default unit
 	}
 
@@ -197,10 +197,10 @@ func (redis *redis) GeoSearch(cmd protocol.RedisCmd) []byte {
 			if err != nil {
 				return protocol.RespValueNotValidFloat
 			}
-			if !data_structure.ValidateCoordinates(lon, lat) {
+			if !types.ValidateCoordinates(lon, lat) {
 				return protocol.RespInvalidLongitudeLatitude
 			}
-			options.FromLonLat = &data_structure.GeoPoint{Longitude: lon, Latitude: lat}
+			options.FromLonLat = &types.GeoPoint{Longitude: lon, Latitude: lat}
 			i += 3
 
 		case "BYRADIUS":
@@ -230,7 +230,7 @@ func (redis *redis) GeoSearch(cmd protocol.RedisCmd) []byte {
 			if err != nil || height < 0 {
 				return protocol.RespValueNotValidFloat
 			}
-			options.ByBox = &data_structure.GeoBox{Width: width, Height: height}
+			options.ByBox = &types.GeoBox{Width: width, Height: height}
 			options.Unit = strings.ToLower(args[i+3])
 			if !isValidGeoUnit(options.Unit) {
 				return protocol.RespSyntaxError
@@ -312,7 +312,7 @@ func isValidGeoUnit(unit string) bool {
 	return unit == "m" || unit == "km" || unit == "ft" || unit == "mi"
 }
 
-func formatGeoSearchResults(results []data_structure.GeoResult, options data_structure.GeoSearchOptions) []byte {
+func formatGeoSearchResults(results []types.GeoResult, options types.GeoSearchOptions) []byte {
 	if !options.WithCoord && !options.WithDist && !options.WithHash {
 		// Simple array of member names
 		members := make([]string, len(results))

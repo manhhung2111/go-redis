@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
+	"github.com/manhhung2111/go-redis/internal/storage/types"
 )
 
 func (s *store) PFAdd(key string, items []string) (int, error) {
@@ -11,7 +11,7 @@ func (s *store) PFAdd(key string, items []string) (int, error) {
 	}
 
 	if result.exists {
-		hll := result.object.value.(data_structure.HyperLogLog)
+		hll := result.object.value.(types.HyperLogLog)
 
 		if len(items) == 0 {
 			return 0, nil
@@ -23,7 +23,7 @@ func (s *store) PFAdd(key string, items []string) (int, error) {
 	}
 
 	// Key doesn't exist - create new HyperLogLog
-	hll := data_structure.NewHyperLogLog()
+	hll := types.NewHyperLogLog()
 	if len(items) > 0 {
 		hll.PFAdd(items)
 	}
@@ -39,7 +39,7 @@ func (s *store) PFAdd(key string, items []string) (int, error) {
 }
 
 func (s *store) PFCount(keys []string) (int, error) {
-	hlls := make([]data_structure.HyperLogLog, 0, len(keys))
+	hlls := make([]types.HyperLogLog, 0, len(keys))
 
 	for i := range keys {
 		hll, err := s.getHyperLogLog(keys[i], false)
@@ -65,7 +65,7 @@ func (s *store) PFMerge(destKey string, sourceKeys []string) error {
 	}
 
 	if destHll == nil {
-		destHll = data_structure.NewHyperLogLog()
+		destHll = types.NewHyperLogLog()
 		delta := s.data.Set(destKey, &RObj{
 			objType:  ObjHyperLogLog,
 			encoding: EncHyperLogLog,
@@ -78,7 +78,7 @@ func (s *store) PFMerge(destKey string, sourceKeys []string) error {
 		return nil
 	}
 
-	sourceHlls := make([]data_structure.HyperLogLog, 0, len(sourceKeys))
+	sourceHlls := make([]types.HyperLogLog, 0, len(sourceKeys))
 	for i := range sourceKeys {
 		sourceHll, err := s.getHyperLogLog(sourceKeys[i], false)
 		if err != nil {
@@ -97,7 +97,7 @@ func (s *store) PFMerge(destKey string, sourceKeys []string) error {
 	return nil
 }
 
-func (s *store) getHyperLogLog(key string, isWrite bool) (data_structure.HyperLogLog, error) {
+func (s *store) getHyperLogLog(key string, isWrite bool) (types.HyperLogLog, error) {
 	result := s.access(key, ObjHyperLogLog, isWrite)
 	if result.err != nil {
 		return nil, result.err
@@ -107,6 +107,6 @@ func (s *store) getHyperLogLog(key string, isWrite bool) (data_structure.HyperLo
 		return nil, nil
 	}
 
-	hll := result.object.value.(data_structure.HyperLogLog)
+	hll := result.object.value.(types.HyperLogLog)
 	return hll, nil
 }

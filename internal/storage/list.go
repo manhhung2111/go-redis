@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
+	"github.com/manhhung2111/go-redis/internal/storage/types"
 )
 
 func (s *store) LPush(key string, elements ...string) (uint32, error) {
@@ -11,13 +11,13 @@ func (s *store) LPush(key string, elements ...string) (uint32, error) {
 	}
 
 	if result.exists {
-		quickList := result.object.value.(data_structure.QuickList)
+		quickList := result.object.value.(types.QuickList)
 		res, delta := quickList.LPush(elements)
 		s.usedMemory += delta
 		return res, nil
 	}
 
-	quicklist := data_structure.NewQuickList()
+	quicklist := types.NewQuickList()
 	res, _ := quicklist.LPush(elements)
 
 	delta := s.data.Set(key, &RObj{
@@ -40,7 +40,7 @@ func (s *store) LPop(key string, count uint32) ([]string, error) {
 		return nil, nil
 	}
 
-	quickList := result.object.value.(data_structure.QuickList)
+	quickList := result.object.value.(types.QuickList)
 	poppedElements, delta := quickList.LPop(count)
 	s.usedMemory -= delta
 	if quickList.Size() == 0 {
@@ -57,13 +57,13 @@ func (s *store) RPush(key string, elements ...string) (uint32, error) {
 	}
 
 	if result.exists {
-		quickList := result.object.value.(data_structure.QuickList)
+		quickList := result.object.value.(types.QuickList)
 		res, delta := quickList.RPush(elements)
 		s.usedMemory += delta
 		return res, nil
 	}
 
-	quicklist := data_structure.NewQuickList()
+	quicklist := types.NewQuickList()
 	res, _ := quicklist.RPush(elements)
 
 	delta := s.data.Set(key, &RObj{
@@ -86,7 +86,7 @@ func (s *store) RPop(key string, count uint32) ([]string, error) {
 		return nil, nil
 	}
 
-	quickList := result.object.value.(data_structure.QuickList)
+	quickList := result.object.value.(types.QuickList)
 	poppedElements, delta := quickList.RPop(count)
 	s.usedMemory -= delta
 	if quickList.Size() == 0 {
@@ -106,7 +106,7 @@ func (s *store) LRange(key string, start int32, end int32) ([]string, error) {
 		return []string{}, nil
 	}
 
-	quickList := result.object.value.(data_structure.QuickList)
+	quickList := result.object.value.(types.QuickList)
 	return quickList.LRange(start, end), nil
 }
 
@@ -120,7 +120,7 @@ func (s *store) LIndex(key string, index int32) (*string, error) {
 		return nil, nil
 	}
 
-	quickList := result.object.value.(data_structure.QuickList)
+	quickList := result.object.value.(types.QuickList)
 	val, succeeded := quickList.LIndex(index)
 	if !succeeded {
 		return nil, nil
@@ -139,7 +139,7 @@ func (s *store) LLen(key string) (uint32, error) {
 		return 0, nil
 	}
 
-	quickList := result.object.value.(data_structure.QuickList)
+	quickList := result.object.value.(types.QuickList)
 	return quickList.Size(), nil
 }
 
@@ -153,7 +153,7 @@ func (s *store) LRem(key string, count int32, element string) (uint32, error) {
 		return 0, nil
 	}
 
-	quickList := result.object.value.(data_structure.QuickList)
+	quickList := result.object.value.(types.QuickList)
 	removedElements, delta := quickList.LRem(count, element)
 	s.usedMemory += delta
 	if quickList.Size() == 0 {
@@ -173,7 +173,7 @@ func (s *store) LSet(key string, index int32, element string) error {
 		return ErrKeyNotFoundError
 	}
 
-	quickList := result.object.value.(data_structure.QuickList)
+	quickList := result.object.value.(types.QuickList)
 	err, delta := quickList.LSet(index, element)
 	s.usedMemory += delta
 	return err
@@ -189,7 +189,7 @@ func (s *store) LTrim(key string, start, end int32) error {
 		return nil
 	}
 
-	quickList := result.object.value.(data_structure.QuickList)
+	quickList := result.object.value.(types.QuickList)
 	delta := quickList.LTrim(start, end)
 	s.usedMemory += delta
 	if quickList.Size() == 0 {

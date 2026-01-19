@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/manhhung2111/go-redis/internal/protocol"
-	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
+	"github.com/manhhung2111/go-redis/internal/storage/types"
 	"github.com/manhhung2111/go-redis/internal/util"
 )
 
@@ -22,7 +22,7 @@ func (redis *redis) ZAdd(cmd protocol.RedisCmd) []byte {
 		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
-	options := data_structure.ZAddOptions{}
+	options := types.ZAddOptions{}
 
 	i := 1
 	for i < len(args) {

@@ -2,7 +2,7 @@ package storage
 
 import (
 	"github.com/manhhung2111/go-redis/internal/config"
-	"github.com/manhhung2111/go-redis/internal/storage/data_structure"
+	"github.com/manhhung2111/go-redis/internal/storage/types"
 )
 
 type ObjectType uint8
@@ -91,7 +91,7 @@ type Store interface {
 	HDel(key string, fields []string) (int64, error)
 	HExists(key, field string) (int64, error)
 
-	ZAdd(key string, scoreMember map[string]float64, options data_structure.ZAddOptions) (*uint32, error)
+	ZAdd(key string, scoreMember map[string]float64, options types.ZAddOptions) (*uint32, error)
 	ZCard(key string) (uint32, error)
 	ZCount(key string, minScore, maxScore float64) (uint32, error)
 	ZIncrBy(key string, member string, increment float64) (float64, error)
@@ -111,11 +111,11 @@ type Store interface {
 	ZRevRank(key, member string, withScore bool) ([]any, error)
 	ZScore(key, member string) (*float64, error)
 
-	GeoAdd(key string, items []data_structure.GeoPoint, options data_structure.ZAddOptions) (*uint32, error)
+	GeoAdd(key string, items []types.GeoPoint, options types.ZAddOptions) (*uint32, error)
 	GeoDist(key, member1, member2, unit string) (*float64, error)
 	GeoHash(key string, members []string) ([]*string, error)
-	GeoPos(key string, members []string) ([]*data_structure.GeoPoint, error)
-	GeoSearch(key string, options data_structure.GeoSearchOptions) ([]data_structure.GeoResult, error)
+	GeoPos(key string, members []string) ([]*types.GeoPoint, error)
+	GeoSearch(key string, options types.GeoSearchOptions) ([]types.GeoResult, error)
 
 	BFAdd(key string, item string) (int, error)
 	BFCard(key string) (int, error)

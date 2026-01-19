@@ -1,4 +1,4 @@
-package data_structure
+package types
 
 import (
 	"github.com/manhhung2111/go-redis/internal/util"
