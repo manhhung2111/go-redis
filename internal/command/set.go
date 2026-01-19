@@ -4,14 +4,14 @@ import (
 	"strconv"
 
 	"github.com/manhhung2111/go-redis/internal/protocol"
-	"github.com/manhhung2111/go-redis/internal/util"
+	"github.com/manhhung2111/go-redis/internal/errors"
 )
 
 /* Support SADD key member [member ...] */
 func (redis *redis) SAdd(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	added, err := redis.Store.SAdd(args[0], args[1:]...)
@@ -26,7 +26,7 @@ func (redis *redis) SAdd(cmd protocol.RedisCmd) []byte {
 func (redis *redis) SCard(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	setLen, err := redis.Store.SCard(args[0])
@@ -41,7 +41,7 @@ func (redis *redis) SCard(cmd protocol.RedisCmd) []byte {
 func (redis *redis) SIsMember(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	var isMember int64 = 0
@@ -61,7 +61,7 @@ func (redis *redis) SIsMember(cmd protocol.RedisCmd) []byte {
 func (redis *redis) SMembers(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	members, err := redis.Store.SMembers(args[0])
@@ -76,7 +76,7 @@ func (redis *redis) SMembers(cmd protocol.RedisCmd) []byte {
 func (redis *redis) SMIsMember(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	isMembers, err := redis.Store.SMIsMember(args[0], args[1:]...)
@@ -99,7 +99,7 @@ func (redis *redis) SMIsMember(cmd protocol.RedisCmd) []byte {
 func (redis *redis) SRem(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	removedElements, err := redis.Store.SRem(args[0], args[1:]...)
@@ -114,7 +114,7 @@ func (redis *redis) SRem(cmd protocol.RedisCmd) []byte {
 func (redis *redis) SPop(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 && len(args) != 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	count := 1
@@ -146,7 +146,7 @@ func (redis *redis) SPop(cmd protocol.RedisCmd) []byte {
 func (redis *redis) SRandMember(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 && len(args) != 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	count := 1

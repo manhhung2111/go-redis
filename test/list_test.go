@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/manhhung2111/go-redis/internal/protocol"
-	"github.com/manhhung2111/go-redis/internal/util"
+	"github.com/manhhung2111/go-redis/internal/errors"
 )
 
 func TestLPush(t *testing.T) {
@@ -336,7 +336,7 @@ func TestLPushX_InvalidArity(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := newTestRedis()
 			resp := r.LPushX(cmd(tt.args[0], tt.args[1:]...))
-			expected := protocol.EncodeResp(util.InvalidNumberOfArgs("LPUSHX"), false)
+			expected := protocol.EncodeResp(errors.InvalidNumberOfArgs("LPUSHX"), false)
 			assert.Equal(t, expected, resp)
 		})
 	}
@@ -422,7 +422,7 @@ func TestLRem_InvalidArity(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := newTestRedis()
 			resp := r.LRem(cmd(tt.args[0], tt.args[1:]...))
-			expected := protocol.EncodeResp(util.InvalidNumberOfArgs("LREM"), false)
+			expected := protocol.EncodeResp(errors.InvalidNumberOfArgs("LREM"), false)
 			assert.Equal(t, expected, resp)
 		})
 	}
@@ -535,7 +535,7 @@ func TestLSet_InvalidArity(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := newTestRedis()
 			resp := r.LSet(cmd(tt.args[0], tt.args[1:]...))
-			expected := protocol.EncodeResp(util.InvalidNumberOfArgs("LSET"), false)
+			expected := protocol.EncodeResp(errors.InvalidNumberOfArgs("LSET"), false)
 			assert.Equal(t, expected, resp)
 		})
 	}
@@ -670,7 +670,7 @@ func TestLTrim_InvalidArity(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := newTestRedis()
 			resp := r.LTrim(cmd(tt.args[0], tt.args[1:]...))
-			expected := protocol.EncodeResp(util.InvalidNumberOfArgs("LTRIM"), false)
+			expected := protocol.EncodeResp(errors.InvalidNumberOfArgs("LTRIM"), false)
 			assert.Equal(t, expected, resp)
 		})
 	}
@@ -834,7 +834,7 @@ func TestRPushX_InvalidArity(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := newTestRedis()
 			resp := r.RPushX(cmd(tt.args[0], tt.args[1:]...))
-			expected := protocol.EncodeResp(util.InvalidNumberOfArgs("RPUSHX"), false)
+			expected := protocol.EncodeResp(errors.InvalidNumberOfArgs("RPUSHX"), false)
 			assert.Equal(t, expected, resp)
 		})
 	}

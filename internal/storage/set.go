@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/manhhung2111/go-redis/internal/storage/types"
-	"github.com/manhhung2111/go-redis/internal/util"
 )
 
 func (s *store) SAdd(key string, members ...string) (int64, error) {
@@ -173,7 +172,7 @@ func (s *store) SPop(key string, count int) ([]string, error) {
 		return members, nil
 	}
 
-	indices := util.FloydSamplingIndices(setLen, count)
+	indices := types.FloydSamplingIndices(setLen, count)
 	members := set.Members()
 	popped := make([]string, 0, count)
 
@@ -215,7 +214,7 @@ func (s *store) SRandMember(key string, count int) ([]string, error) {
 			return set.Members(), nil
 		}
 
-		indices := util.FloydSamplingIndices(setLen, count)
+		indices := types.FloydSamplingIndices(setLen, count)
 		members := set.Members()
 		selected := make([]string, 0, count)
 

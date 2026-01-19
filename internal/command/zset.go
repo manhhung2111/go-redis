@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
+	rerr "github.com/manhhung2111/go-redis/internal/errors"
 	"github.com/manhhung2111/go-redis/internal/protocol"
 	"github.com/manhhung2111/go-redis/internal/storage/types"
-	"github.com/manhhung2111/go-redis/internal/util"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 func (redis *redis) ZAdd(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 3 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(rerr.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	options := types.ZAddOptions{}
@@ -90,7 +90,7 @@ func (redis *redis) ZAdd(cmd protocol.RedisCmd) []byte {
 func (redis *redis) ZCard(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(rerr.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.ZCard(args[0])
@@ -105,7 +105,7 @@ func (redis *redis) ZCard(cmd protocol.RedisCmd) []byte {
 func (redis *redis) ZCount(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 3 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(rerr.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	minValue, err := strconv.ParseFloat(args[1], 64)
@@ -130,7 +130,7 @@ func (redis *redis) ZCount(cmd protocol.RedisCmd) []byte {
 func (redis *redis) ZIncrBy(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 3 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(rerr.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	increment, err := strconv.ParseFloat(args[1], 64)
@@ -150,7 +150,7 @@ func (redis *redis) ZIncrBy(cmd protocol.RedisCmd) []byte {
 func (redis *redis) ZLexCount(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 3 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(rerr.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	minValue, err := getLexString(args[1])
@@ -175,7 +175,7 @@ func (redis *redis) ZLexCount(cmd protocol.RedisCmd) []byte {
 func (redis *redis) ZMScore(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(rerr.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.ZMScore(args[0], args[1:])
@@ -190,7 +190,7 @@ func (redis *redis) ZMScore(cmd protocol.RedisCmd) []byte {
 func (redis *redis) ZPopMax(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 && len(args) != 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(rerr.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	count := 1
@@ -214,7 +214,7 @@ func (redis *redis) ZPopMax(cmd protocol.RedisCmd) []byte {
 func (redis *redis) ZPopMin(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 && len(args) != 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(rerr.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	count := 1
@@ -238,7 +238,7 @@ func (redis *redis) ZPopMin(cmd protocol.RedisCmd) []byte {
 func (redis *redis) ZRandMember(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 && len(args) != 2 && len(args) != 3 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(rerr.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	count := 1
@@ -277,7 +277,7 @@ func (redis *redis) ZRandMember(cmd protocol.RedisCmd) []byte {
 func (redis *redis) ZRange(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 3 || len(args) > 6 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(rerr.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	var (
@@ -394,7 +394,7 @@ func (redis *redis) ZRange(cmd protocol.RedisCmd) []byte {
 func (redis *redis) ZRank(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 2 && len(args) != 3 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(rerr.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	withScore := false
@@ -424,7 +424,7 @@ func (redis *redis) ZRank(cmd protocol.RedisCmd) []byte {
 func (redis *redis) ZRem(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(rerr.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.ZRem(args[0], args[1:])
@@ -439,7 +439,7 @@ func (redis *redis) ZRem(cmd protocol.RedisCmd) []byte {
 func (redis *redis) ZRevRank(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 2 && len(args) != 3 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(rerr.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	withScore := false
@@ -469,7 +469,7 @@ func (redis *redis) ZRevRank(cmd protocol.RedisCmd) []byte {
 func (redis *redis) ZScore(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(rerr.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.ZScore(args[0], args[1])

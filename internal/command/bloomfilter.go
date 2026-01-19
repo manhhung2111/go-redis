@@ -7,14 +7,14 @@ import (
 	"github.com/manhhung2111/go-redis/internal/config"
 	"github.com/manhhung2111/go-redis/internal/protocol"
 	"github.com/manhhung2111/go-redis/internal/storage/types"
-	"github.com/manhhung2111/go-redis/internal/util"
+	"github.com/manhhung2111/go-redis/internal/errors"
 )
 
 /* Support BF.ADD key item */
 func (redis *redis) BFAdd(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.BFAdd(args[0], args[1])
@@ -29,7 +29,7 @@ func (redis *redis) BFAdd(cmd protocol.RedisCmd) []byte {
 func (redis *redis) BFCard(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.BFCard(args[0])
@@ -44,7 +44,7 @@ func (redis *redis) BFCard(cmd protocol.RedisCmd) []byte {
 func (redis *redis) BFExists(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.BFExists(args[0], args[1])
@@ -59,7 +59,7 @@ func (redis *redis) BFExists(cmd protocol.RedisCmd) []byte {
 func (redis *redis) BFInfo(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 && len(args) != 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	option := types.BloomFilterInfoAll
@@ -76,7 +76,7 @@ func (redis *redis) BFInfo(cmd protocol.RedisCmd) []byte {
 		case "EXPANSION":
 			option = types.BloomFilterInfoExpansion
 		default:
-			return protocol.EncodeResp(util.InvalidCommandOption(strings.ToUpper(args[1]), cmd.Cmd), false)
+			return protocol.EncodeResp(errors.InvalidCommandOption(strings.ToUpper(args[1]), cmd.Cmd), false)
 		}
 	}
 
@@ -92,7 +92,7 @@ func (redis *redis) BFInfo(cmd protocol.RedisCmd) []byte {
 func (redis *redis) BFMAdd(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.BFMAdd(args[0], args[1:])
@@ -107,7 +107,7 @@ func (redis *redis) BFMAdd(cmd protocol.RedisCmd) []byte {
 func (redis *redis) BFMExists(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.BFMExists(args[0], args[1:])
@@ -122,7 +122,7 @@ func (redis *redis) BFMExists(cmd protocol.RedisCmd) []byte {
 func (redis *redis) BFReserve(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 3 && len(args) != 5 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	errorRate, err := strconv.ParseFloat(args[1], 64)

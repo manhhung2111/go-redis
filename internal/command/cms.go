@@ -4,14 +4,14 @@ import (
 	"strconv"
 
 	"github.com/manhhung2111/go-redis/internal/protocol"
-	"github.com/manhhung2111/go-redis/internal/util"
+	"github.com/manhhung2111/go-redis/internal/errors"
 )
 
 /* Support CMS.INCRBY key item increment [item increment ...] */
 func (redis *redis) CMSIncrBy(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 3 || len(args)%2 != 1 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	// Parse item-increment pairs
@@ -37,7 +37,7 @@ func (redis *redis) CMSIncrBy(cmd protocol.RedisCmd) []byte {
 func (redis *redis) CMSInfo(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.CMSInfo(args[0])
@@ -52,7 +52,7 @@ func (redis *redis) CMSInfo(cmd protocol.RedisCmd) []byte {
 func (redis *redis) CMSInitByDim(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 3 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	width, err := strconv.ParseInt(args[1], 10, 64)
@@ -77,7 +77,7 @@ func (redis *redis) CMSInitByDim(cmd protocol.RedisCmd) []byte {
 func (redis *redis) CMSInitByProb(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 3 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	errorRate, err := strconv.ParseFloat(args[1], 64)
@@ -110,7 +110,7 @@ func (redis *redis) CMSInitByProb(cmd protocol.RedisCmd) []byte {
 func (redis *redis) CMSQuery(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.CMSQuery(args[0], args[1:])

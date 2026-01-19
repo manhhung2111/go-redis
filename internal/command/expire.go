@@ -6,13 +6,13 @@ import (
 
 	"github.com/manhhung2111/go-redis/internal/protocol"
 	"github.com/manhhung2111/go-redis/internal/storage"
-	"github.com/manhhung2111/go-redis/internal/util"
+	"github.com/manhhung2111/go-redis/internal/errors"
 )
 
 /* Supports `TTL key` */
 func (redis *redis) TTL(cmd protocol.RedisCmd) []byte {
 	if len(cmd.Args) != 1 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	ttl := redis.Store.TTL(cmd.Args[0])
@@ -34,13 +34,13 @@ func (redis *redis) Expire(cmd protocol.RedisCmd) []byte {
 	argsLen := len(args)
 
 	if argsLen < 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	key := args[0]
 	ttlSeconds, err := strconv.ParseInt(args[1], 10, 64)
 	if err != nil || ttlSeconds <= 0 {
-		return protocol.EncodeResp(util.InvalidExpireTime(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidExpireTime(cmd.Cmd), false)
 	}
 
 	var opt storage.ExpireOptions
@@ -57,7 +57,7 @@ func (redis *redis) Expire(cmd protocol.RedisCmd) []byte {
 		case "LT":
 			opt.LT = true
 		default:
-			return protocol.EncodeResp(util.InvalidCommandOption(cmdOpt, cmd.Cmd), false)
+			return protocol.EncodeResp(errors.InvalidCommandOption(cmdOpt, cmd.Cmd), false)
 		}
 	}
 

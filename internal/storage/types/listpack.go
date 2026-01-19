@@ -1,9 +1,5 @@
 package types
 
-import (
-	"github.com/manhhung2111/go-redis/internal/util"
-)
-
 const (
 	sliceHeaderSize      uint64 = 24
 	stringHeaderSize     uint64 = 16
@@ -59,7 +55,7 @@ func (lp *listPack) lPush(elements []string) {
 		lp.data = newData
 	}
 
-	util.ReverseSlice(elements)
+	ReverseSlice(elements)
 	copy(lp.data, elements)
 }
 

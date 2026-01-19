@@ -4,14 +4,14 @@ import (
 	"strconv"
 
 	"github.com/manhhung2111/go-redis/internal/protocol"
-	"github.com/manhhung2111/go-redis/internal/util"
+	"github.com/manhhung2111/go-redis/internal/errors"
 )
 
 /* Support LPUSH key element [element ...] */
 func (redis *redis) LPush(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.LPush(args[0], args[1:]...)
@@ -26,7 +26,7 @@ func (redis *redis) LPush(cmd protocol.RedisCmd) []byte {
 func (redis *redis) LPop(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 1 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	var count uint32 = 1
@@ -59,7 +59,7 @@ func (redis *redis) LPop(cmd protocol.RedisCmd) []byte {
 func (redis *redis) RPush(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.RPush(args[0], args[1:]...)
@@ -74,7 +74,7 @@ func (redis *redis) RPush(cmd protocol.RedisCmd) []byte {
 func (redis *redis) RPop(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 1 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	var count uint32 = 1
@@ -107,7 +107,7 @@ func (redis *redis) RPop(cmd protocol.RedisCmd) []byte {
 func (redis *redis) LRange(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 3 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	start, err := strconv.ParseInt(args[1], 10, 32)
@@ -132,7 +132,7 @@ func (redis *redis) LRange(cmd protocol.RedisCmd) []byte {
 func (redis *redis) LIndex(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	index, err := strconv.ParseInt(args[1], 10, 64)
@@ -156,7 +156,7 @@ func (redis *redis) LIndex(cmd protocol.RedisCmd) []byte {
 func (redis *redis) LLen(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.LLen(args[0])
@@ -171,7 +171,7 @@ func (redis *redis) LLen(cmd protocol.RedisCmd) []byte {
 func (redis *redis) LPushX(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	exists := redis.Store.Exists(args[0])
@@ -191,7 +191,7 @@ func (redis *redis) LPushX(cmd protocol.RedisCmd) []byte {
 func (redis *redis) LRem(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 3 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	count, err := strconv.ParseInt(args[1], 10, 64)
@@ -211,7 +211,7 @@ func (redis *redis) LRem(cmd protocol.RedisCmd) []byte {
 func (redis *redis) LSet(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 3 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	index, err := strconv.ParseInt(args[1], 10, 64)
@@ -231,7 +231,7 @@ func (redis *redis) LSet(cmd protocol.RedisCmd) []byte {
 func (redis *redis) LTrim(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 3 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	start, err := strconv.ParseInt(args[1], 10, 64)
@@ -255,7 +255,7 @@ func (redis *redis) LTrim(cmd protocol.RedisCmd) []byte {
 func (redis *redis) RPushX(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	exists := redis.Store.Exists(args[0])

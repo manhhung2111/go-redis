@@ -3,7 +3,7 @@ package command
 import (
 	"github.com/manhhung2111/go-redis/internal/protocol"
 	"github.com/manhhung2111/go-redis/internal/storage"
-	"github.com/manhhung2111/go-redis/internal/util"
+	"github.com/manhhung2111/go-redis/internal/errors"
 )
 
 type Redis interface {
@@ -223,7 +223,7 @@ func NewRedis(
 func (r *redis) HandleCommand(cmd protocol.RedisCmd) []byte {
 	handler, ok := r.handlers[cmd.Cmd]
 	if !ok {
-		return protocol.EncodeResp(util.InvalidCommand(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidCommand(cmd.Cmd), false)
 	}
 	return handler(cmd)
 }

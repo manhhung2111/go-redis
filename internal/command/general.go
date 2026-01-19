@@ -2,13 +2,13 @@ package command
 
 import (
 	"github.com/manhhung2111/go-redis/internal/protocol"
-	"github.com/manhhung2111/go-redis/internal/util"
+	"github.com/manhhung2111/go-redis/internal/errors"
 )
 
 func (redis *redis) Ping(cmd protocol.RedisCmd) []byte {
 	argsLen := len(cmd.Args)
 	if argsLen > 1 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	if argsLen == 0 {

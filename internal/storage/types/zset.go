@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/DmitriyVTitov/size"
-	"github.com/manhhung2111/go-redis/internal/util"
 )
 
 type ZSet interface {
@@ -226,7 +225,7 @@ func (zset *zSet) ZRandMember(count int, withScores bool) []string {
 				}
 			}
 		} else {
-			indices := util.FloydSamplingIndices(len(zset.data), count)
+			indices := FloydSamplingIndices(len(zset.data), count)
 			i := 0
 			for member, score := range zset.data {
 				if _, selected := indices[i]; selected {

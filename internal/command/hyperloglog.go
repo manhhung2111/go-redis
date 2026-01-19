@@ -2,14 +2,14 @@ package command
 
 import (
 	"github.com/manhhung2111/go-redis/internal/protocol"
-	"github.com/manhhung2111/go-redis/internal/util"
+	"github.com/manhhung2111/go-redis/internal/errors"
 )
 
 /* Support PFADD key [element [element ...]] */
 func (redis *redis) PFAdd(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 1 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	// Elements are optional - if not provided, just create the HLL
@@ -30,7 +30,7 @@ func (redis *redis) PFAdd(cmd protocol.RedisCmd) []byte {
 func (redis *redis) PFCount(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 1 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	count, err := redis.Store.PFCount(args)
@@ -45,7 +45,7 @@ func (redis *redis) PFCount(cmd protocol.RedisCmd) []byte {
 func (redis *redis) PFMerge(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 1 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	destKey := args[0]

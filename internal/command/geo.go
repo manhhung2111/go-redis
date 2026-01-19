@@ -6,14 +6,14 @@ import (
 
 	"github.com/manhhung2111/go-redis/internal/protocol"
 	"github.com/manhhung2111/go-redis/internal/storage/types"
-	"github.com/manhhung2111/go-redis/internal/util"
+	"github.com/manhhung2111/go-redis/internal/errors"
 )
 
 /* Support GEOADD key [NX | XX] [CH] longitude latitude member [longitude latitude member...] */
 func (redis *redis) GeoAdd(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 4 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	options := types.ZAddOptions{}
@@ -91,7 +91,7 @@ func (redis *redis) GeoAdd(cmd protocol.RedisCmd) []byte {
 func (redis *redis) GeoDist(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 3 || len(args) > 4 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	unit := "m"
@@ -118,7 +118,7 @@ func (redis *redis) GeoDist(cmd protocol.RedisCmd) []byte {
 func (redis *redis) GeoHash(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.GeoHash(args[0], args[1:])
@@ -133,7 +133,7 @@ func (redis *redis) GeoHash(cmd protocol.RedisCmd) []byte {
 func (redis *redis) GeoPos(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	points, err := redis.Store.GeoPos(args[0], args[1:])
@@ -166,7 +166,7 @@ Support GEOSEARCH key [FROMMEMBER member | FROMLONLAT longitude latitude]
 func (redis *redis) GeoSearch(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 4 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	options := types.GeoSearchOptions{

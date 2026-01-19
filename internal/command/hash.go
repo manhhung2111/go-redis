@@ -4,14 +4,14 @@ import (
 	"strconv"
 
 	"github.com/manhhung2111/go-redis/internal/protocol"
-	"github.com/manhhung2111/go-redis/internal/util"
+	"github.com/manhhung2111/go-redis/internal/errors"
 )
 
 /* Support HGET key field */
 func (redis *redis) HGet(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.HGet(args[0], args[1])
@@ -30,7 +30,7 @@ func (redis *redis) HGet(cmd protocol.RedisCmd) []byte {
 func (redis *redis) HGetAll(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.HGetAll(args[0])
@@ -45,7 +45,7 @@ func (redis *redis) HGetAll(cmd protocol.RedisCmd) []byte {
 func (redis *redis) HMGet(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.HMGet(args[0], args[1:])
@@ -60,7 +60,7 @@ func (redis *redis) HMGet(cmd protocol.RedisCmd) []byte {
 func (redis *redis) HIncrBy(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 3 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	increment, err := strconv.ParseInt(args[2], 10, 64)
@@ -80,7 +80,7 @@ func (redis *redis) HIncrBy(cmd protocol.RedisCmd) []byte {
 func (redis *redis) HKeys(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.HKeys(args[0])
@@ -95,7 +95,7 @@ func (redis *redis) HKeys(cmd protocol.RedisCmd) []byte {
 func (redis *redis) HVals(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.HVals(args[0])
@@ -110,7 +110,7 @@ func (redis *redis) HVals(cmd protocol.RedisCmd) []byte {
 func (redis *redis) HLen(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 1 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.HLen(args[0])
@@ -125,7 +125,7 @@ func (redis *redis) HLen(cmd protocol.RedisCmd) []byte {
 func (redis *redis) HSet(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 3 || (len(args)&1) == 0 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	fieldValue := make(map[string]string)
@@ -145,7 +145,7 @@ func (redis *redis) HSet(cmd protocol.RedisCmd) []byte {
 func (redis *redis) HSetNx(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 3 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.HSetNx(args[0], args[1], args[2])
@@ -160,7 +160,7 @@ func (redis *redis) HSetNx(cmd protocol.RedisCmd) []byte {
 func (redis *redis) HDel(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) < 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.HDel(args[0], args[1:])
@@ -175,7 +175,7 @@ func (redis *redis) HDel(cmd protocol.RedisCmd) []byte {
 func (redis *redis) HExists(cmd protocol.RedisCmd) []byte {
 	args := cmd.Args
 	if len(args) != 2 {
-		return protocol.EncodeResp(util.InvalidNumberOfArgs(cmd.Cmd), false)
+		return protocol.EncodeResp(errors.InvalidNumberOfArgs(cmd.Cmd), false)
 	}
 
 	result, err := redis.Store.HExists(args[0], args[1])

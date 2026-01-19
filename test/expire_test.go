@@ -7,14 +7,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/manhhung2111/go-redis/internal/protocol"
-	"github.com/manhhung2111/go-redis/internal/util"
+	"github.com/manhhung2111/go-redis/internal/errors"
 )
 
 func TestTTL_InvalidNumberOfArgs(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.TTL(cmd("TTL"))
-	assert.Equal(t, protocol.EncodeResp(util.InvalidNumberOfArgs("TTL"), false), resp)
+	assert.Equal(t, protocol.EncodeResp(errors.InvalidNumberOfArgs("TTL"), false), resp)
 }
 
 func TestTTL_NoKey(t *testing.T) {
@@ -51,7 +51,7 @@ func TestExpire_InvalidArity(t *testing.T) {
 	r := newTestRedis()
 
 	resp := r.Expire(cmd("EXPIRE", "key"))
-	expected := protocol.EncodeResp(util.InvalidNumberOfArgs("EXPIRE"), false)
+	expected := protocol.EncodeResp(errors.InvalidNumberOfArgs("EXPIRE"), false)
 
 	assert.Equal(t, expected, resp)
 }
@@ -61,7 +61,7 @@ func TestExpire_InvalidTTL_NonNumeric(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.Expire(cmd("EXPIRE", "k", "abc"))
-	expected := protocol.EncodeResp(util.InvalidExpireTime("EXPIRE"), false)
+	expected := protocol.EncodeResp(errors.InvalidExpireTime("EXPIRE"), false)
 
 	assert.Equal(t, expected, resp)
 }
@@ -71,7 +71,7 @@ func TestExpire_InvalidTTL_Zero(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.Expire(cmd("EXPIRE", "k", "0"))
-	expected := protocol.EncodeResp(util.InvalidExpireTime("EXPIRE"), false)
+	expected := protocol.EncodeResp(errors.InvalidExpireTime("EXPIRE"), false)
 
 	assert.Equal(t, expected, resp)
 }
@@ -81,7 +81,7 @@ func TestExpire_InvalidTTL_Negative(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.Expire(cmd("EXPIRE", "k", "-10"))
-	expected := protocol.EncodeResp(util.InvalidExpireTime("EXPIRE"), false)
+	expected := protocol.EncodeResp(errors.InvalidExpireTime("EXPIRE"), false)
 
 	assert.Equal(t, expected, resp)
 }
@@ -91,7 +91,7 @@ func TestExpire_InvalidOption(t *testing.T) {
 	r.Set(cmd("SET", "k", "v"))
 
 	resp := r.Expire(cmd("EXPIRE", "k", "10", "BAD"))
-	expected := protocol.EncodeResp(util.InvalidCommandOption("BAD", "EXPIRE"), false)
+	expected := protocol.EncodeResp(errors.InvalidCommandOption("BAD", "EXPIRE"), false)
 
 	assert.Equal(t, expected, resp)
 }

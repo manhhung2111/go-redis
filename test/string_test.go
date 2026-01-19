@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/manhhung2111/go-redis/internal/protocol"
-	"github.com/manhhung2111/go-redis/internal/util"
+	"github.com/manhhung2111/go-redis/internal/errors"
 )
 
 func TestGet(t *testing.T) {
@@ -31,7 +31,7 @@ func TestGet_InvalidArgs(t *testing.T) {
 
 	resp := r.Get(cmd("GET"))
 	expected := protocol.EncodeResp(
-		util.InvalidNumberOfArgs("GET"),
+		errors.InvalidNumberOfArgs("GET"),
 		false,
 	)
 
@@ -46,7 +46,7 @@ func TestMGet_InvalidArgs(t *testing.T) {
 
 	resp := r.MGet(cmd("MGET"))
 	expected := protocol.EncodeResp(
-		util.InvalidNumberOfArgs("MGET"),
+		errors.InvalidNumberOfArgs("MGET"),
 		false,
 	)
 
@@ -104,7 +104,7 @@ func TestSet_InvalidArgs(t *testing.T) {
 
 	resp := r.Set(cmd("SET"))
 	expected := protocol.EncodeResp(
-		util.InvalidNumberOfArgs("SET"),
+		errors.InvalidNumberOfArgs("SET"),
 		false,
 	)
 
@@ -127,7 +127,7 @@ func TestDel_InvalidArgs(t *testing.T) {
 
 	resp := r.Del(cmd("DEL"))
 	expected := protocol.EncodeResp(
-		util.InvalidNumberOfArgs("DEL"),
+		errors.InvalidNumberOfArgs("DEL"),
 		false,
 	)
 
@@ -157,7 +157,7 @@ func TestIncr_InvalidArgs(t *testing.T) {
 
 	resp := r.Incr(cmd("INCR"))
 	expected := protocol.EncodeResp(
-		util.InvalidNumberOfArgs("INCR"),
+		errors.InvalidNumberOfArgs("INCR"),
 		false,
 	)
 
@@ -193,7 +193,7 @@ func TestIncrBy_InvalidArgs(t *testing.T) {
 
 	resp := r.IncrBy(cmd("INCRBY", "a"))
 	expected := protocol.EncodeResp(
-		util.InvalidNumberOfArgs("INCRBY"),
+		errors.InvalidNumberOfArgs("INCRBY"),
 		false,
 	)
 
@@ -233,7 +233,7 @@ func TestDecr_InvalidArgs(t *testing.T) {
 
 	resp := r.Decr(cmd("DECR"))
 	expected := protocol.EncodeResp(
-		util.InvalidNumberOfArgs("DECR"),
+		errors.InvalidNumberOfArgs("DECR"),
 		false,
 	)
 
@@ -279,7 +279,7 @@ func TestDecrBy_InvalidArgs(t *testing.T) {
 
 	resp := r.DecrBy(cmd("DECRBY", "a"))
 	expected := protocol.EncodeResp(
-		util.InvalidNumberOfArgs("DECRBY"),
+		errors.InvalidNumberOfArgs("DECRBY"),
 		false,
 	)
 
@@ -291,7 +291,7 @@ func TestMSet_EmptyArgs(t *testing.T) {
 
 	resp := r.MSet(cmd("MSET"))
 	expected := protocol.EncodeResp(
-		util.InvalidNumberOfArgs("MSET"),
+		errors.InvalidNumberOfArgs("MSET"),
 		false,
 	)
 
@@ -303,7 +303,7 @@ func TestMSet_OddArgs(t *testing.T) {
 
 	resp := r.MSet(cmd("MSET", "a", "1", "b"))
 	expected := protocol.EncodeResp(
-		util.InvalidNumberOfArgs("MSET"),
+		errors.InvalidNumberOfArgs("MSET"),
 		false,
 	)
 
