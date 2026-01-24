@@ -43,6 +43,26 @@ docker run -d --name go-redis -p 6379:6379 manhhung2111/go-redis:1.0.0
 docker exec -it go-redis redis-cli
 ```
 
+## Build from Source
+
+### Prerequisites
+
+- Go 1.25 or later
+
+### Build and Run
+
+```bash
+# Clone the repository
+git clone https://github.com/manhhung2111/go-redis.git
+cd go-redis
+
+# Build
+go build -o go-redis ./cmd
+
+# Run
+./go-redis
+```
+
 ## Supported Commands
 
 ### General
