@@ -61,6 +61,9 @@ go build -o go-redis ./cmd
 
 # Run
 ./go-redis
+
+# Run redis-cli
+redis-cli -h 0.0.0.0 -p 6379
 ```
 
 ## Supported Commands
