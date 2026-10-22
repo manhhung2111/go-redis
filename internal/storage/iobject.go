@@ -120,6 +120,15 @@ type CMSStore interface {
 	CMSQuery(key string, items []string) ([]uint64, error)
 }
 
+type PersistenceStore interface {
+	// Snapshot serializes the whole keyspace into a snapshot file image.
+	Snapshot() ([]byte, error)
+	// LoadSnapshot replaces the contents of an empty store with a snapshot file image.
+	LoadSnapshot(data []byte) error
+	// KeyCount returns the number of keys, including not yet expired ones.
+	KeyCount() int
+}
+
 // Store combines all storage interfaces
 type Store interface {
 	StringStore
@@ -133,4 +142,5 @@ type Store interface {
 	CuckooFilterStore
 	HyperLogLogStore
 	CMSStore
+	PersistenceStore
 }
