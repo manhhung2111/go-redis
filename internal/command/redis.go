@@ -1,6 +1,7 @@
 package command
 
 import (
+	"github.com/manhhung2111/go-redis/internal/persistence"
 	"github.com/manhhung2111/go-redis/internal/protocol"
 	"github.com/manhhung2111/go-redis/internal/storage"
 	"github.com/manhhung2111/go-redis/internal/errors"
@@ -9,16 +10,21 @@ import (
 type CommandHandler func(cmd protocol.RedisCmd) []byte
 
 type redis struct {
-	Store    storage.Store
-	handlers map[string]CommandHandler
+	Store       storage.Store
+	Persistence *persistence.Manager
+	handlers    map[string]CommandHandler
 }
 
 func NewRedis(
 	store storage.Store,
+	persistence *persistence.Manager,
 ) Redis {
-	redis := &redis{Store: store}
+	redis := &redis{Store: store, Persistence: persistence}
 	redis.handlers = map[string]CommandHandler{
-		"PING": redis.Ping,
+		"PING":     redis.Ping,
+		"SAVE":     redis.Save,
+		"BGSAVE":   redis.BGSave,
+		"LASTSAVE": redis.LastSave,
 
 		"SET":    redis.Set,
 		"GET":    redis.Get,

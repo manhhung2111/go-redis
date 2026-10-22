@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft |
+| **Status** | Implemented |
 | **Author** | manhhung2111 |
 | **Created** | 2026-10-22 |
 
@@ -76,19 +76,19 @@ All integers little-endian. `uvarint` = `encoding/binary` unsigned varint. `byte
 File   := Header Entry* EOF Checksum
 Header := "GREDIS" (6 bytes) | version uint16 (=1) | createdAtMs uint64
 Entry  := opcode=0x01 | objType uint8 | encoding uint8 | expireAtMs uint64 (0 = none)
-          | key bytes | value bytes
+          | key bytes | valueLen uint64 | value (valueLen bytes)
 EOF    := opcode=0xFF
 Checksum := CRC-64/ECMA uint64 over every byte before it
 ```
 
 - `objType` / `encoding` reuse the existing `ObjectType` / `ObjectEncoding` values. Those enums are now part of the on-disk format: **new values may only be appended, never reordered.** A comment saying so is added to `object.go`.
-- The value payload is length-prefixed so a loader can skip or report an unknown type precisely.
-- Reserved opcodes `0x02–0xFE` allow future metadata (e.g. aux fields, key counts) without a version bump if the loader skips unknown opcodes it can size. Loader rejects files with `version` > supported.
+- The value payload is length-prefixed so a loader can report an unknown type precisely. The length is a fixed-width `uint64` so the encoder can reserve it and patch it after writing the value in place, avoiding a copy per key.
+- Opcodes `0x02–0xFE` are reserved for future metadata (e.g. aux fields, key counts). The v1 loader rejects unknown opcodes and files whose `version` differs from the one it supports.
 - LRU/LFU state is not persisted; loaded objects get a fresh `lru` exactly as newly created objects do.
 
 ## 7. Value encoding per type
 
-Each concrete type in `internal/storage/types` gets `MarshalBinary() ([]byte, error)` and a package-level `Unmarshal<Type>([]byte) (<Interface>, error)`. Payload layouts:
+Each concrete type in `internal/storage/types` implements `Encodable` (`Encode(e *codec.Encoder)`, appending to the shared snapshot buffer) and has a package-level `Decode<Type>(d *codec.Decoder) (<Interface>, error)` (`internal/storage/types/serialize.go`). The primitives live in `internal/codec`. Payload layouts:
 
 | ObjType / Encoding | Payload |
 |---|---|
@@ -112,19 +112,20 @@ Requirement: probabilistic structures must round-trip **bit-exact** so `BF.EXIST
 |---|---|
 | `internal/config/config.go` | New fields + defaults (§5) |
 | `cmd/main.go` | New flags |
-| `internal/storage/types/*.go` | `MarshalBinary` / `Unmarshal*` per type (§7) |
-| `internal/storage/snapshot.go` (new) | `Snapshot(w io.Writer) error`, `LoadSnapshot(r io.Reader) error`, format constants, CRC writer/reader |
+| `internal/codec` (new) | Binary `Encoder` / `Decoder` primitives with sticky errors and allocation guards |
+| `internal/storage/types/serialize.go` (new) | `Encode` / `Decode*` per type (§7) |
+| `internal/storage/snapshot.go` (new) | `Snapshot() ([]byte, error)`, `LoadSnapshot([]byte) error`, `KeyCount()`, format constants, CRC |
 | `internal/storage/iobject.go` | New `PersistenceStore` interface embedded in `Store` |
-| `internal/persistence/` (new) | `Saver`: owns file path, atomic write, in-progress flag, result channel, `lastSave`/`lastStatus` |
+| `internal/persistence/` (new) | `Manager`: owns file path, load, atomic write, in-progress flag, result channel, `lastSave`/`lastSaveErr` |
 | `internal/server/server.go` | Timer handler → `serverCron()`; load before listening; final save on shutdown |
-| `internal/command/general.go` | `SAVE`, `BGSAVE`, `LASTSAVE` |
-| `internal/wiring` | Provide `Saver`; regenerate `wire_gen.go` |
+| `internal/command/persistence.go` (new) | `SAVE`, `BGSAVE`, `LASTSAVE` |
+| `internal/wiring` | Provide `Manager`; update `wire_gen.go` |
 | `Dockerfile` / `README.md` | `VOLUME /data`, `-snapshot-dir /data`, document flags |
 | `.gitignore` | `*.grdb`, `*.grdb.tmp` |
 
 ### 8.1 `Snapshot` / `LoadSnapshot`
 - `Snapshot` iterates `data`; for each key, looks up `expires`, **skips keys whose deadline has passed**, writes an entry. Iteration uses the existing `keys` slice of `dict`, requiring a small `ForEach(fn func(K, V))` on `Dict`.
-- `LoadSnapshot` requires an empty store, verifies magic, version and CRC (CRC is checked while streaming; on mismatch the partially loaded store is discarded and an error returned). Keys already expired at load time are dropped. Insertion goes through `dict.Set` so `usedMemory` stays accurate.
+- `LoadSnapshot` requires an empty store. The file is read fully and magic and CRC are verified before any entry is decoded, then the version is checked. Entries are decoded into fresh dicts that replace the store's only on success, so a failed load leaves the store empty. Keys already expired at load time are dropped. Insertion goes through `dict.Set` so `usedMemory` stays accurate.
 
 ### 8.2 Scheduling (`serverCron`)
 Reusing the single existing timer avoids touching the epoll/kqueue implementations:
@@ -132,10 +133,9 @@ Reusing the single existing timer avoids touching the epoll/kqueue implementatio
 ```go
 func (s *Server) serverCron() {
     s.redis.ActiveExpireCycle()
-    s.saver.Poll()                         // non-blocking read of result channel
-    if s.saver.Due(time.Now()) {           // enabled && interval elapsed && !inProgress
-        s.saver.StartBackground(s.store)   // Snapshot() into buffer, then go write
-    }
+    // Collects a finished background write (non-blocking), then calls
+    // BackgroundSave() if enabled && interval elapsed && !inProgress
+    s.persistence.Cron(time.Now())
 }
 ```
 
@@ -155,13 +155,13 @@ Any error removes the tmp file and is reported on the result channel. The previo
 
 ### 8.5 Startup and shutdown
 - Startup (`Server.Start`, before `createServerSocket`): if `SnapshotLoadOnStart` and the file exists → load. Missing file → log and continue. Corrupt / bad CRC / unsupported version → **refuse to start** with a clear error (operator must move the file aside). Load time and key count are logged.
-- Shutdown: `WaitingForSignals` currently closes the event loop from another goroutine, which must not read the store. It will instead signal the loop (e.g. via a self-pipe / eventfd registered with the loop, or a flag checked after `Wait` returns `EINTR`); the loop then waits for any in-flight background write, performs a final foreground save if enabled, and exits.
+- Shutdown: `WaitingForSignals` used to close the epoll/kqueue fd from another goroutine, which did not wake the blocked `Wait` (the server never exited on SIGTERM). It now only sets an atomic `stopping` flag; the event loop checks it after every `Wait`, and the 100ms timer guarantees `Wait` returns. Once the loop has stopped, `Start` waits for any in-flight background write, performs a final foreground save if enabled, and returns.
 
 ## 9. Failure handling
 
 | Situation | Behaviour |
 |---|---|
-| Background write fails (disk full, permissions) | Log error, keep old dump, `lastStatus=err`, retry at next interval. Server keeps serving |
+| Background write fails (disk full, permissions) | Log error, keep old dump, `lastSaveErr` set, retry at next interval. Server keeps serving |
 | Save requested while one in progress | Cron: skip. `SAVE`/`BGSAVE`: error reply |
 | Crash during write | Only the `.tmp` is affected; stale `.tmp` is deleted on next startup |
 | Corrupt dump at startup | Refuse to start |
@@ -180,7 +180,7 @@ Any error removes the tmp file and is reported on the result channel. The previo
 - **Option C — copy-on-write at the storage layer.** Near-zero pause, but every mutation path must check a snapshot epoch and clone before writing. Large blast radius; deferred.
 - **`fork()`** — unsafe with the Go runtime.
 - **`encoding/gob`** — can't see unexported fields, slower, and couples the format to Go struct layout.
-- **Change-count save rules** (`save <sec> <changes>`) — requires a dirty counter in every write path. Can be layered onto `Saver.Due()` later without format changes.
+- **Change-count save rules** (`save <sec> <changes>`) — requires a dirty counter in every write path. Can be layered onto `Manager.Cron()` later without format changes.
 
 ## 12. Testing
 
@@ -194,9 +194,9 @@ Any error removes the tmp file and is reported on the result channel. The previo
 
 ## 13. Rollout plan (PRs)
 
-1. **Type serialization** — `MarshalBinary`/`Unmarshal*` for all types + round-trip tests. No behaviour change.
+1. **Type serialization** — `Encode`/`Decode*` for all types + round-trip tests. No behaviour change.
 2. **Store snapshot/load** — `snapshot.go`, `Dict.ForEach`, format + CRC, `PersistenceStore`, corruption tests. No behaviour change.
-3. **Saver + server integration** — config/flags (default on), `serverCron`, atomic background write, load on start, save on shutdown, `SAVE`/`BGSAVE`/`LASTSAVE`, integration tests.
+3. **Persistence manager + server integration** — config/flags (default on), `serverCron`, atomic background write, load on start, save on shutdown, `SAVE`/`BGSAVE`/`LASTSAVE`, integration tests.
 4. **Docs & packaging** — README section, Dockerfile `VOLUME /data`, `.gitignore`.
 
 Each PR is independently reviewable and mergeable; only PR 3 changes runtime behaviour.

@@ -32,3 +32,6 @@ go.work.sum
 # .vscode/
 
 vendor
+# Snapshot files
+*.grdb
+*.grdb.tmp

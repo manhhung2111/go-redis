@@ -2,6 +2,8 @@ package storage
 
 import "github.com/manhhung2111/go-redis/internal/config"
 
+// ObjectType and ObjectEncoding values are written to snapshot files.
+// Only append new values; never reorder or remove existing ones.
 type ObjectType uint8
 type ObjectEncoding uint8
 

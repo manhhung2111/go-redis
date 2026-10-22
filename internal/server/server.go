@@ -6,28 +6,38 @@ import (
 	"log"
 	"net"
 	"os"
+	"sync/atomic"
 	"syscall"
+	"time"
 
 	"github.com/manhhung2111/go-redis/internal/command"
 	"github.com/manhhung2111/go-redis/internal/config"
+	"github.com/manhhung2111/go-redis/internal/persistence"
 	"github.com/manhhung2111/go-redis/internal/protocol"
 )
 
 type Server struct {
-	config    *config.Config
-	redis     command.Redis
-	eventLoop EventLoop
-	serverFd  int
+	config      *config.Config
+	redis       command.Redis
+	persistence *persistence.Manager
+	eventLoop   EventLoop
+	serverFd    int
+	stopping    atomic.Bool
 }
 
-func NewServer(cfg *config.Config, redis command.Redis) *Server {
+func NewServer(cfg *config.Config, redis command.Redis, persistence *persistence.Manager) *Server {
 	return &Server{
-		config: cfg,
-		redis:  redis,
+		config:      cfg,
+		redis:       redis,
+		persistence: persistence,
 	}
 }
 
 func (s *Server) Start(sigCh chan os.Signal) error {
+	if err := s.persistence.Load(); err != nil {
+		return err
+	}
+
 	log.Printf("starting TCP server on %s:%d", s.config.Host, s.config.Port)
 
 	var err error
@@ -51,7 +61,15 @@ func (s *Server) Start(sigCh chan os.Signal) error {
 		return fmt.Errorf("failed to register active expire cycle event: %w", err)
 	}
 
-	return s.runEventLoop()
+	if err := s.runEventLoop(); err != nil {
+		return err
+	}
+
+	// The event loop has stopped, so no command can run concurrently with the final save
+	if err := s.persistence.Shutdown(); err != nil {
+		return fmt.Errorf("failed to save snapshot on shutdown: %w", err)
+	}
+	return nil
 }
 
 func (s *Server) createServerSocket() (int, error) {
@@ -112,15 +130,21 @@ func (s *Server) runEventLoop() error {
 				log.Printf("error handling event: %v", err)
 			}
 		}
+
+		// The periodic timer guarantees Wait returns, so a stop request is
+		// noticed within one tick
+		if s.stopping.Load() {
+			break
+		}
 	}
 
-	log.Println("server shutdown complete")
+	log.Println("event loop stopped")
 	return nil
 }
 
 func (s *Server) handleEvent(event Event) error {
 	if event.IsTimer {
-		s.redis.ActiveExpireCycle()
+		s.serverCron()
 		return nil
 	}
 
@@ -128,6 +152,12 @@ func (s *Server) handleEvent(event Event) error {
 		return s.acceptConnection()
 	}
 	return s.handleClientRequest(event.Fd)
+}
+
+// serverCron runs periodic background tasks on every timer tick.
+func (s *Server) serverCron() {
+	s.redis.ActiveExpireCycle()
+	s.persistence.Cron(time.Now())
 }
 
 func (s *Server) acceptConnection() error {
@@ -181,5 +211,7 @@ func (s *Server) handleClientRequest(clientFD int) error {
 func (s *Server) WaitingForSignals(sigCh chan os.Signal) {
 	<-sigCh
 	log.Println("shutdown signal received")
-	s.eventLoop.Close()
+	// Only flag the stop: the event loop goroutine owns the store and must
+	// perform the final snapshot itself
+	s.stopping.Store(true)
 }

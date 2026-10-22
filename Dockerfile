@@ -6,5 +6,6 @@ RUN go build -o go-redis ./cmd
 FROM alpine:3.23
 RUN apk add --no-cache redis
 COPY --from=builder /app/go-redis /go-redis
+VOLUME /data
 EXPOSE 6379
-CMD ["/go-redis"]
+CMD ["/go-redis", "-snapshot-dir", "/data"]

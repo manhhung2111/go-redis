@@ -120,9 +120,16 @@ type CMSCommands interface {
 	CMSQuery(cmd protocol.RedisCmd) []byte
 }
 
+type PersistenceCommands interface {
+	Save(cmd protocol.RedisCmd) []byte
+	BGSave(cmd protocol.RedisCmd) []byte
+	LastSave(cmd protocol.RedisCmd) []byte
+}
+
 type Redis interface {
 	HandleCommand(cmd protocol.RedisCmd) []byte
 	Ping(cmd protocol.RedisCmd) []byte
+	PersistenceCommands
 	StringCommands
 	ExpireCommands
 	SetCommands

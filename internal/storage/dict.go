@@ -14,6 +14,7 @@ type Dict[K comparable, V any] interface {
 	Len() int
 	GetRandomKey() K
 	Empty() bool
+	ForEach(fn func(key K, value V))
 }
 
 type dict[K comparable, V any] struct {
@@ -120,4 +121,11 @@ func (d *dict[K, V]) GetRandomKey() K {
 
 func (d *dict[K, V]) Empty() bool {
 	return len(d.contents) == 0
+}
+
+// ForEach calls fn for every entry. fn must not modify the dict.
+func (d *dict[K, V]) ForEach(fn func(key K, value V)) {
+	for _, key := range d.keys {
+		fn(key, d.contents[key])
+	}
 }
