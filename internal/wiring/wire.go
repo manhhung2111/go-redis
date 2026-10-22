@@ -10,12 +10,14 @@ import (
 	"github.com/google/wire"
 	"github.com/manhhung2111/go-redis/internal/command"
 	"github.com/manhhung2111/go-redis/internal/config"
+	"github.com/manhhung2111/go-redis/internal/persistence"
 	"github.com/manhhung2111/go-redis/internal/server"
 	"github.com/manhhung2111/go-redis/internal/storage"
 )
 
 var WireSet = wire.NewSet(
 	storage.WireSet,
+	persistence.WireSet,
 	command.WireSet,
 	server.WireSet,
 )

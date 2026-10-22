@@ -10,6 +10,7 @@ import (
 	"github.com/google/wire"
 	"github.com/manhhung2111/go-redis/internal/command"
 	"github.com/manhhung2111/go-redis/internal/config"
+	"github.com/manhhung2111/go-redis/internal/persistence"
 	"github.com/manhhung2111/go-redis/internal/server"
 	"github.com/manhhung2111/go-redis/internal/storage"
 )
@@ -18,11 +19,15 @@ import (
 
 func InitializeServer(cfg *config.Config) (*server.Server, error) {
 	store := storage.NewStore(cfg)
-	redis := command.NewRedis(store)
-	serverServer := server.NewServer(cfg, redis)
+	manager, err := persistence.NewManager(cfg, store)
+	if err != nil {
+		return nil, err
+	}
+	redis := command.NewRedis(store, manager)
+	serverServer := server.NewServer(cfg, redis, manager)
 	return serverServer, nil
 }
 
 // wire.go:
 
-var WireSet = wire.NewSet(storage.WireSet, command.WireSet, server.WireSet)
+var WireSet = wire.NewSet(storage.WireSet, persistence.WireSet, command.WireSet, server.WireSet)

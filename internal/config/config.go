@@ -84,6 +84,14 @@ type Config struct {
 	LFUInitVal   uint8
 	LFULogFactor int
 	LFUDecayTime uint32
+
+	// Snapshot settings
+	SnapshotEnabled        bool
+	SnapshotIntervalSec    int
+	SnapshotDir            string
+	SnapshotFilename       string
+	SnapshotLoadOnStart    bool
+	SnapshotSaveOnShutdown bool
 }
 
 // NewConfig returns a Config with default values.
@@ -131,5 +139,12 @@ func NewConfig() *Config {
 		LFUInitVal:   5,
 		LFULogFactor: 10,
 		LFUDecayTime: 1,
+
+		SnapshotEnabled:        true,
+		SnapshotIntervalSec:    300,
+		SnapshotDir:            ".",
+		SnapshotFilename:       "dump.grdb",
+		SnapshotLoadOnStart:    true,
+		SnapshotSaveOnShutdown: true,
 	}
 }
