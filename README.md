@@ -29,6 +29,7 @@ This project was inspired by ideas from the
   - `volatile-lfu`: Evict least frequently used keys with TTL
   - `volatile-ttl`: Evict keys with shortest TTL
   - `volatile-random`: Evict random keys with TTL
+- **Snapshot Persistence** (enabled by default): The whole keyspace is saved to a snapshot file (`dump.grdb`) on a fixed interval and on shutdown, and loaded on startup. See [Persistence](#persistence).
 
 ## Getting Started with Docker
 
@@ -36,8 +37,8 @@ This project was inspired by ideas from the
 # Pull the image
 docker pull manhhung2111/go-redis:1.0.0
 
-# Run the server
-docker run -d --name go-redis -p 6379:6379 manhhung2111/go-redis:1.0.0
+# Run the server (snapshots are written to the /data volume)
+docker run -d --name go-redis -p 6379:6379 -v go-redis-data:/data manhhung2111/go-redis:1.0.0
 
 # Interact with the server using redis-cli
 docker exec -it go-redis redis-cli
@@ -66,6 +67,32 @@ go build -o go-redis ./cmd
 redis-cli -h 0.0.0.0 -p 6379
 ```
 
+## Persistence
+
+The server periodically writes a point-in-time snapshot of all keys to disk. Every type is persisted, including TTLs and probabilistic structures, which load back exactly. On each save the keyspace is encoded in memory on the event loop, then written to a temporary file in the background, fsynced, and atomically renamed over the previous snapshot, so a crash never leaves a partial file.
+
+| Flag | Default | Description |
+|---|---|---|
+| `-snapshot` | `true` | Enable periodic snapshots and the final save on shutdown |
+| `-snapshot-interval` | `300` | Seconds between snapshots |
+| `-snapshot-dir` | `.` | Directory holding the snapshot file |
+| `-snapshot-file` | `dump.grdb` | Snapshot file name |
+| `-snapshot-load` | `true` | Load the snapshot file on startup |
+
+```bash
+# Snapshot every 60 seconds into /var/lib/go-redis
+./go-redis -snapshot-interval 60 -snapshot-dir /var/lib/go-redis
+
+# Run purely in memory
+./go-redis -snapshot=false -snapshot-load=false
+```
+
+Notes:
+- A corrupt or unreadable snapshot stops the server at startup; move the file aside to start empty.
+- Writes made after the last snapshot are lost on a crash (there is no append-only file).
+- Saving needs extra memory roughly the size of the encoded dataset while the write is in flight.
+- The format is specific to go-redis and is not compatible with Redis RDB files. See [docs/design/snapshot.md](docs/design/snapshot.md).
+
 ## Supported Commands
 
 ### General
@@ -74,6 +101,9 @@ redis-cli -h 0.0.0.0 -p 6379
 - `DEL key [key ...]`
 - `TTL key`
 - `EXPIRE key seconds [NX | XX | GT | LT]`
+- `SAVE`
+- `BGSAVE`
+- `LASTSAVE`
 
 ### Strings
 
